@@ -1,4 +1,6 @@
 ---
 wallet: '0x0000000000000000000000000000000000000000'
-token_icons:
-  '0x8076C74C5e3F5852037F31Ff0093Eeb8c8ADd8D3': '🌖' # SAFEMOON
+secrets:
+  bscscan_api_key: ''
+  telegram_token: ''
+  admin_chat_id: 123456

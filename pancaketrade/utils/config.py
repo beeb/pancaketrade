@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from web3.types import ChecksumAddress
 from web3 import Web3
-from typing import Dict
 import questionary
 
 import yamale
@@ -19,7 +18,6 @@ class Config:
     """Class to hold the bot configuration."""
 
     wallet: ChecksumAddress
-    token_icons: Dict[str, str] = field(default_factory=dict)
     config_file: str = 'config.yml'
     _pk: str = field(repr=False, default='')
 
