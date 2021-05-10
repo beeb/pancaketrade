@@ -1,7 +1,7 @@
 from peewee import Model, CharField, FixedCharField
 from playhouse.pool import PooledSqliteDatabase
 
-db = PooledSqliteDatabase('pancaketrade.db', max_connections=20, stale_time=20, timeout=0)
+db = PooledSqliteDatabase('pancaketrade.db', max_connections=20, stale_timeout=20, timeout=0)
 
 
 class Token(Model):

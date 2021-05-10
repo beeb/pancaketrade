@@ -7,6 +7,7 @@ from loguru import logger
 from pancaketrade.utils.config import read_config
 from pancaketrade.utils.generic import InterceptHandler
 from pancaketrade.persistence.models import db
+from pancaketrade.bot import TradeBot
 
 logger.remove()
 logger.add(
@@ -26,7 +27,8 @@ logging.basicConfig(handlers=[InterceptHandler()], level=0)
 def main(config_file: str) -> None:
     try:
         config = read_config(config_file)
-        logger.info(config)
+        bot = TradeBot(config=config)
+        logger.info(bot)
         logger.info('Bot started')
     finally:
         db.close()
