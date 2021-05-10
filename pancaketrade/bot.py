@@ -1,6 +1,7 @@
 """Bot class."""
+from pancaketrade.network.bsc import Network
+from pancaketrade.persistence.models import db, init_db
 from pancaketrade.utils.config import Config
-from pancaketrade.persistence.models import init_db, db
 
 
 class TradeBot:
@@ -8,5 +9,6 @@ class TradeBot:
 
     def __init__(self, config: Config):
         self.config = config
+        self.net = Network(secrets=self.config.secrets)
         self.db = db
         init_db()
