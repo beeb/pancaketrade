@@ -16,11 +16,13 @@ class Token(Model):
 
 class Order(Model):
     token = ForeignKeyField(Token, backref='orders')
-    type = FixedCharField(max_length=4)  # buy or sell
-    limit_price = CharField()  # store as string
+    type = FixedCharField(max_length=4)  # buy (tokens for BNB) or sell (tokens for BNB)
+    limit_price = CharField()  # decimal stored as string
     above = BooleanField()  # Above = True, below = False
     trailing_stop = SmallIntegerField(null=True)  # in percent
-    amount = CharField()
+    amount = CharField()  # in wei, either BNB or token depending on "type"
+    slippage = SmallIntegerField()
+    gas_price = CharField()  # in wei
 
     class Meta:
         database = db
