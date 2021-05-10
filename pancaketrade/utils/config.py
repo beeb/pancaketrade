@@ -14,10 +14,20 @@ import string
 
 
 @dataclass
+class ConfigSecrets:
+    """Class to hold secrets from the config file."""
+
+    bscscan_api_key: str
+    telegram_token: str
+    admin_chat_id: int
+
+
+@dataclass
 class Config:
     """Class to hold the bot configuration."""
 
     wallet: ChecksumAddress
+    secrets: ConfigSecrets
     config_file: str = 'config.yml'
     _pk: str = field(repr=False, default='')
 
