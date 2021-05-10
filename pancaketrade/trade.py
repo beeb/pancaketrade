@@ -6,6 +6,7 @@ from loguru import logger
 
 from pancaketrade.utils.config import read_config
 from pancaketrade.utils.generic import InterceptHandler
+from pancaketrade.persistence.models import db
 
 logger.remove()
 logger.add(
@@ -23,10 +24,12 @@ logging.basicConfig(handlers=[InterceptHandler()], level=0)
 @click.command()
 @click.argument('config_file', required=False, default='config.yml')
 def main(config_file: str) -> None:
-    global logger
-    config = read_config(config_file)
-    logger.info(config)
-    logger.info('Bot started')
+    try:
+        config = read_config(config_file)
+        logger.info(config)
+        logger.info('Bot started')
+    finally:
+        db.close()
 
 
 if __name__ == '__main__':
