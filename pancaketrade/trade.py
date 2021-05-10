@@ -25,7 +25,7 @@ logging.basicConfig(handlers=[InterceptHandler()], level=0)
 def main(config_file: str) -> None:
     global logger
     config = read_config(config_file)
-    config.config_file = config_file
+    logger.info(config)
     logger.info('Bot started')
 
 

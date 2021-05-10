@@ -1,13 +1,17 @@
 """Config utilities."""
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from web3.types import ChecksumAddress
 from web3 import Web3
+from typing import Dict
+import questionary
 
 import yamale
 import yaml
+from questionary import ValidationError, Validator
 from loguru import logger
+import string
 
 
 @dataclass
@@ -15,15 +19,28 @@ class Config:
     """Class to hold the bot configuration."""
 
     wallet: ChecksumAddress
-    _pk: str = ''
+    token_icons: Dict[str, str] = field(default_factory=dict)
+    config_file: str = 'config.yml'
+    _pk: str = field(repr=False, default='')
 
-    def __init__(self, wallet: str) -> None:
-        self.wallet = Web3.toChecksumAddress(wallet)
+    def __post_init__(self):
+        self.wallet = Web3.toChecksumAddress(self.wallet)
+
+
+class PrivateKeyValidator(Validator):
+    def validate(self, document):
+        if len(document.text) != 64 or not all(c in string.hexdigits for c in document.text):
+            raise ValidationError(message='Enter a valid private key (64 hexadecimal characters)')
 
 
 def parse_config_file(path: Path) -> Config:
     with path.open('r') as f:
         conf = yaml.full_load(f)
+    conf['_pk'] = questionary.password(
+        f'In order to make transactions, I need the private key for wallet {conf["wallet"]}:',
+        validate=PrivateKeyValidator,
+    ).ask()
+    conf['config_file'] = str(path)
     return Config(**conf)
 
 
