@@ -33,6 +33,7 @@ class Config:
 
     def __post_init__(self):
         self.wallet = Web3.toChecksumAddress(self.wallet)
+        self.secrets = ConfigSecrets(**self.secrets)
 
 
 class PrivateKeyValidator(Validator):
