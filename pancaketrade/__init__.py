@@ -6,3 +6,5 @@ except ModuleNotFoundError:
 __version__ = version('pancaketrade')
 __doc__ = metadata('pancaketrade')['Summary']
 __author__ = metadata('pancaketrade')['Author']
+
+from .trade import *
