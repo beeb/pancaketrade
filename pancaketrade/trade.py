@@ -28,7 +28,7 @@ def main(config_file: str) -> None:
     try:
         config = read_config(config_file)
         bot = TradeBot(config=config)
-        logger.info(bot)
+        logger.info(bot.net.w3.eth.get_balance(bot.config.wallet))
         logger.info('Bot started')
     finally:
         db.close()
