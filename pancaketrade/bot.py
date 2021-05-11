@@ -15,10 +15,20 @@ def check_chat_id(func: Callable) -> Callable:
     """Compare chat ID with admin's chat ID and refuse access if unauthorized."""
 
     @functools.wraps(func)
-    def wrapper_check_chat_id(*args, **kwargs):
-        print(args)
-        print(kwargs)
-        return func(*args, **kwargs)
+    def wrapper_check_chat_id(tradebot: TradeBot, update: Update, context: CallbackContext, *args, **kwargs):
+        if update.effective_chat is None:
+            logger.debug('No chat ID')
+            return
+        chat_id = update.effective_chat.id
+        if chat_id == tradebot.config.secrets.admin_chat_id:
+            return func(tradebot, update, context, *args, **kwargs)
+        logger.warning(f'Prevented user {chat_id} to interact.')
+        context.bot.send_message(
+            chat_id=tradebot.config.secrets.admin_chat_id, text=f'Prevented user {chat_id} to interact.'
+        )
+        if update.message is None:
+            return
+        update.message.reply_text('This bot is not public, you are not allowed to use it.')
 
     return wrapper_check_chat_id
 
@@ -46,5 +56,5 @@ class TradeBot:
         self.updater.idle()
 
     @check_chat_id
-    def command_start(self, message: Update, context: CallbackContext):
+    def command_start(self, update: Update, context: CallbackContext):
         pass
