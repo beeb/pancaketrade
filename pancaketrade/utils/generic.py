@@ -36,6 +36,12 @@ def check_chat_id(func: Callable) -> Callable:
         if update.message is None:
             logger.debug('No message')
             return
+        if update.message.text is None:
+            logger.debug('No text in message')
+            return
+        if context.user_data is None:
+            logger.debug('No user data')
+            return
         chat_id = update.effective_chat.id
         if chat_id == tradebot.config.secrets.admin_chat_id:
             return func(tradebot, update, context, *args, **kwargs)
