@@ -9,6 +9,7 @@ class Token(Model):
     symbol = CharField()
     icon = CharField(null=True)  # emoji
     decimals = SmallIntegerField()
+    default_slippage = SmallIntegerField()
 
     class Meta:
         database = db
