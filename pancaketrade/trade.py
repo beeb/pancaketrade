@@ -6,7 +6,7 @@ from loguru import logger
 
 from pancaketrade.utils.config import read_config
 from pancaketrade.utils.generic import InterceptHandler
-from pancaketrade.persistence.models import db
+from pancaketrade.persistence import db
 from pancaketrade.bot import TradeBot
 
 logger.remove()
