@@ -1,6 +1,8 @@
-from typing import NamedTuple
+from decimal import Decimal
+from typing import NamedTuple, Optional
 
-from cachetools import LRUCache, cached
+from cachetools import LRUCache, TTLCache, cached
+from loguru import logger
 from pancaketrade.utils.config import ConfigSecrets
 from pancaketrade.utils.web3 import fetch_abi
 from web3 import Web3
@@ -31,15 +33,39 @@ class NetworkContracts:
 
 
 class Network:
-    def __init__(self, secrets: ConfigSecrets):
+    def __init__(self, wallet: ChecksumAddress, secrets: ConfigSecrets):
+        self.wallet = wallet
         self.secrets = secrets
         w3_provider = Web3.HTTPProvider(endpoint_uri='https://bsc-dataseed.binance.org:443')
         self.w3 = Web3(provider=w3_provider)
         self.addr = NetworkAddresses()
         self.contracts = NetworkContracts(addr=self.addr, w3=self.w3, api_key=secrets.bscscan_api_key)
 
-    def get_bnb_balance(self, wallet: ChecksumAddress) -> Wei:
-        return Wei(self.w3.eth.get_balance(wallet))
+    def get_bnb_balance(self) -> Decimal:
+        return Decimal(self.w3.eth.get_balance(self.wallet)) / Decimal(10 ** 18)
+
+    def get_bnb_price(self) -> Decimal:
+        lp = self.find_lp_address(token_address=self.addr.busd, v2=True)
+        if not lp:
+            return Decimal(0)
+        bnb_amount = Decimal(self.contracts.wbnb.functions.balanceOf(lp).call())
+        busd_amount = Decimal(self.contracts.busd.functions.balanceOf(lp).call())
+        return busd_amount / bnb_amount
+
+    @cached(cache=TTLCache(maxsize=64, ttl=30))  # cache 30 seconds
+    def get_current_balance(self, token_address: ChecksumAddress) -> Decimal:
+        token_contract = self.get_token_contract(token_address)
+        balance = Decimal(token_contract.functions.balanceOf(self.wallet).call()) / Decimal(
+            10 ** self.get_token_decimals(token_address)
+        )
+        return balance
+
+    @cached(cache=LRUCache(maxsize=256))
+    def get_token_contract(self, token_address: ChecksumAddress) -> Contract:
+        logger.debug(f'Token contract initiated for {token_address}')
+        return self.w3.eth.contract(
+            address=token_address, abi=fetch_abi(contract=token_address, api_key=self.secrets.bscscan_api_key)
+        )
 
     @cached(cache=LRUCache(maxsize=256))
     def get_token_decimals(self, token_address: ChecksumAddress) -> int:
@@ -56,6 +82,14 @@ class Network:
         )
         symbol = token_contract.functions.symbol().call()
         return symbol
+
+    @cached(cache=TTLCache(maxsize=256, ttl=3600))  # cache 60 minutes
+    def find_lp_address(self, token_address: ChecksumAddress, v2: bool = False) -> Optional[str]:
+        contract = self.contracts.factory_v2 if v2 else self.contracts.factory_v1
+        pair = contract.functions.getPair(token_address, self.addr.wbnb).call()
+        if pair == '0x0000000000000000000000000000000000000000':  # not found
+            return None
+        return pair
 
     def get_gas_price(self) -> Wei:
         return self.w3.eth.gas_price

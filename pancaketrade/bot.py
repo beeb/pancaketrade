@@ -1,8 +1,8 @@
 """Bot class."""
 import functools
 from typing import Callable
-from loguru import logger
 
+from loguru import logger
 from telegram import Update
 from telegram.ext import CallbackContext, CommandHandler, PicklePersistence, Updater
 
@@ -39,7 +39,7 @@ class TradeBot:
 
     def __init__(self, config: Config):
         self.config = config
-        self.net = Network(secrets=self.config.secrets)
+        self.net = Network(wallet=self.config.wallet, secrets=self.config.secrets)
         self.db = db
         init_db()
         persistence = PicklePersistence(filename='botpersistence')
@@ -49,6 +49,7 @@ class TradeBot:
 
     def setup_telegram(self):
         self.dispatcher.add_handler(CommandHandler('start', self.command_start))
+        self.dispatcher.add_handler(CommandHandler('status', self.command_status))
 
     def start(self):
         self.dispatcher.bot.send_message(chat_id=self.config.secrets.admin_chat_id, text='Bot started')
@@ -59,4 +60,12 @@ class TradeBot:
     @check_chat_id
     def command_start(self, update: Update, context: CallbackContext):
         assert update.message and update.effective_chat
-        update.message.reply_text('Hi!')
+        update.message.reply_html(
+            'Hi! You can start adding tokens that you want to trade with the <a href="/addtoken">/addtoken</a> command.'
+        )
+
+    @check_chat_id
+    def command_status(self, update: Update, context: CallbackContext):
+        assert update.message and update.effective_chat
+        balance_bnb = self.net.get_bnb_balance()
+        update.message.reply_html(f'BNB in wallet: {balance_bnb:.4f}')
