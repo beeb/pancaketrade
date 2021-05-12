@@ -1,10 +1,18 @@
 """Bot class."""
 import functools
-from typing import Callable
+from typing import Callable, NamedTuple
 
 from loguru import logger
 from telegram import Update
-from telegram.ext import CallbackContext, CommandHandler, PicklePersistence, Updater
+from telegram.ext import (
+    CallbackContext,
+    CommandHandler,
+    PicklePersistence,
+    Updater,
+    ConversationHandler,
+    MessageHandler,
+    Filters,
+)
 
 from pancaketrade.network.bsc import Network
 from pancaketrade.persistence.models import db, init_db
@@ -34,6 +42,10 @@ def check_chat_id(func: Callable) -> Callable:
     return wrapper_check_chat_id
 
 
+class ChatResponses(NamedTuple):
+    ADD_TOKEN_ADDRESS: int = 0
+
+
 class TradeBot:
     """Bot class."""
 
@@ -45,11 +57,24 @@ class TradeBot:
         persistence = PicklePersistence(filename='botpersistence')
         self.updater = Updater(token=config.secrets.telegram_token, persistence=persistence)
         self.dispatcher = self.updater.dispatcher
+        self.next = ChatResponses()
         self.setup_telegram()
 
     def setup_telegram(self):
         self.dispatcher.add_handler(CommandHandler('start', self.command_start))
         self.dispatcher.add_handler(CommandHandler('status', self.command_status))
+        addtoken_handler = ConversationHandler(
+            entry_points=[CommandHandler('addtoken', self.command_addtoken)],
+            states={
+                self.next.ADD_TOKEN_ADDRESS: [
+                    MessageHandler(Filters.text & ~Filters.command, self.command_addtoken_address)
+                ]
+            },
+            fallbacks=[CommandHandler('canceltoken', self.command_canceltoken)],
+            name='addtoken_conversation',
+            persistent=True,
+        )
+        self.dispatcher.add_handler(addtoken_handler)
 
     def start(self):
         self.dispatcher.bot.send_message(chat_id=self.config.secrets.admin_chat_id, text='Bot started')
@@ -69,3 +94,19 @@ class TradeBot:
         assert update.message and update.effective_chat
         balance_bnb = self.net.get_bnb_balance()
         update.message.reply_html(f'BNB in wallet: {balance_bnb:.4f}')
+
+    @check_chat_id
+    def command_addtoken(self, update: Update, context: CallbackContext):
+        assert update.message and update.effective_chat
+        update.message.reply_html('Please send me the token contract address.')
+        return self.next.ADD_TOKEN_ADDRESS
+
+    @check_chat_id
+    def command_addtoken_address(self, update: Update, context: CallbackContext):
+        assert update.message and update.effective_chat
+
+    @check_chat_id
+    def command_canceltoken(self, update: Update, context: CallbackContext):
+        assert update.message and update.effective_chat
+        update.message.reply_html('OK, I\'m cancelling this command.')
+        return ConversationHandler.END
