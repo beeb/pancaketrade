@@ -1,7 +1,7 @@
 from typing import NamedTuple
 
 from loguru import logger
-from pancaketrade.persistence import Token
+from pancaketrade.persistence import Token, db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.generic import check_chat_id
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -15,6 +15,7 @@ from telegram.ext import (
 )
 from web3 import Web3
 from web3.types import ChecksumAddress
+from peewee import IntegrityError
 
 
 class AddTokenResponses(NamedTuple):
@@ -119,7 +120,16 @@ class AddTokenConversation:
             f'Alright, the token <b>{emoji}{context.user_data["symbol"]}</b> '
             + f'will use <b>{context.user_data["default_slippage"]}%</b> slippage by default.'
         )
-        token = Token.create(**context.user_data)
+        try:
+            db.connect()
+            with db.atomic():
+                token = Token.create(**context.user_data)
+        except IntegrityError:
+            update.message.reply_html('Failed to create database record.')
+            context.user_data.clear()
+            return ConversationHandler.END
+        finally:
+            db.close()
         logger.info(token)
         context.user_data.clear()
         return ConversationHandler.END
@@ -132,4 +142,6 @@ class AddTokenConversation:
         return ConversationHandler.END
 
     def token_exists(self, address: ChecksumAddress) -> bool:
-        return Token.select().where(Token.address == str(address)).count() > 0
+        with db:
+            count = Token.select().where(Token.address == str(address)).count()
+        return count > 0

@@ -1,7 +1,15 @@
-from peewee import CharField, FixedCharField, ForeignKeyField, Model, SmallIntegerField, BooleanField, DateTimeField
-from playhouse.pool import PooledSqliteDatabase
+from peewee import (
+    BooleanField,
+    CharField,
+    DateTimeField,
+    FixedCharField,
+    ForeignKeyField,
+    Model,
+    SmallIntegerField,
+    SqliteDatabase,
+)
 
-db = PooledSqliteDatabase('pancaketrade.db', max_connections=20, stale_timeout=20, timeout=0)
+db = SqliteDatabase('pancaketrade.db')
 
 
 class Token(Model):

@@ -6,7 +6,6 @@ from loguru import logger
 
 from pancaketrade.utils.config import read_config
 from pancaketrade.utils.generic import InterceptHandler
-from pancaketrade.persistence import db
 from pancaketrade.bot import TradeBot
 
 logger.remove()
@@ -30,7 +29,7 @@ def main(config_file: str) -> None:
         bot = TradeBot(config=config)
         bot.start()
     finally:
-        db.close()
+        logger.info('Bye!')
 
 
 if __name__ == '__main__':
