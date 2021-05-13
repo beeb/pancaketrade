@@ -22,7 +22,7 @@ class TradeBot:
         persistence = PicklePersistence(filename='botpersistence')
         self.updater = Updater(token=config.secrets.telegram_token, persistence=persistence, defaults=defaults)
         self.dispatcher = self.updater.dispatcher
-        self.convos = {'addtoken': AddTokenConversation(parent=self)}
+        self.convos = {'addtoken': AddTokenConversation(parent=self, config=self.config)}
         self.setup_telegram()
 
     def setup_telegram(self):
