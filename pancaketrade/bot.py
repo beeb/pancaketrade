@@ -1,12 +1,7 @@
 """Bot class."""
 from loguru import logger
-from telegram import Update
-from telegram.ext import (
-    CallbackContext,
-    CommandHandler,
-    PicklePersistence,
-    Updater,
-)
+from telegram import Update, ParseMode
+from telegram.ext import CallbackContext, CommandHandler, PicklePersistence, Updater, Defaults
 
 from pancaketrade.conversations import AddTokenConversation
 from pancaketrade.network.bsc import Network
@@ -23,8 +18,9 @@ class TradeBot:
         self.net = Network(wallet=self.config.wallet, secrets=self.config.secrets)
         self.db = db
         init_db()
+        defaults = Defaults(parse_mode=ParseMode.HTML, disable_web_page_preview=True, timeout=120)
         persistence = PicklePersistence(filename='botpersistence')
-        self.updater = Updater(token=config.secrets.telegram_token, persistence=persistence)
+        self.updater = Updater(token=config.secrets.telegram_token, persistence=persistence, defaults=defaults)
         self.dispatcher = self.updater.dispatcher
         self.convos = {'addtoken': AddTokenConversation(parent=self)}
         self.setup_telegram()
