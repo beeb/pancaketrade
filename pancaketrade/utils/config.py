@@ -28,6 +28,7 @@ class Config:
 
     wallet: ChecksumAddress
     secrets: ConfigSecrets
+    bsc_rpc: str = 'https://bsc-dataseed.binance.org:443'
     config_file: str = 'config.yml'
     _pk: str = field(repr=False, default='')
 

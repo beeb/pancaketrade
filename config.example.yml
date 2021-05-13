@@ -1,4 +1,5 @@
 ---
+bsc_rpc: 'https://bsc-dataseed.binance.org:443'
 wallet: '0x0000000000000000000000000000000000000000'
 secrets:
   bscscan_api_key: ''

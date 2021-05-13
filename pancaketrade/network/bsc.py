@@ -33,10 +33,10 @@ class NetworkContracts:
 
 
 class Network:
-    def __init__(self, wallet: ChecksumAddress, secrets: ConfigSecrets):
+    def __init__(self, rpc: str, wallet: ChecksumAddress, secrets: ConfigSecrets):
         self.wallet = wallet
         self.secrets = secrets
-        w3_provider = Web3.HTTPProvider(endpoint_uri='https://bsc-dataseed.binance.org:443')
+        w3_provider = Web3.HTTPProvider(endpoint_uri=rpc)
         self.w3 = Web3(provider=w3_provider)
         self.addr = NetworkAddresses()
         self.contracts = NetworkContracts(addr=self.addr, w3=self.w3, api_key=secrets.bscscan_api_key)

@@ -15,7 +15,7 @@ class TradeBot:
 
     def __init__(self, config: Config):
         self.config = config
-        self.net = Network(wallet=self.config.wallet, secrets=self.config.secrets)
+        self.net = Network(rpc=self.config.bsc_rpc, wallet=self.config.wallet, secrets=self.config.secrets)
         self.db = db
         init_db()
         defaults = Defaults(parse_mode=ParseMode.HTML, disable_web_page_preview=True, timeout=120)

@@ -1,4 +1,5 @@
 ---
+bsc_rpc: regex("^(https?://.*):(\d*)\/?(.*)$", 'URI')
 wallet: regex('^0x[a-fA-F0-9]{40}$', 'ethereum address')
 secrets:
   bscscan_api_key: str(min=34, max=34)

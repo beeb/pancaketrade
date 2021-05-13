@@ -39,6 +39,7 @@ class AddTokenConversation:
             fallbacks=[CommandHandler('canceltoken', self.command_canceltoken)],
             name='addtoken_conversation',
             persistent=True,
+            conversation_timeout=120,
         )
 
     @check_chat_id
