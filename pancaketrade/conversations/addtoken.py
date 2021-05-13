@@ -47,7 +47,8 @@ class AddTokenConversation:
         context.user_data['symbol'] = self.parent.net.get_token_symbol(token_address)
 
     @check_chat_id
-    def command_canceltoken(self, update: Update, _: CallbackContext):
-        assert update.message and update.effective_chat
+    def command_canceltoken(self, update: Update, context: CallbackContext):
+        assert update.message and update.effective_chat and context.user_data
+        context.user_data.clear()
         update.message.reply_html('OK, I\'m cancelling this command.')
         return ConversationHandler.END
