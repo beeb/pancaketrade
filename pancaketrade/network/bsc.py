@@ -87,7 +87,7 @@ class Network:
     def find_lp_address(self, token_address: ChecksumAddress, v2: bool = False) -> Optional[str]:
         contract = self.contracts.factory_v2 if v2 else self.contracts.factory_v1
         pair = contract.functions.getPair(token_address, self.addr.wbnb).call()
-        if pair == '0x0000000000000000000000000000000000000000':  # not found
+        if pair == '0x' + 40 * '0':  # not found
             return None
         return pair
 
