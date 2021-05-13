@@ -1,4 +1,4 @@
-from peewee import CharField, FixedCharField, ForeignKeyField, Model, SmallIntegerField, BooleanField
+from peewee import CharField, FixedCharField, ForeignKeyField, Model, SmallIntegerField, BooleanField, DateTimeField
 from playhouse.pool import PooledSqliteDatabase
 
 db = PooledSqliteDatabase('pancaketrade.db', max_connections=20, stale_timeout=20, timeout=0)
@@ -24,6 +24,7 @@ class Order(Model):
     amount = CharField()  # in wei, either BNB or token depending on "type"
     slippage = SmallIntegerField()
     gas_price = CharField(null=True)  # in wei, if null then use network gas price
+    created = DateTimeField()
 
     class Meta:
         database = db

@@ -4,7 +4,7 @@ from telegram import Update, ParseMode
 from telegram.ext import CallbackContext, CommandHandler, PicklePersistence, Updater, Defaults
 
 from pancaketrade.conversations import AddTokenConversation
-from pancaketrade.network.bsc import Network
+from pancaketrade.network import Network
 from pancaketrade.persistence import db, init_db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.generic import check_chat_id

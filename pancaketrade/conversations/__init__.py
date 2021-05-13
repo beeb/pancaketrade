@@ -1,1 +1,1 @@
-from .addtoken import *
+from .addtoken import AddTokenConversation
