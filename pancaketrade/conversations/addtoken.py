@@ -1,10 +1,10 @@
 from typing import NamedTuple
 
-from loguru import logger
 from pancaketrade.persistence import Token, db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.generic import check_chat_id
 from pancaketrade.utils.network import ContractABIError, fetch_abi
+from pancaketrade.network import Network
 from peewee import IntegrityError
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -28,6 +28,7 @@ class AddTokenResponses(NamedTuple):
 class AddTokenConversation:
     def __init__(self, parent, config: Config):
         self.parent = parent
+        self.net: Network = parent.net
         self.config = config
         self.next = AddTokenResponses()
         self.handler = ConversationHandler(
@@ -73,8 +74,8 @@ class AddTokenConversation:
             context.user_data.clear()
             return ConversationHandler.END
         context.user_data['address'] = str(token_address)
-        context.user_data['decimals'] = self.parent.net.get_token_decimals(token_address)
-        context.user_data['symbol'] = self.parent.net.get_token_symbol(token_address)
+        context.user_data['decimals'] = self.net.get_token_decimals(token_address)
+        context.user_data['symbol'] = self.net.get_token_symbol(token_address)
         if self.token_exists(token_address):
             update.message.reply_html(f'⚠ Token <b>{context.user_data["symbol"]}</b> already exists.')
             context.user_data.clear()
@@ -128,10 +129,10 @@ class AddTokenConversation:
             return self.next.SLIPPAGE
         context.user_data['default_slippage'] = slippage
         emoji = context.user_data['icon'] + ' ' if context.user_data['icon'] else ''
+
         update.message.reply_html(
             f'Alright, the token <b>{emoji}{context.user_data["symbol"]}</b> '
-            + f'will use <b>{context.user_data["default_slippage"]}%</b> slippage by default.\n'
-            + '✅ Token was added successfully'
+            + f'will use <b>{context.user_data["default_slippage"]}%</b> slippage by default.'
         )
         try:
             db.connect()
@@ -142,9 +143,10 @@ class AddTokenConversation:
             context.user_data.clear()
             return ConversationHandler.END
         finally:
+            context.user_data.clear()
             db.close()
-        logger.info(token)
-        context.user_data.clear()
+        balance = self.net.get_current_balance(token_address=Web3.toChecksumAddress(token.address))
+        update.message.reply_html(f'✅ Token was added successfully. Balance is {balance:.1f} {token.symbol}.')
         return ConversationHandler.END
 
     @check_chat_id

@@ -8,6 +8,7 @@ from pancaketrade.utils.network import fetch_abi
 from web3 import Web3
 from web3.contract import Contract
 from web3.types import ChecksumAddress, Wei
+from web3.exceptions import ABIFunctionNotFound
 
 
 class NetworkAddresses(NamedTuple):
@@ -55,9 +56,13 @@ class Network:
     @cached(cache=TTLCache(maxsize=64, ttl=30))  # cache 30 seconds
     def get_current_balance(self, token_address: ChecksumAddress) -> Decimal:
         token_contract = self.get_token_contract(token_address)
-        balance = Decimal(token_contract.functions.balanceOf(self.wallet).call()) / Decimal(
-            10 ** self.get_token_decimals(token_address)
-        )
+        try:
+            balance = Decimal(token_contract.functions.balanceOf(self.wallet).call()) / Decimal(
+                10 ** self.get_token_decimals(token_address)
+            )
+        except ABIFunctionNotFound:
+            logger.error(f'Contract {token_address} does not have function "balanceOf"')
+            return Decimal(0)
         return balance
 
     @cached(cache=LRUCache(maxsize=256))
@@ -72,7 +77,11 @@ class Network:
         token_contract = self.w3.eth.contract(
             address=token_address, abi=fetch_abi(contract=token_address, api_key=self.secrets.bscscan_api_key)
         )
-        decimals = token_contract.functions.decimals().call()
+        try:
+            decimals = token_contract.functions.decimals().call()
+        except ABIFunctionNotFound:
+            logger.error(f'Contract {token_address} does not have function "decimals"')
+            return 0
         return int(decimals)
 
     @cached(cache=LRUCache(maxsize=256))
@@ -80,7 +89,11 @@ class Network:
         token_contract = self.w3.eth.contract(
             address=token_address, abi=fetch_abi(contract=token_address, api_key=self.secrets.bscscan_api_key)
         )
-        symbol = token_contract.functions.symbol().call()
+        try:
+            symbol = token_contract.functions.symbol().call()
+        except ABIFunctionNotFound:
+            logger.error(f'Contract {token_address} does not have function "symbol"')
+            return 'None'
         return symbol
 
     @cached(cache=TTLCache(maxsize=256, ttl=3600))  # cache 60 minutes
