@@ -14,6 +14,7 @@ class TokenWatcher:
         self.symbol = str(token_record.symbol)
         emoji = token_record.icon + ' ' if token_record.icon else ''
         self.name = emoji + self.symbol
+        self.default_slippage = token_record.default_slippage
         self.orders: List = []
 
     def start_monitoring(self):
