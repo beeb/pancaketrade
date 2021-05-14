@@ -91,6 +91,7 @@ class OrderWatcher:
                 return
 
     def close(self):
+        self.active = False
         if self.type == 'buy':
             logger.info('Buying tokens')
         else:
