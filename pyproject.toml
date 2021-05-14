@@ -20,6 +20,7 @@ click = "^7.1.2"
 yamale = "^3.0.6"
 questionary = "^1.9.0"
 peewee = "^3.14.4"
+apscheduler = "*"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.9.1"
