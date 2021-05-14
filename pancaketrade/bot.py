@@ -1,12 +1,13 @@
 """Bot class."""
 from loguru import logger
-from typing import List
+from typing import Dict
 from telegram import ParseMode, Update
 from telegram.ext import CallbackContext, CommandHandler, Defaults, PicklePersistence, Updater
 
 from pancaketrade.conversations import AddTokenConversation
 from pancaketrade.network import Network
 from pancaketrade.persistence import db
+from pancaketrade.utils.db import get_token_watchers, init_db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.generic import check_chat_id
 from pancaketrade.watchers import TokenWatcher
@@ -24,13 +25,15 @@ class TradeBot:
             secrets=self.config.secrets,
         )
         self.db = db
+        init_db()
         defaults = Defaults(parse_mode=ParseMode.HTML, disable_web_page_preview=True, timeout=120)
         persistence = PicklePersistence(filename='botpersistence')
         self.updater = Updater(token=config.secrets.telegram_token, persistence=persistence, defaults=defaults)
         self.dispatcher = self.updater.dispatcher
         self.convos = {'addtoken': AddTokenConversation(parent=self, config=self.config)}
         self.setup_telegram()
-        self.watchers: List[TokenWatcher] = []
+        self.watchers: Dict[str, TokenWatcher] = get_token_watchers(net=self.net)
+        pass
 
     def setup_telegram(self):
         self.dispatcher.add_handler(CommandHandler('start', self.command_start))

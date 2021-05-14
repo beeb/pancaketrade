@@ -1,8 +1,9 @@
 from typing import NamedTuple
 
 from pancaketrade.network import Network
-from pancaketrade.persistence import Token, db, token_exists
+from pancaketrade.persistence import Token, db
 from pancaketrade.utils.config import Config
+from pancaketrade.utils.db import token_exists
 from pancaketrade.utils.generic import check_chat_id
 from pancaketrade.utils.network import ContractABIError, fetch_abi
 from pancaketrade.watchers import TokenWatcher
