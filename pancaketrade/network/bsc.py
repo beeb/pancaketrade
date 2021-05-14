@@ -80,7 +80,6 @@ class Network:
     def get_token_price(
         self, token_address: ChecksumAddress, token_decimals: Optional[int] = None, sell: bool = True
     ) -> Decimal:
-        logger.info(f'Getting price for {token_address}')
         if token_decimals is None:
             token_decimals = self.get_token_decimals(token_address=token_address)
         token_contract = self.get_token_contract(token_address)

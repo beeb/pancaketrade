@@ -24,10 +24,13 @@ class OrderWatcher:
             Wei(int(order_record.gas_price)) if order_record.gas_price else None
         )  # in wei, if null then use network gas price
         self.created = order_record.created
+        self.active = True
         self.min_price: Optional[Decimal] = None
         self.max_price: Optional[Decimal] = None
 
     def price_update(self, sell_price: Decimal, buy_price: Decimal):
+        if not self.active:
+            return
         if self.type == 'buy':
             logger.info(buy_price)
         else:
@@ -35,6 +38,8 @@ class OrderWatcher:
 
         if self.type == 'buy' and self.trailing_stop is None and self.above is False and buy_price <= self.limit_price:
             logger.success('Limit buy triggered')  # buy
+            self.close()
+            return
         elif (
             self.type == 'sell'
             and self.trailing_stop is None
@@ -42,10 +47,14 @@ class OrderWatcher:
             and sell_price <= self.limit_price
         ):
             logger.warning('Stop loss triggered')  # sell
+            self.close()
+            return
         elif (
             self.type == 'sell' and self.trailing_stop is None and self.above is True and sell_price >= self.limit_price
         ):
             logger.success('Take profit triggered')  # sell
+            self.close()
+            return
         elif (
             self.type == 'buy'
             and self.trailing_stop
@@ -53,6 +62,7 @@ class OrderWatcher:
             and (buy_price <= self.limit_price or self.min_price is not None)
         ):
             if self.min_price is None:
+                logger.info('Limit condition reached')
                 self.min_price = buy_price
             rise = ((buy_price / self.min_price) - Decimal(1)) * Decimal(100)
             if buy_price < self.min_price:
@@ -60,6 +70,7 @@ class OrderWatcher:
                 return
             elif rise > self.trailing_stop:
                 logger.success('Trailing stop loss triggered')  # buy
+                self.close()
                 return
         elif (
             self.type == 'sell'
@@ -68,6 +79,7 @@ class OrderWatcher:
             and (sell_price >= self.limit_price or self.max_price is not None)
         ):
             if self.max_price is None:
+                logger.info('Limit condition reached')
                 self.max_price = sell_price
             drop = (Decimal(1) - (sell_price / self.max_price)) * Decimal(100)
             if sell_price > self.max_price:
@@ -75,4 +87,11 @@ class OrderWatcher:
                 return
             elif drop > self.trailing_stop:
                 logger.success('Trailing stop loss triggered')  # sell
+                self.close()
                 return
+
+    def close(self):
+        if self.type == 'buy':
+            logger.info('Buying tokens')
+        else:
+            logger.info('Selling tokens')

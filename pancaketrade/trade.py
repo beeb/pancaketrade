@@ -12,7 +12,7 @@ logger.remove()
 logger.add(
     sys.stderr,
     format="<d>{time:YYYY-MM-DD HH:mm:ss}</> <lvl>{level: ^8}</>|<lvl><n>{message}</n></lvl>",
-    level='DEBUG',
+    level='INFO',
     backtrace=False,
     diagnose=False,
     colorize=True,
