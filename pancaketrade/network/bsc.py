@@ -45,13 +45,16 @@ class Network:
     def get_bnb_balance(self) -> Decimal:
         return Decimal(self.w3.eth.get_balance(self.wallet)) / Decimal(10 ** 18)
 
-    def get_bnb_price(self) -> Decimal:
-        lp = self.find_lp_address(token_address=self.addr.busd, v2=True)
-        if not lp:
-            return Decimal(0)
-        bnb_amount = Decimal(self.contracts.wbnb.functions.balanceOf(lp).call())
-        busd_amount = Decimal(self.contracts.busd.functions.balanceOf(lp).call())
-        return busd_amount / bnb_amount
+    def get_token_balance_usd(self, token_address: ChecksumAddress, balance: Optional[Decimal] = None) -> Decimal:
+        balance_bnb = self.get_token_balance_bnb(token_address, balance=balance)
+        bnb_price = self.get_bnb_price()
+        return bnb_price * balance_bnb
+
+    def get_token_balance_bnb(self, token_address: ChecksumAddress, balance: Optional[Decimal] = None) -> Decimal:
+        if balance is None:
+            balance = self.get_token_balance(token_address)
+        token_price = self.get_token_price(token_address=token_address)
+        return token_price * balance
 
     def get_token_balance(self, token_address: ChecksumAddress) -> Decimal:
         token_contract = self.get_token_contract(token_address)
@@ -64,11 +67,60 @@ class Network:
             return Decimal(0)
         return balance
 
-    def get_token_balance_usd(self, token_address: ChecksumAddress, balance_bnb: Optional[Decimal] = None) -> Decimal:
-        if balance_bnb is None:
-            balance_bnb = self.get_token_balance(token_address)
-        bnb_price = self.get_bnb_price()
-        return bnb_price * balance_bnb
+    def get_bnb_price(self) -> Decimal:
+        lp = self.find_lp_address(token_address=self.addr.busd, v2=True)
+        if not lp:
+            return Decimal(0)
+        bnb_amount = Decimal(self.contracts.wbnb.functions.balanceOf(lp).call())
+        busd_amount = Decimal(self.contracts.busd.functions.balanceOf(lp).call())
+        return busd_amount / bnb_amount
+
+    def get_token_price(self, token_address: ChecksumAddress, sell: bool = True) -> Decimal:
+        token_contract = self.get_token_contract(token_address)
+        token_decimals = self.get_token_decimals(token_address)
+        lp_v1 = self.find_lp_address(token_address=token_address, v2=False)
+        lp_v2 = self.find_lp_address(token_address=token_address, v2=True)
+        if lp_v1 is None and lp_v2 is None:  # no lp
+            return Decimal(0)
+        elif lp_v2 is None and lp_v1:  # only v1
+            return self.get_token_price_by_lp(
+                token_contract=token_contract, token_lp=lp_v1, token_decimals=token_decimals
+            )
+        elif lp_v1 is None and lp_v2:  # only v2
+            return self.get_token_price_by_lp(
+                token_contract=token_contract, token_lp=lp_v2, token_decimals=token_decimals
+            )
+        # both exist
+        assert lp_v1 and lp_v2
+        price_v1 = self.get_token_price_by_lp(
+            token_contract=token_contract, token_lp=lp_v1, token_decimals=token_decimals
+        )
+        price_v2 = self.get_token_price_by_lp(
+            token_contract=token_contract, token_lp=lp_v1, token_decimals=token_decimals
+        )
+        # if the liquidity is not large enough, we get a price of zero and should use the other LP
+        if price_v1 == 0:
+            return price_v2
+        elif price_v2 == 0:
+            return price_v1
+
+        if sell:
+            return max(price_v1, price_v2)
+        return min(price_v1, price_v2)
+
+    def get_token_price_by_lp(
+        self, token_contract: Contract, token_lp: ChecksumAddress, token_decimals: int
+    ) -> Decimal:
+        lp_bnb_amount = Decimal(self.contracts.wbnb.functions.balanceOf(token_lp).call())
+        lp_token_amount = Decimal(token_contract.functions.balanceOf(token_lp).call()) * Decimal(
+            10 ** (18 - token_decimals)
+        )
+        # normalize to 18 decimals
+        try:
+            bnb_per_token = lp_bnb_amount / lp_token_amount
+        except Exception:
+            bnb_per_token = Decimal(0)
+        return bnb_per_token
 
     @cached(cache=LRUCache(maxsize=256))
     def get_token_contract(self, token_address: ChecksumAddress) -> Contract:
@@ -102,12 +154,12 @@ class Network:
         return symbol
 
     @cached(cache=TTLCache(maxsize=256, ttl=3600))  # cache 60 minutes
-    def find_lp_address(self, token_address: ChecksumAddress, v2: bool = False) -> Optional[str]:
+    def find_lp_address(self, token_address: ChecksumAddress, v2: bool = False) -> Optional[ChecksumAddress]:
         contract = self.contracts.factory_v2 if v2 else self.contracts.factory_v1
         pair = contract.functions.getPair(token_address, self.addr.wbnb).call()
         if pair == '0x' + 40 * '0':  # not found
             return None
-        return pair
+        return Web3.toChecksumAddress(pair)
 
     def get_gas_price(self) -> Wei:
         return self.w3.eth.gas_price
