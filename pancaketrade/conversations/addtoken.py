@@ -146,7 +146,7 @@ class AddTokenConversation:
             context.user_data.clear()
             db.close()
         token = TokenWatcher(token_record=token_record, net=self.net)
-        self.parent.watchers.append()
+        self.parent.watchers.append(token)
         balance = self.net.get_token_balance(token_address=token.address)
         balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance_bnb=balance)
         update.message.reply_html(
