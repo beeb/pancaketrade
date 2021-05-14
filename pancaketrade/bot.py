@@ -32,7 +32,7 @@ class TradeBot:
         self.dispatcher = self.updater.dispatcher
         self.convos = {'addtoken': AddTokenConversation(parent=self, config=self.config)}
         self.setup_telegram()
-        self.watchers: Dict[str, TokenWatcher] = get_token_watchers(net=self.net)
+        self.watchers: Dict[str, TokenWatcher] = get_token_watchers(net=self.net, interval=self.config.monitor_interval)
         pass
 
     def setup_telegram(self):

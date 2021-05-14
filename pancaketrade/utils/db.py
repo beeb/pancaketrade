@@ -18,9 +18,9 @@ def token_exists(address: ChecksumAddress) -> bool:
     return count > 0
 
 
-def get_token_watchers(net) -> Dict[str, TokenWatcher]:
+def get_token_watchers(net, interval: float) -> Dict[str, TokenWatcher]:
     out: Dict[str, TokenWatcher] = {}
     with db:
         for token_record in Token.select().order_by(fn.Lower(Token.symbol)):
-            out[token_record.address] = TokenWatcher(token_record=token_record, net=net)
+            out[token_record.address] = TokenWatcher(token_record=token_record, net=net, interval=interval)
     return out

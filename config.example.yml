@@ -2,6 +2,7 @@
 bsc_rpc: 'https://bsc-dataseed.binance.org:443'
 wallet: '0x0000000000000000000000000000000000000000'
 min_pool_size_bnb: 25
+monitor_interval: 5
 secrets:
   bscscan_api_key: ''
   telegram_token: ''
