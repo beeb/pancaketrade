@@ -17,7 +17,12 @@ class TradeBot:
 
     def __init__(self, config: Config):
         self.config = config
-        self.net = Network(rpc=self.config.bsc_rpc, wallet=self.config.wallet, secrets=self.config.secrets)
+        self.net = Network(
+            rpc=self.config.bsc_rpc,
+            wallet=self.config.wallet,
+            min_pool_size_bnb=self.config.min_pool_size_bnb,
+            secrets=self.config.secrets,
+        )
         self.db = db
         defaults = Defaults(parse_mode=ParseMode.HTML, disable_web_page_preview=True, timeout=120)
         persistence = PicklePersistence(filename='botpersistence')
