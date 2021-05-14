@@ -9,6 +9,7 @@ from peewee import (
     SqliteDatabase,
     TextField,
 )
+from web3.types import ChecksumAddress
 
 db = SqliteDatabase('pancaketrade.db')
 
@@ -54,3 +55,10 @@ def init_db() -> None:
 
 
 init_db()
+
+
+def token_exists(address: ChecksumAddress) -> bool:
+    global db
+    with db:
+        count = Token.select().where(Token.address == str(address)).count()
+    return count > 0

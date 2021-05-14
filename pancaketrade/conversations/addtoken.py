@@ -1,10 +1,11 @@
 from typing import NamedTuple
 
-from pancaketrade.persistence import Token, db
+from pancaketrade.network import Network
+from pancaketrade.persistence import Token, db, token_exists
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.generic import check_chat_id
 from pancaketrade.utils.network import ContractABIError, fetch_abi
-from pancaketrade.network import Network
+from pancaketrade.watchers import TokenWatcher
 from peewee import IntegrityError
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -16,7 +17,6 @@ from telegram.ext import (
     MessageHandler,
 )
 from web3 import Web3
-from web3.types import ChecksumAddress
 
 
 class AddTokenResponses(NamedTuple):
@@ -76,7 +76,7 @@ class AddTokenConversation:
         context.user_data['address'] = str(token_address)
         context.user_data['decimals'] = self.net.get_token_decimals(token_address)
         context.user_data['symbol'] = self.net.get_token_symbol(token_address)
-        if self.token_exists(token_address):
+        if token_exists(address=token_address):
             update.message.reply_html(f'⚠ Token <b>{context.user_data["symbol"]}</b> already exists.')
             context.user_data.clear()
             return ConversationHandler.END
@@ -137,7 +137,7 @@ class AddTokenConversation:
         try:
             db.connect()
             with db.atomic():
-                token = Token.create(**context.user_data)
+                token_record = Token.create(**context.user_data)
         except IntegrityError:
             update.message.reply_html('⛔ Failed to create database record.')
             context.user_data.clear()
@@ -145,8 +145,13 @@ class AddTokenConversation:
         finally:
             context.user_data.clear()
             db.close()
-        balance = self.net.get_current_balance(token_address=Web3.toChecksumAddress(token.address))
-        update.message.reply_html(f'✅ Token was added successfully. Balance is {balance:.1f} {token.symbol}.')
+        token = TokenWatcher(token_record=token_record, net=self.net)
+        self.parent.watchers.append()
+        balance = self.net.get_token_balance(token_address=token.address)
+        balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance_bnb=balance)
+        update.message.reply_html(
+            f'✅ Token was added successfully. Balance is {balance:.1f} {token.symbol} (${balance_usd:.2f}).'
+        )
         return ConversationHandler.END
 
     @check_chat_id
@@ -155,8 +160,3 @@ class AddTokenConversation:
         context.user_data.clear()
         update.message.reply_html('⚠ OK, I\'m cancelling this command.')
         return ConversationHandler.END
-
-    def token_exists(self, address: ChecksumAddress) -> bool:
-        with db:
-            count = Token.select().where(Token.address == str(address)).count()
-        return count > 0

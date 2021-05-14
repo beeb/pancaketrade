@@ -33,6 +33,8 @@ def fetch_abi(contract: ChecksumAddress, api_key: str) -> str:
         except JSONDecodeError:
             raise ContractABIError
         out = res['result']
+        if out[0] != '[':  # abi starts with a square bracket, otherwise we got a message from bscscan
+            raise ContractABIError
         try:
             db.connect()
             with db.atomic():

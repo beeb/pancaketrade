@@ -1,5 +1,6 @@
 """Bot class."""
 from loguru import logger
+from typing import List
 from telegram import ParseMode, Update
 from telegram.ext import CallbackContext, CommandHandler, Defaults, PicklePersistence, Updater
 
@@ -8,6 +9,7 @@ from pancaketrade.network import Network
 from pancaketrade.persistence import db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.generic import check_chat_id
+from pancaketrade.watchers import TokenWatcher
 
 
 class TradeBot:
@@ -23,6 +25,7 @@ class TradeBot:
         self.dispatcher = self.updater.dispatcher
         self.convos = {'addtoken': AddTokenConversation(parent=self, config=self.config)}
         self.setup_telegram()
+        self.watchers: List[TokenWatcher] = []
 
     def setup_telegram(self):
         self.dispatcher.add_handler(CommandHandler('start', self.command_start))

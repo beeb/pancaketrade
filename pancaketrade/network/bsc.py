@@ -53,8 +53,7 @@ class Network:
         busd_amount = Decimal(self.contracts.busd.functions.balanceOf(lp).call())
         return busd_amount / bnb_amount
 
-    @cached(cache=TTLCache(maxsize=64, ttl=30))  # cache 30 seconds
-    def get_current_balance(self, token_address: ChecksumAddress) -> Decimal:
+    def get_token_balance(self, token_address: ChecksumAddress) -> Decimal:
         token_contract = self.get_token_contract(token_address)
         try:
             balance = Decimal(token_contract.functions.balanceOf(self.wallet).call()) / Decimal(
@@ -64,6 +63,12 @@ class Network:
             logger.error(f'Contract {token_address} does not have function "balanceOf"')
             return Decimal(0)
         return balance
+
+    def get_token_balance_usd(self, token_address: ChecksumAddress, balance_bnb: Optional[Decimal] = None) -> Decimal:
+        if balance_bnb is None:
+            balance_bnb = self.get_token_balance(token_address)
+        bnb_price = self.get_bnb_price()
+        return bnb_price * balance_bnb
 
     @cached(cache=LRUCache(maxsize=256))
     def get_token_contract(self, token_address: ChecksumAddress) -> Contract:
