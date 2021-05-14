@@ -76,9 +76,11 @@ class Network:
         busd_amount = Decimal(self.contracts.busd.functions.balanceOf(lp).call())
         return busd_amount / bnb_amount
 
+    @cached(cache=TTLCache(maxsize=256, ttl=1))
     def get_token_price(
         self, token_address: ChecksumAddress, token_decimals: Optional[int] = None, sell: bool = True
     ) -> Decimal:
+        logger.info(f'Getting price for {token_address}')
         if token_decimals is None:
             token_decimals = self.get_token_decimals(token_address=token_address)
         token_contract = self.get_token_contract(token_address)
@@ -174,6 +176,11 @@ class Network:
         if pair == '0x' + 40 * '0':  # not found
             return None
         return Web3.toChecksumAddress(pair)
+
+    def has_both_versions(self, token_address: ChecksumAddress) -> bool:
+        lp_v1 = self.find_lp_address(token_address=token_address, v2=False)
+        lp_v2 = self.find_lp_address(token_address=token_address, v2=True)
+        return lp_v1 is not None and lp_v2 is not None
 
     def get_gas_price(self) -> Wei:
         return self.w3.eth.gas_price

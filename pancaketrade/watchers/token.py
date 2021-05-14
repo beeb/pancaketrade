@@ -37,6 +37,9 @@ class TokenWatcher:
         if not self.orders:
             return
         sell_price = self.net.get_token_price(token_address=self.address, token_decimals=self.decimals, sell=True)
-        buy_price = self.net.get_token_price(token_address=self.address, token_decimals=self.decimals, sell=False)
+        if self.net.has_both_versions(token_address=self.address):
+            buy_price = self.net.get_token_price(token_address=self.address, token_decimals=self.decimals, sell=False)
+        else:
+            buy_price = sell_price
         for order in self.orders:
             order.price_update(sell_price=sell_price, buy_price=buy_price)
