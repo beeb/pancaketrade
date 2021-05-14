@@ -5,7 +5,6 @@ from pancaketrade.persistence import Token, db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.db import token_exists
 from pancaketrade.utils.generic import check_chat_id
-from pancaketrade.utils.network import ContractABIError, fetch_abi
 from pancaketrade.watchers import TokenWatcher
 from peewee import IntegrityError
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -18,6 +17,7 @@ from telegram.ext import (
     MessageHandler,
 )
 from web3 import Web3
+from web3.exceptions import ABIFunctionNotFound
 
 
 class AddTokenResponses(NamedTuple):
@@ -64,19 +64,19 @@ class AddTokenConversation:
         else:
             update.message.reply_html('⚠ The address you provided is not a valid ETH address. Try again:')
             return self.next.ADDRESS
+        context.user_data['address'] = str(token_address)
         try:
-            fetch_abi(contract=token_address, api_key=self.config.secrets.bscscan_api_key)
-        except ContractABIError:
+            context.user_data['decimals'] = self.net.get_token_decimals(token_address)
+            context.user_data['symbol'] = self.net.get_token_symbol(token_address)
+        except ABIFunctionNotFound:
             update.message.reply_html(
-                '⛔ Could not fetch ABI for this contract.\n'
+                '⛔ Wrong ABi for this address.\n'
                 + 'Check that address is a contract at '
                 + f'<a href="https://bscscan.com/address/{token_address}">BscScan</a> and try again.'
             )
             context.user_data.clear()
             return ConversationHandler.END
-        context.user_data['address'] = str(token_address)
-        context.user_data['decimals'] = self.net.get_token_decimals(token_address)
-        context.user_data['symbol'] = self.net.get_token_symbol(token_address)
+
         if token_exists(address=token_address):
             update.message.reply_html(f'⚠ Token <b>{context.user_data["symbol"]}</b> already exists.')
             context.user_data.clear()

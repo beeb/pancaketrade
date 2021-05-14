@@ -1,15 +1,12 @@
 """Utilities for web3 interaction."""
 from json.decoder import JSONDecodeError
+from pathlib import Path
 
 import requests
 from loguru import logger
 from pancaketrade.persistence import Abi, db
 from peewee import IntegrityError
 from web3.types import ChecksumAddress
-
-
-class ContractABIError(Exception):
-    pass
 
 
 def fetch_abi(contract: ChecksumAddress, api_key: str) -> str:
@@ -31,10 +28,14 @@ def fetch_abi(contract: ChecksumAddress, api_key: str) -> str:
         try:
             res = r.json()
         except JSONDecodeError:
-            raise ContractABIError
+            logger.warning('ABI decode error, falling back to default ABI.')
+            with Path('pancaketrade/utils/bep20.abi').open('r') as f:
+                return f.read()
         out = res['result']
         if out[0] != '[':  # abi starts with a square bracket, otherwise we got a message from bscscan
-            raise ContractABIError
+            logger.warning('ABI not found, falling back to default ABI.')
+            with Path('pancaketrade/utils/bep20.abi').open('r') as f:
+                return f.read()
         try:
             db.connect()
             with db.atomic():

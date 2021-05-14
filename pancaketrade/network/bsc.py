@@ -140,21 +140,13 @@ class Network:
     @cached(cache=LRUCache(maxsize=256))
     def get_token_decimals(self, token_address: ChecksumAddress) -> int:
         token_contract = self.get_token_contract(token_address=token_address)
-        try:
-            decimals = token_contract.functions.decimals().call()
-        except ABIFunctionNotFound:
-            logger.error(f'Contract {token_address} does not have function "decimals"')
-            return 0
+        decimals = token_contract.functions.decimals().call()
         return int(decimals)
 
     @cached(cache=LRUCache(maxsize=256))
     def get_token_symbol(self, token_address: ChecksumAddress) -> str:
         token_contract = self.get_token_contract(token_address=token_address)
-        try:
-            symbol = token_contract.functions.symbol().call()
-        except ABIFunctionNotFound:
-            logger.error(f'Contract {token_address} does not have function "symbol"')
-            return 'None'
+        symbol = token_contract.functions.symbol().call()
         return symbol
 
     def get_biggest_lp(self, lp1: ChecksumAddress, lp2: ChecksumAddress) -> ChecksumAddress:
