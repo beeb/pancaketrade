@@ -1,10 +1,12 @@
 """Token watcher."""
 from typing import List
-from pancaketrade.persistence import Token
-from pancaketrade.network import Network
-from web3 import Web3
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from loguru import logger
+from pancaketrade.network import Network
+from pancaketrade.persistence import Token
+from web3 import Web3
 
 
 class TokenWatcher:
@@ -19,7 +21,10 @@ class TokenWatcher:
         self.default_slippage = token_record.default_slippage
         self.orders: List = []
         self.interval = interval
-        self.scheduler = BackgroundScheduler(job_defaults={'coalesce': False, 'max_instances': 1})
+        self.scheduler = BackgroundScheduler(
+            job_defaults={'coalesce': True, 'max_instances': 1, 'misfire_grace_time': 0.8 * interval}
+        )
+        self.start_monitoring()
 
     def start_monitoring(self):
         trigger = IntervalTrigger(seconds=self.interval)
@@ -29,3 +34,5 @@ class TokenWatcher:
     def monitor_price(self):
         selling_price = self.net.get_token_price(token_address=self.address, token_decimals=self.decimals, sell=True)
         buying_price = self.net.get_token_price(token_address=self.address, token_decimals=self.decimals, sell=False)
+        logger.info(selling_price)
+        logger.info(buying_price)
