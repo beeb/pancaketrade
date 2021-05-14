@@ -4,7 +4,7 @@ from typing import NamedTuple, Optional
 from cachetools import LRUCache, TTLCache, cached
 from loguru import logger
 from pancaketrade.utils.config import ConfigSecrets
-from pancaketrade.utils.web3 import fetch_abi
+from pancaketrade.utils.network import fetch_abi
 from web3 import Web3
 from web3.contract import Contract
 from web3.types import ChecksumAddress, Wei

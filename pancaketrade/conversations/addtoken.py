@@ -4,6 +4,8 @@ from loguru import logger
 from pancaketrade.persistence import Token, db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.generic import check_chat_id
+from pancaketrade.utils.network import ContractABIError, fetch_abi
+from peewee import IntegrityError
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     CallbackContext,
@@ -15,7 +17,6 @@ from telegram.ext import (
 )
 from web3 import Web3
 from web3.types import ChecksumAddress
-from peewee import IntegrityError
 
 
 class AddTokenResponses(NamedTuple):
@@ -59,13 +60,23 @@ class AddTokenConversation:
         if Web3.isAddress(response):
             token_address = Web3.toChecksumAddress(response)
         else:
-            update.message.reply_html('The address you provided is not a valid ETH address. Try again:')
+            update.message.reply_html('⚠ The address you provided is not a valid ETH address. Try again:')
             return self.next.ADDRESS
+        try:
+            fetch_abi(contract=token_address, api_key=self.config.secrets.bscscan_api_key)
+        except ContractABIError:
+            update.message.reply_html(
+                '⛔ Could not fetch ABI for this contract.\n'
+                + 'Check that address is a contract at '
+                + f'<a href="https://bscscan.com/address/{token_address}">BscScan</a> and try again.'
+            )
+            context.user_data.clear()
+            return ConversationHandler.END
         context.user_data['address'] = str(token_address)
         context.user_data['decimals'] = self.parent.net.get_token_decimals(token_address)
         context.user_data['symbol'] = self.parent.net.get_token_symbol(token_address)
         if self.token_exists(token_address):
-            update.message.reply_html(f'Token <b>{context.user_data["symbol"]}</b> already exists.')
+            update.message.reply_html(f'⚠ Token <b>{context.user_data["symbol"]}</b> already exists.')
             context.user_data.clear()
             return ConversationHandler.END
         reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton('🙅‍♂️ No emoji', callback_data='None')]])
@@ -106,26 +117,28 @@ class AddTokenConversation:
             slippage = int(update.message.text.strip())
         except ValueError:
             update.message.reply_html(
-                'This is not a valid slippage value. Please enter an integer number for percentage. Try again:'
+                '⚠ This is not a valid slippage value. Please enter an integer number for percentage. Try again:'
             )
             return self.next.SLIPPAGE
         if slippage < 1:
             update.message.reply_html(
-                'This is not a valid slippage value. Please enter a positive integer number for percentage. Try again:'
+                '⚠ This is not a valid slippage value. Please enter a positive integer number for percentage. '
+                + 'Try again:'
             )
             return self.next.SLIPPAGE
         context.user_data['default_slippage'] = slippage
         emoji = context.user_data['icon'] + ' ' if context.user_data['icon'] else ''
         update.message.reply_html(
             f'Alright, the token <b>{emoji}{context.user_data["symbol"]}</b> '
-            + f'will use <b>{context.user_data["default_slippage"]}%</b> slippage by default.'
+            + f'will use <b>{context.user_data["default_slippage"]}%</b> slippage by default.\n'
+            + '✅ Token was added successfully'
         )
         try:
             db.connect()
             with db.atomic():
                 token = Token.create(**context.user_data)
         except IntegrityError:
-            update.message.reply_html('Failed to create database record.')
+            update.message.reply_html('⛔ Failed to create database record.')
             context.user_data.clear()
             return ConversationHandler.END
         finally:
@@ -138,7 +151,7 @@ class AddTokenConversation:
     def command_canceltoken(self, update: Update, context: CallbackContext):
         assert update.message and context.user_data is not None
         context.user_data.clear()
-        update.message.reply_html('OK, I\'m cancelling this command.')
+        update.message.reply_html('⚠ OK, I\'m cancelling this command.')
         return ConversationHandler.END
 
     def token_exists(self, address: ChecksumAddress) -> bool:
