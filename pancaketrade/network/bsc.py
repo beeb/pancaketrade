@@ -102,7 +102,7 @@ class Network:
             token_contract=token_contract, token_lp=lp_v1, token_decimals=token_decimals
         )
         price_v2 = self.get_token_price_by_lp(
-            token_contract=token_contract, token_lp=lp_v1, token_decimals=token_decimals
+            token_contract=token_contract, token_lp=lp_v2, token_decimals=token_decimals
         )
         # if the BNB in pool or tokens in pool is zero, we get a price of zero. Also if LP is too empty
         if price_v1 == 0 and price_v2 == 0:  # both lp's are too small, we choose the largest
