@@ -135,6 +135,7 @@ class Network:
             bnb_per_token = Decimal(0)
         return bnb_per_token
 
+    @cached(cache=TTLCache(maxsize=1, ttl=30))
     def get_bnb_price(self) -> Decimal:
         lp = self.find_lp_address(token_address=self.addr.busd, v2=True)
         if not lp:
