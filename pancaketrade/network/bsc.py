@@ -68,13 +68,12 @@ class Network:
             return Decimal(0)
         return balance
 
-    def get_bnb_price(self) -> Decimal:
-        lp = self.find_lp_address(token_address=self.addr.busd, v2=True)
-        if not lp:
-            return Decimal(0)
-        bnb_amount = Decimal(self.contracts.wbnb.functions.balanceOf(lp).call())
-        busd_amount = Decimal(self.contracts.busd.functions.balanceOf(lp).call())
-        return busd_amount / bnb_amount
+    def get_token_price_usd(
+        self, token_address: ChecksumAddress, token_decimals: Optional[int] = None, sell: bool = True
+    ) -> Decimal:
+        bnb_per_token = self.get_token_price(token_address=token_address, token_decimals=token_decimals, sell=sell)
+        usd_per_bnb = self.get_bnb_price()
+        return bnb_per_token * usd_per_bnb
 
     @cached(cache=TTLCache(maxsize=256, ttl=1))
     def get_token_price(
@@ -135,6 +134,14 @@ class Network:
         except Exception:
             bnb_per_token = Decimal(0)
         return bnb_per_token
+
+    def get_bnb_price(self) -> Decimal:
+        lp = self.find_lp_address(token_address=self.addr.busd, v2=True)
+        if not lp:
+            return Decimal(0)
+        bnb_amount = Decimal(self.contracts.wbnb.functions.balanceOf(lp).call())
+        busd_amount = Decimal(self.contracts.busd.functions.balanceOf(lp).call())
+        return busd_amount / bnb_amount
 
     @cached(cache=LRUCache(maxsize=256))
     def get_token_decimals(self, token_address: ChecksumAddress) -> int:
