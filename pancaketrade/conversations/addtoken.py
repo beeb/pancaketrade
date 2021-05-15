@@ -17,7 +17,7 @@ from telegram.ext import (
     MessageHandler,
 )
 from web3 import Web3
-from web3.exceptions import ABIFunctionNotFound
+from web3.exceptions import ABIFunctionNotFound, ContractLogicError
 
 
 class AddTokenResponses(NamedTuple):
@@ -68,7 +68,7 @@ class AddTokenConversation:
         try:
             context.user_data['decimals'] = self.net.get_token_decimals(token_address)
             context.user_data['symbol'] = self.net.get_token_symbol(token_address)
-        except ABIFunctionNotFound:
+        except (ABIFunctionNotFound, ContractLogicError):
             update.message.reply_html(
                 '⛔ Wrong ABi for this address.\n'
                 + 'Check that address is a contract at '

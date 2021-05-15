@@ -8,7 +8,7 @@ from pancaketrade.utils.network import fetch_abi
 from web3 import Web3
 from web3.contract import Contract
 from web3.types import ChecksumAddress, Wei
-from web3.exceptions import ABIFunctionNotFound
+from web3.exceptions import ABIFunctionNotFound, ContractLogicError
 
 
 class NetworkAddresses(NamedTuple):
@@ -63,7 +63,7 @@ class Network:
             balance = Decimal(token_contract.functions.balanceOf(self.wallet).call()) / Decimal(
                 10 ** self.get_token_decimals(token_address=token_address)
             )
-        except ABIFunctionNotFound:
+        except (ABIFunctionNotFound, ContractLogicError):
             logger.error(f'Contract {token_address} does not have function "balanceOf"')
             return Decimal(0)
         return balance
