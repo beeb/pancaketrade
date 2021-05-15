@@ -1,16 +1,17 @@
 """Config utilities."""
+import os
+import string
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from web3.types import ChecksumAddress
-from web3 import Web3
-import questionary
 
+import questionary
 import yamale
 import yaml
-from questionary import ValidationError, Validator
 from loguru import logger
-import string
+from questionary import ValidationError, Validator
+from web3 import Web3
+from web3.types import ChecksumAddress
 
 
 @dataclass
@@ -48,11 +49,13 @@ class PrivateKeyValidator(Validator):
 def parse_config_file(path: Path) -> Config:
     with path.open('r') as f:
         conf = yaml.full_load(f)
-    conf['_pk'] = questionary.password(
-        f'In order to make transactions, I need the private key for wallet {conf["wallet"]}:',
-        validate=PrivateKeyValidator,
-        default=64 * '0',
-    ).ask()
+    conf['_pk'] = os.environ.get('WALLET_PK')
+    if not conf['_pk'] or len(conf['_pk']) != 64 or not all(c in string.hexdigits for c in conf['_pk']):
+        conf['_pk'] = questionary.password(
+            f'In order to make transactions, I need the private key for wallet {conf["wallet"]}:',
+            validate=PrivateKeyValidator,
+            default=64 * '0',
+        ).ask()
     conf['config_file'] = str(path)
     return Config(**conf)
 
