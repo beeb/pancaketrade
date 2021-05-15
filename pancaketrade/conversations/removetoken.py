@@ -2,6 +2,7 @@ from typing import List, NamedTuple
 
 from pancaketrade.network import Network
 from pancaketrade.utils.config import Config
+from pancaketrade.utils.db import remove_token
 from pancaketrade.utils.generic import check_chat_id
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, ConversationHandler
@@ -46,8 +47,10 @@ class RemoveTokenConversation:
         if query.data == 'cancel':
             query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
             return ConversationHandler.END
-        # perform removal
-        query.edit_message_text(f'✅ Alright, the token <b>"{self.parent.watchers[query.data].name}"</b> was removed.')
+        remove_token(self.parent.watchers[query.data].token_record)
+        token_name = self.parent.watchers[query.data].name
+        del self.parent.watchers[query.data]
+        query.edit_message_text(f'✅ Alright, the token <b>"{token_name}"</b> was removed.')
         return ConversationHandler.END
 
     @check_chat_id

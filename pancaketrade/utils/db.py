@@ -26,3 +26,7 @@ def get_token_watchers(net, interval: float) -> Dict[str, TokenWatcher]:
                 token_record=token_record, net=net, interval=interval, orders=token_record.orders
             )
     return out
+
+
+def remove_token(token_record: Token):
+    token_record.delete_instance(recursive=True)
