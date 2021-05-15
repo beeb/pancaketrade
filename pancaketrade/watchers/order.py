@@ -63,31 +63,17 @@ class OrderWatcher:
         else:
             logger.info(sell_price)
 
-        if self.type == 'buy' and self.trailing_stop is None and self.above is False and buy_price <= self.limit_price:
+        if self.type == 'buy':
+            self.price_update_buy(buy_price=buy_price)
+        else:
+            self.price_update_sell(sell_price=sell_price)
+
+    def price_update_buy(self, buy_price: Decimal):
+        if self.trailing_stop is None and not self.above and buy_price <= self.limit_price:
             logger.success(f'Limit buy triggered at price {buy_price:.3E} BNB')  # buy
             self.close()
             return
-        elif (
-            self.type == 'sell'
-            and self.trailing_stop is None
-            and self.above is False
-            and sell_price <= self.limit_price
-        ):
-            logger.warning(f'Stop loss triggered at price {sell_price:.3E} BNB')  # sell
-            self.close()
-            return
-        elif (
-            self.type == 'sell' and self.trailing_stop is None and self.above is True and sell_price >= self.limit_price
-        ):
-            logger.success(f'Take profit triggered at price {sell_price:.3E} BNB')  # sell
-            self.close()
-            return
-        elif (
-            self.type == 'buy'
-            and self.trailing_stop
-            and self.above is False
-            and (buy_price <= self.limit_price or self.min_price is not None)
-        ):
+        elif self.trailing_stop and not self.above and (buy_price <= self.limit_price or self.min_price is not None):
             if self.min_price is None:
                 logger.info(f'Limit condition reached at price {buy_price:.3E} BNB')
                 self.min_price = buy_price
@@ -99,12 +85,17 @@ class OrderWatcher:
                 logger.success(f'Trailing stop loss triggered at price {buy_price:.3E} BNB')  # buy
                 self.close()
                 return
-        elif (
-            self.type == 'sell'
-            and self.trailing_stop
-            and self.above is True
-            and (sell_price >= self.limit_price or self.max_price is not None)
-        ):
+
+    def price_update_sell(self, sell_price: Decimal):
+        if self.trailing_stop is None and not self.above and sell_price <= self.limit_price:
+            logger.warning(f'Stop loss triggered at price {sell_price:.3E} BNB')
+            self.close()
+            return
+        elif self.trailing_stop is None and self.above and sell_price >= self.limit_price:
+            logger.success(f'Take profit triggered at price {sell_price:.3E} BNB')
+            self.close()
+            return
+        elif self.trailing_stop and self.above and (sell_price >= self.limit_price or self.max_price is not None):
             if self.max_price is None:
                 logger.info(f'Limit condition reached at price {sell_price:.3E} BNB')
                 self.max_price = sell_price
@@ -113,7 +104,7 @@ class OrderWatcher:
                 self.max_price = sell_price
                 return
             elif drop > self.trailing_stop:
-                logger.success(f'Trailing stop loss triggered at price {sell_price:.3E} BNB')  # sell
+                logger.success(f'Trailing stop loss triggered at price {sell_price:.3E} BNB')
                 self.close()
                 return
 
