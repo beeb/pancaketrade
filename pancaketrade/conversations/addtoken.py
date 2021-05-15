@@ -51,7 +51,7 @@ class AddTokenConversation:
     @check_chat_id
     def command_addtoken(self, update: Update, context: CallbackContext):
         assert update.message and context.user_data is not None
-        context.user_data.clear()
+        context.user_data['addtoken'] = {}
         update.message.reply_html('Please send me the token contract address.')
         return self.next.ADDRESS
 
@@ -64,26 +64,28 @@ class AddTokenConversation:
         else:
             update.message.reply_html('⚠️ The address you provided is not a valid ETH address. Try again:')
             return self.next.ADDRESS
-        context.user_data['address'] = str(token_address)
+        add = context.user_data['addtoken']
+        add['address'] = str(token_address)
         try:
-            context.user_data['decimals'] = self.net.get_token_decimals(token_address)
-            context.user_data['symbol'] = self.net.get_token_symbol(token_address)
+            add['decimals'] = self.net.get_token_decimals(token_address)
+            add['symbol'] = self.net.get_token_symbol(token_address)
         except (ABIFunctionNotFound, ContractLogicError):
             update.message.reply_html(
                 '⛔ Wrong ABi for this address.\n'
                 + 'Check that address is a contract at '
                 + f'<a href="https://bscscan.com/address/{token_address}">BscScan</a> and try again.'
             )
-            context.user_data.clear()
+            del context.user_data['addtoken']
             return ConversationHandler.END
 
         if token_exists(address=token_address):
-            update.message.reply_html(f'⚠️ Token <b>{context.user_data["symbol"]}</b> already exists.')
-            context.user_data.clear()
+            update.message.reply_html(f'⚠️ Token <b>{add["symbol"]}</b> already exists.')
+            del context.user_data['addtoken']
             return ConversationHandler.END
         reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton('🙅‍♂️ No emoji', callback_data='None')]])
         update.message.reply_html(
-            f'Thanks, the token <b>{context.user_data["symbol"]}</b> uses {context.user_data["decimals"]} decimals. '
+            f'Thanks, the token <b>{add["symbol"]}</b> uses '
+            + f'{add["decimals"]} decimals. '
             + 'Now please send me and EMOJI you would like to associate to this token for easy spotting, '
             + 'or click the button below.',
             reply_markup=reply_markup,
@@ -93,9 +95,11 @@ class AddTokenConversation:
     @check_chat_id
     def command_addtoken_emoji(self, update: Update, context: CallbackContext):
         assert update.message and update.message.text and update.effective_chat and context.user_data is not None
-        context.user_data['icon'] = update.message.text.strip()
+        add = context.user_data['addtoken']
+        add['icon'] = update.message.text.strip()
         update.message.reply_html(
-            f'Alright, the token will show as <b>"{context.user_data["icon"]} {context.user_data["symbol"]}"</b>. '
+            'Alright, the token will show as '
+            + f'<b>"{add["icon"]} {add["symbol"]}"</b>. '
             + 'What is the default slippage in % to use for swapping on PancakeSwap?'
         )
         return self.next.SLIPPAGE
@@ -105,9 +109,10 @@ class AddTokenConversation:
         assert context.user_data is not None and update.callback_query
         query = update.callback_query
         query.answer()
-        context.user_data['icon'] = None
+        add = context.user_data['addtoken']
+        add['icon'] = None
         query.edit_message_text(
-            f'Alright, the token will show as <b>"{context.user_data["symbol"]}"</b>. '
+            f'Alright, the token will show as <b>"{add["symbol"]}"</b>. '
             + 'What is the default slippage in % to use for swapping on PancakeSwap?'
         )
         return self.next.SLIPPAGE
@@ -128,23 +133,24 @@ class AddTokenConversation:
                 + 'Try again:'
             )
             return self.next.SLIPPAGE
-        context.user_data['default_slippage'] = slippage
-        emoji = context.user_data['icon'] + ' ' if context.user_data['icon'] else ''
+        add = context.user_data['addtoken']
+        add['default_slippage'] = slippage
+        emoji = add['icon'] + ' ' if add['icon'] else ''
 
         update.message.reply_html(
-            f'Alright, the token <b>{emoji}{context.user_data["symbol"]}</b> '
-            + f'will use <b>{context.user_data["default_slippage"]}%</b> slippage by default.'
+            f'Alright, the token <b>{emoji}{add["symbol"]}</b> '
+            + f'will use <b>{add["default_slippage"]}%</b> slippage by default.'
         )
         try:
             db.connect()
             with db.atomic():
-                token_record = Token.create(**context.user_data)
+                token_record = Token.create(**add)
         except IntegrityError:
             update.message.reply_html('⛔ Failed to create database record.')
-            context.user_data.clear()
+            del context.user_data['addtoken']
             return ConversationHandler.END
         finally:
-            context.user_data.clear()
+            del context.user_data['addtoken']
             db.close()
         token = TokenWatcher(token_record=token_record, net=self.net, interval=self.config.monitor_interval)
         self.parent.watchers[token.address] = token
@@ -158,6 +164,6 @@ class AddTokenConversation:
     @check_chat_id
     def command_canceltoken(self, update: Update, context: CallbackContext):
         assert update.message and context.user_data is not None
-        context.user_data.clear()
+        del context.user_data['addtoken']
         update.message.reply_html('⚠️ OK, I\'m cancelling this command.')
         return ConversationHandler.END
