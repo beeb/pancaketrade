@@ -62,7 +62,7 @@ class AddTokenConversation:
         if Web3.isAddress(response):
             token_address = Web3.toChecksumAddress(response)
         else:
-            update.message.reply_html('⚠ The address you provided is not a valid ETH address. Try again:')
+            update.message.reply_html('⚠️ The address you provided is not a valid ETH address. Try again:')
             return self.next.ADDRESS
         context.user_data['address'] = str(token_address)
         try:
@@ -78,7 +78,7 @@ class AddTokenConversation:
             return ConversationHandler.END
 
         if token_exists(address=token_address):
-            update.message.reply_html(f'⚠ Token <b>{context.user_data["symbol"]}</b> already exists.')
+            update.message.reply_html(f'⚠️ Token <b>{context.user_data["symbol"]}</b> already exists.')
             context.user_data.clear()
             return ConversationHandler.END
         reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton('🙅‍♂️ No emoji', callback_data='None')]])
@@ -119,12 +119,12 @@ class AddTokenConversation:
             slippage = int(update.message.text.strip())
         except ValueError:
             update.message.reply_html(
-                '⚠ This is not a valid slippage value. Please enter an integer number for percentage. Try again:'
+                '⚠️ This is not a valid slippage value. Please enter an integer number for percentage. Try again:'
             )
             return self.next.SLIPPAGE
         if slippage < 1:
             update.message.reply_html(
-                '⚠ This is not a valid slippage value. Please enter a positive integer number for percentage. '
+                '⚠️ This is not a valid slippage value. Please enter a positive integer number for percentage. '
                 + 'Try again:'
             )
             return self.next.SLIPPAGE
@@ -159,5 +159,5 @@ class AddTokenConversation:
     def command_canceltoken(self, update: Update, context: CallbackContext):
         assert update.message and context.user_data is not None
         context.user_data.clear()
-        update.message.reply_html('⚠ OK, I\'m cancelling this command.')
+        update.message.reply_html('⚠️ OK, I\'m cancelling this command.')
         return ConversationHandler.END
