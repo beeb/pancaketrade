@@ -1,5 +1,7 @@
+from decimal import Decimal
 from typing import NamedTuple
 
+from loguru import logger
 from pancaketrade.network import Network
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.generic import check_chat_id
@@ -31,10 +33,13 @@ class CreateOrderConversation:
         self.handler = ConversationHandler(
             entry_points=[CallbackQueryHandler(self.command_createorder, pattern='^create_order:0x[a-fA-F0-9]{40}$')],
             states={
-                self.next.TYPE: [CallbackQueryHandler(self.command_createorder_type)],
+                self.next.TYPE: [CallbackQueryHandler(self.command_createorder_type, pattern='^[^:]*$')],
                 self.next.TRAILING: [
-                    CallbackQueryHandler(self.command_createorder_trailing),
+                    CallbackQueryHandler(self.command_createorder_trailing, pattern='^[^:]*$'),
                     MessageHandler(Filters.text & ~Filters.command, self.command_createorder_trailing_custom),
+                ],
+                self.next.AMOUNT: [
+                    MessageHandler(Filters.text & ~Filters.command, self.command_createorder_amount),
                 ],
             },
             fallbacks=[CommandHandler('cancelorder', self.command_cancelorder)],
@@ -130,6 +135,7 @@ class CreateOrderConversation:
         query = update.callback_query
         query.answer()
         assert query.data
+        logger.info(query.data)
         query.edit_message_reply_markup(reply_markup=None)
         if query.data == 'cancel':
             del context.user_data['createorder']
@@ -165,7 +171,40 @@ class CreateOrderConversation:
 
     @check_chat_id
     def command_createorder_trailing_custom(self, update: Update, context: CallbackContext):
-        pass
+        assert update.message and update.message.text and update.effective_chat and context.user_data is not None
+        order = context.user_data['createorder']
+        try:
+            callback_rate = int(update.message.text.strip())
+        except ValueError:
+            del context.user_data['createorder']
+            update.message.reply_html('⛔ The callback rate is not recognized.')
+            return ConversationHandler.END
+        order['trailing_stop'] = callback_rate
+        token = self.parent.watchers[order['token_address']]
+        unit = 'BNB' if order['type'] == 'buy' else token.symbol
+        update.message.reply_html(
+            f'OK, the order will use trailing stop loss with {callback_rate}% callback.\n'
+            + f'Next, please indicate the value in <b>{unit}</b> you would like to {order["type"]}.\n'
+            + 'You can use scientific notation like <code>1.3E-4</code> if you want.'
+        )
+        return self.next.AMOUNT
+
+    @check_chat_id
+    def command_createorder_amount(self, update: Update, context: CallbackContext):
+        assert update.message and update.message.text and update.effective_chat and context.user_data is not None
+        order = context.user_data['createorder']
+        try:
+            amount = Decimal(update.message.text.strip())
+        except Exception:
+            del context.user_data['createorder']
+            update.message.reply_html('⚠️ The amount you inserted is not valid. Try again:')
+            return self.next.AMOUNT
+        token = self.parent.watchers[order['token_address']]
+        decimals = 18 if order['type'] == 'buy' else token.decimals
+        unit = 'BNB' if order['type'] == 'buy' else token.symbol
+        order['amount'] = str(int(amount * Decimal(10 ** decimals)))
+        update.message.reply_html(f'OK, I will {order["type"]} {amount:g} {unit} when the condition is reached.')
+        return self.next.SLIPPAGE
 
     @check_chat_id
     def command_cancelorder(self, update: Update, context: CallbackContext):

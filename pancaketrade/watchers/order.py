@@ -130,11 +130,8 @@ class OrderWatcher:
         return '>' if self.above else '<'
 
     def get_human_amount(self) -> Decimal:
-        return (
-            Decimal(self.amount) / Decimal(10 ** self.token_record.decimals)
-            if self.type == 'sell'
-            else Decimal(self.amount) / Decimal(10 ** 18)
-        )
+        decimals = self.token_record.decimals if self.type == 'sell' else 18
+        return Decimal(self.amount) / Decimal(10 ** decimals)
 
     def get_amount_unit(self) -> str:
         return self.token_record.symbol if self.type == 'sell' else 'BNB'
