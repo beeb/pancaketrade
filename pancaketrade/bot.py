@@ -4,7 +4,7 @@ from typing import Dict
 from telegram import ParseMode, Update
 from telegram.ext import CallbackContext, CommandHandler, Defaults, PicklePersistence, Updater
 
-from pancaketrade.conversations import AddTokenConversation
+from pancaketrade.conversations import AddTokenConversation, RemoveTokenConversation
 from pancaketrade.network import Network
 from pancaketrade.persistence import db
 from pancaketrade.utils.db import get_token_watchers, init_db
@@ -30,15 +30,25 @@ class TradeBot:
         persistence = PicklePersistence(filename='botpersistence')
         self.updater = Updater(token=config.secrets.telegram_token, persistence=persistence, defaults=defaults)
         self.dispatcher = self.updater.dispatcher
-        self.convos = {'addtoken': AddTokenConversation(parent=self, config=self.config)}
+        self.convos = {
+            'addtoken': AddTokenConversation(parent=self, config=self.config),
+            'removetoken': RemoveTokenConversation(parent=self, config=self.config),
+        }
         self.setup_telegram()
         self.watchers: Dict[str, TokenWatcher] = get_token_watchers(net=self.net, interval=self.config.monitor_interval)
-        pass
 
     def setup_telegram(self):
         self.dispatcher.add_handler(CommandHandler('start', self.command_start))
         self.dispatcher.add_handler(CommandHandler('status', self.command_status))
-        self.dispatcher.add_handler(self.convos['addtoken'].handler)
+        for convo in self.convos.values():
+            self.dispatcher.add_handler(convo.handler)
+        commands = [
+            ('start', 'start interaction with the bot'),
+            ('status', 'display all tokens and their price, orders'),
+            ('addtoken', 'add a token that you want to trade'),
+            ('removetoken', 'remove a token that you added previously'),
+        ]
+        self.dispatcher.bot.set_my_commands(commands=commands)
 
     def start(self):
         self.dispatcher.bot.send_message(chat_id=self.config.secrets.admin_chat_id, text='Bot started')
