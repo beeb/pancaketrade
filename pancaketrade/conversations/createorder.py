@@ -113,7 +113,7 @@ class CreateOrderConversation:
             order['trailing_stop'] = None
             # we don't use trailing stop loss here
             token = self.parent.watchers[order['token_address']]
-            current_price = self.net.get_token_price(
+            current_price, _ = self.net.get_token_price(
                 token_address=token.address, token_decimals=token.decimals, sell=True
             )
             query.edit_message_text(
@@ -163,7 +163,7 @@ class CreateOrderConversation:
         assert update.effective_chat and context.user_data is not None
         order = context.user_data['createorder']
         token = self.parent.watchers[order['token_address']]
-        current_price = self.net.get_token_price(
+        current_price, _ = self.net.get_token_price(
             token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
         )
         if update.message is None:
