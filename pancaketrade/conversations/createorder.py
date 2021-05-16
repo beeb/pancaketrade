@@ -367,6 +367,8 @@ class CreateOrderConversation:
                     [
                         InlineKeyboardButton('network default', callback_data='None'),
                         InlineKeyboardButton('default + 0.1 Gwei', callback_data='+0.1'),
+                    ],
+                    [
                         InlineKeyboardButton('default + 1 Gwei', callback_data='+1'),
                         InlineKeyboardButton('default + 2 Gwei', callback_data='+2'),
                     ],

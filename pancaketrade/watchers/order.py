@@ -26,8 +26,6 @@ class OrderWatcher:
         self.active = True
         self.min_price: Optional[Decimal] = None
         self.max_price: Optional[Decimal] = None
-        logger.info(self.long_repr())
-        logger.info(self)
 
     def __repr__(self) -> str:
         type_name = self.get_type_name()
