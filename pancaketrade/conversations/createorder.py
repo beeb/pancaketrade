@@ -48,6 +48,11 @@ class CreateOrderConversation:
                 ],
                 self.next.SLIPPAGE: [
                     CallbackQueryHandler(self.command_createorder_slippage, pattern='^[^:]*$'),
+                    MessageHandler(Filters.text & ~Filters.command, self.command_createorder_slippage),
+                ],
+                self.next.GAS: [
+                    CallbackQueryHandler(self.command_createorder_gas, pattern='^[^:]*$'),
+                    MessageHandler(Filters.text & ~Filters.command, self.command_createorder_gas),
                 ],
             },
             fallbacks=[CommandHandler('cancelorder', self.command_cancelorder)],
@@ -271,15 +276,85 @@ class CreateOrderConversation:
         decimals = 18 if order['type'] == 'buy' else token.decimals
         unit = f'BNB worth of {token.symbol}' if order['type'] == 'buy' else token.symbol
         order['amount'] = str(int(amount * Decimal(10 ** decimals)))
+        reply_markup = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        f'{token.default_slippage}% (default)', callback_data=str(token.default_slippage)
+                    ),
+                    InlineKeyboardButton('1%', callback_data='1'),
+                    InlineKeyboardButton('2%', callback_data='2'),
+                    InlineKeyboardButton('5%', callback_data='5'),
+                ],
+                [
+                    InlineKeyboardButton('10%', callback_data='10'),
+                    InlineKeyboardButton('12%', callback_data='12'),
+                    InlineKeyboardButton('15%', callback_data='15'),
+                    InlineKeyboardButton('20%', callback_data='20'),
+                ],
+                [
+                    InlineKeyboardButton('❌ Cancel', callback_data='cancel'),
+                ],
+            ]
+        )
+
         context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=f'OK, I will {order["type"]} {amount:.6g} {unit} when the condition is reached.',
+            text=f'OK, I will {order["type"]} {amount:.6g} {unit} when the condition is reached.\n'
+            + 'Next, please indicate the slippage in percent you want to use for this order.\n'
+            + 'You can also message me a custom value in percent.',
+            reply_markup=reply_markup,
         )
         return self.next.SLIPPAGE
 
     @check_chat_id
     def command_createorder_slippage(self, update: Update, context: CallbackContext):
-        return ConversationHandler.END
+        assert update.effective_chat and context.user_data is not None
+        order = context.user_data['createorder']
+        if update.message is None:
+            assert update.callback_query
+            query = update.callback_query
+            query.answer()
+            assert query.data
+            if query.data == 'cancel':
+                del context.user_data['createorder']
+                query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
+                return ConversationHandler.END
+            try:
+                slippage_percent = int(query.data)
+            except ValueError:
+                del context.user_data['createorder']
+                query.edit_message_text('⛔ The slippage is not recognized.')
+                return ConversationHandler.END
+        else:
+            assert update.message and update.message.text
+            try:
+                slippage_percent = int(update.message.text.strip())
+            except ValueError:
+                del context.user_data['createorder']
+                update.message.reply_html('⛔ The slippage is not recognized.')
+                return ConversationHandler.END
+        order['slippage'] = slippage_percent
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f'OK, the order will use slippage of {slippage_percent}%.\n'
+            + 'Finally, please indicate the gas price in GWEI for this order.\n'
+            + 'Choose "Default" to use the default network price at the moment of the transaction '
+            + 'or message me the value.',
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton('Default', callback_data='None'),
+                        InlineKeyboardButton('❌ Cancel', callback_data='cancel'),
+                    ]
+                ]
+            ),
+        )
+        return self.next.GAS
+
+    @check_chat_id
+    def command_createorder_gas(self, update: Update, context: CallbackContext):
+        pass
 
     @check_chat_id
     def command_cancelorder(self, update: Update, context: CallbackContext):

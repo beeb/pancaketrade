@@ -49,9 +49,8 @@ def check_chat_id(func: Callable) -> Callable:
         context.bot.send_message(
             chat_id=this.config.secrets.admin_chat_id, text=f'Prevented user {chat_id} to interact.'
         )
-        if update.message:
-            update.message.reply_text('This bot is not public, you are not allowed to use it.')
-        elif update.callback_query:
+        if update.callback_query:
             update.callback_query.answer()
+        context.bot.send_message(chat_id=chat_id, text='This bot is not public, you are not allowed to use it.')
 
     return wrapper_check_chat_id
