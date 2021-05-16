@@ -11,7 +11,7 @@ from pancaketrade.utils.network import fetch_abi
 from web3 import Web3
 from web3.contract import Contract, ContractFunction
 from web3.exceptions import ABIFunctionNotFound, ContractLogicError
-from web3.types import ChecksumAddress, HexBytes, Nonce, TxParams, Wei
+from web3.types import ChecksumAddress, HexBytes, Nonce, TxParams, Wei, TxReceipt
 
 
 class NetworkAddresses(NamedTuple):
@@ -247,6 +247,40 @@ class Network:
         logger.success('Approved wallet for trading.')
         return True
 
+    def buy_tokens(
+        self,
+        token_address: ChecksumAddress,
+        amount_bnb: Wei,
+        min_output_tokens: Wei,
+        gas_limit: Wei,
+        gas_price: Wei,
+        v2: bool,
+    ) -> TxReceipt:
+        router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
+        func = router_contract.functions.swapExactETHForTokens(
+            min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
+        )
+        params = self.get_tx_params(value=amount_bnb, gas=gas_limit, gas_price=gas_price)
+        tx = self.build_and_send_tx(func=func, tx_params=params)
+        return self.w3.eth.wait_for_transaction_receipt(tx, timeout=60)
+
+    def sell_tokens(
+        self,
+        token_address: ChecksumAddress,
+        amount_tokens: Wei,
+        min_output_bnb: Wei,
+        gas_limit: Wei,
+        gas_price: Wei,
+        v2: bool,
+    ) -> TxReceipt:
+        router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
+        func = router_contract.functions.swapExactTokensForETH(
+            amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
+        )
+        params = self.get_tx_params(value=Wei(0), gas=gas_limit, gas_price=gas_price)
+        tx = self.build_and_send_tx(func=func, tx_params=params)
+        return self.w3.eth.wait_for_transaction_receipt(tx, timeout=60)
+
     def build_and_send_tx(self, func: ContractFunction, tx_params: Optional[TxParams] = None) -> HexBytes:
         if not tx_params:
             tx_params = self.get_tx_params()
@@ -268,3 +302,6 @@ class Network:
         if gas_price:
             params['gasPrice'] = gas_price
         return params
+
+    def deadline(self, seconds: int = 60) -> int:
+        return int(time.time()) + seconds
