@@ -1,18 +1,19 @@
 """Bot class."""
-from typing import Dict
+from typing import Dict, List, Tuple
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 from loguru import logger
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Update
 from telegram.ext import CallbackContext, CommandHandler, Defaults, PicklePersistence, Updater
 
-from pancaketrade.conversations import AddTokenConversation, RemoveTokenConversation, CreateOrderConversation
+from pancaketrade.conversations import AddTokenConversation, CreateOrderConversation, RemoveTokenConversation
 from pancaketrade.network import Network
 from pancaketrade.persistence import db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.db import get_token_watchers, init_db
 from pancaketrade.utils.generic import check_chat_id
 from pancaketrade.watchers import TokenWatcher
-from web3.types import ChecksumAddress
 
 
 class TradeBot:
@@ -39,6 +40,14 @@ class TradeBot:
         }
         self.setup_telegram()
         self.watchers: Dict[str, TokenWatcher] = get_token_watchers(net=self.net, interval=self.config.monitor_interval)
+        self.status_scheduler = BackgroundScheduler(
+            job_defaults={
+                'coalesce': True,
+                'max_instances': 1,
+                'misfire_grace_time': 0.8 * self.config.monitor_interval,
+            }
+        )
+        self.start_status_update()
 
     def setup_telegram(self):
         self.dispatcher.add_handler(CommandHandler('start', self.command_start))
@@ -53,6 +62,11 @@ class TradeBot:
             ('cancelorder', 'cancel the current order creation process (if bot is stuck for instance)'),
         ]
         self.dispatcher.bot.set_my_commands(commands=commands)
+
+    def start_status_update(self):
+        trigger = IntervalTrigger(seconds=self.config.monitor_interval)
+        self.status_scheduler.add_job(self.update_status, trigger=trigger)
+        self.status_scheduler.start()
 
     def start(self):
         self.dispatcher.bot.send_message(chat_id=self.config.secrets.admin_chat_id, text='Bot started')
@@ -72,46 +86,60 @@ class TradeBot:
         assert update.message and update.effective_chat
         balance_bnb = self.net.get_bnb_balance()
         price_bnb = self.net.get_bnb_price()
-        sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
-        token_status: Dict[ChecksumAddress, str] = {}
-        for token in sorted_tokens:
-            token_balance = self.net.get_token_balance(token_address=token.address)
-            token_balance_bnb = self.net.get_token_balance_bnb(token_address=token.address, balance=token_balance)
-            token_balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance=token_balance)
-            token_price = self.net.get_token_price(
-                token_address=token.address, token_decimals=token.decimals, sell=True
-            )
-            token_price_usd = self.net.get_token_price_usd(
-                token_address=token.address, token_decimals=token.decimals, sell=True
-            )
-            orders = [str(order) for order in token.orders]
-            token_status[token.address] = (
-                f'<b>{token.name}</b>: {token_balance:,.1f}\n'
-                + f'<b>Value</b>: {token_balance_bnb:.3g} BNB (${token_balance_usd:.2f})\n'
-                + f'<b>Price</b>: {token_price:.3g} BNB per token (${token_price_usd:.3g})\n'
-                + '<b>Orders</b>: (underlined = tracking trailing stop loss)\n'
-                + '\n'.join(orders)
-            )
-
         update.message.reply_html(
             '<u>STATUS</u>\n' + f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})\n\n'
         )
-        for token_address, status in token_status.items():
-            buttons = [
-                [
-                    InlineKeyboardButton('➕ Create order...', callback_data=f'create_order:{token_address}'),
-                ],
-                [
-                    InlineKeyboardButton('💰 Sell...', callback_data=f'sell:{token_address}'),
-                    InlineKeyboardButton('💷 Buy...', callback_data=f'buy:{token_address}'),
-                ],
-                [
-                    InlineKeyboardButton('❗️ Sell all now!', callback_data=f'quick_sell:{token_address}'),
-                ],
-            ]
-            if len(self.watchers[token_address].orders):
-                buttons[0].append(
-                    InlineKeyboardButton('➖ Delete order...', callback_data=f'delete_order:{token_address}'),
-                )
+        sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
+        for token in sorted_tokens:
+            status, buttons = self.get_token_status(token)
             reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
-            update.message.reply_html(status, reply_markup=reply_markup)
+            msg = update.message.reply_html(status, reply_markup=reply_markup)
+            self.watchers[token.address].last_status_message_id = msg.message_id
+
+    def update_status(self):
+        sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
+        for token in sorted_tokens:
+            if token.last_status_message_id is None:
+                continue
+            status, buttons = self.get_token_status(token)
+            reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
+            self.dispatcher.bot.edit_message_text(
+                status,
+                chat_id=self.config.secrets.admin_chat_id,
+                message_id=token.last_status_message_id,
+                reply_markup=reply_markup,
+            )
+
+    def get_token_status(self, token: TokenWatcher) -> Tuple[str, List[List[InlineKeyboardButton]]]:
+        buttons = [
+            [
+                InlineKeyboardButton('➕ Create order...', callback_data=f'create_order:{token.address}'),
+            ],
+            [
+                InlineKeyboardButton('💰 Sell...', callback_data=f'sell:{token.address}'),
+                InlineKeyboardButton('💷 Buy...', callback_data=f'buy:{token.address}'),
+            ],
+            [
+                InlineKeyboardButton('❗️ Sell all now!', callback_data=f'quick_sell:{token.address}'),
+            ],
+        ]
+        if len(token.orders):
+            buttons[0].append(
+                InlineKeyboardButton('➖ Delete order...', callback_data=f'delete_order:{token.address}'),
+            )
+        token_balance = self.net.get_token_balance(token_address=token.address)
+        token_balance_bnb = self.net.get_token_balance_bnb(token_address=token.address, balance=token_balance)
+        token_balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance=token_balance)
+        token_price = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
+        token_price_usd = self.net.get_token_price_usd(
+            token_address=token.address, token_decimals=token.decimals, sell=True
+        )
+        orders = [str(order) for order in token.orders]
+        message = (
+            f'<b>{token.name}</b>: {token_balance:,.1f}\n'
+            + f'<b>Value</b>: {token_balance_bnb:.3g} BNB (${token_balance_usd:.2f})\n'
+            + f'<b>Price</b>: {token_price:.3g} BNB per token (${token_price_usd:.3g})\n'
+            + '<b>Orders</b>: (underlined = tracking trailing stop loss)\n'
+            + '\n'.join(orders)
+        )
+        return message, buttons

@@ -1,5 +1,5 @@
 """Token watcher."""
-from typing import List
+from typing import List, Optional
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -26,6 +26,7 @@ class TokenWatcher:
         self.scheduler = BackgroundScheduler(
             job_defaults={'coalesce': True, 'max_instances': 1, 'misfire_grace_time': 0.8 * interval}
         )
+        self.last_status_message_id: Optional[int] = None
         self.start_monitoring()
 
     def start_monitoring(self):
