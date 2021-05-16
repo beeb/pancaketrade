@@ -108,10 +108,10 @@ class RemoveOrderConversation:
     def get_type_name(self, order: OrderWatcher) -> str:
         return (
             'limit buy'
-            if order.type == 'buy' and not order.type
+            if order.type == 'buy' and not order.above
             else 'stop loss'
-            if order.type == 'sell' and not order.type
+            if order.type == 'sell' and not order.above
             else 'limit sell'
-            if order.type == 'sell' and order.type
+            if order.type == 'sell' and order.above
             else 'unknown'
         )
