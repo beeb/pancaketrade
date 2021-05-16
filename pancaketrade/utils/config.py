@@ -55,7 +55,6 @@ def parse_config_file(path: Path) -> Config:
         conf['_pk'] = questionary.password(
             f'In order to make transactions, I need the private key for wallet {conf["wallet"]}:',
             validate=PrivateKeyValidator,
-            default=64 * '0',
         ).ask()
     conf['config_file'] = str(path)
     return Config(**conf)
