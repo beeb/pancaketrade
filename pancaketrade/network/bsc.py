@@ -238,8 +238,8 @@ class Network:
         if receipt['status'] == 0:  # fail
             logger.error(f'Approval call failed at tx {str(receipt["transactionHash"])}')
             return False
+        time.sleep(10)  # let tx propagate
         logger.success('Approved wallet for trading.')
-        time.sleep(5)  # let tx propagate
         return True
 
     def build_and_send_tx(self, func: ContractFunction, tx_params: Optional[TxParams] = None) -> HexBytes:
