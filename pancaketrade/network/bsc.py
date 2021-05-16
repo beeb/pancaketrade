@@ -1,6 +1,6 @@
 import time
 from decimal import Decimal
-from typing import NamedTuple, Optional, Tuple
+from typing import NamedTuple, Optional, Tuple, Set
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -50,6 +50,7 @@ class Network:
         self.max_approval_check_hex = f"0x{15 * '0'}{49 * 'f'}"
         self.max_approval_check_int = int(self.max_approval_check_hex, 16)
         self.last_nonce = self.w3.eth.get_transaction_count(self.wallet)
+        self.approved: Set[Tuple[str, bool]] = set()  # address and v2 boolean tuples
         self.nonce_scheduler = BackgroundScheduler(
             job_defaults={
                 'coalesce': True,
@@ -220,12 +221,16 @@ class Network:
     def get_gas_price(self) -> Wei:
         return self.w3.eth.gas_price
 
-    @cached(cache=LRUCache(maxsize=256))
     def is_approved(self, token_address: ChecksumAddress, v2: bool = False) -> bool:
+        if (str(token_address), v2) in self.approved:
+            return True
         token_contract = self.get_token_contract(token_address=token_address)
         router_address = self.addr.router_v2 if v2 else self.addr.router_v1
         amount = token_contract.functions.allowance(self.wallet, router_address).call()
-        return amount >= self.max_approval_check_int
+        approved = amount >= self.max_approval_check_int
+        if approved:
+            self.approved.add((str(token_address), v2))
+        return approved
 
     def approve(self, token_address: ChecksumAddress, v2: bool = False, max_approval: Optional[int] = None) -> bool:
         max_approval = self.max_approval_int if not max_approval else max_approval
