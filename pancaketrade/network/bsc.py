@@ -241,7 +241,7 @@ class Network:
         tx = self.build_and_send_tx(func)
         receipt = self.w3.eth.wait_for_transaction_receipt(tx, timeout=6000)
         if receipt['status'] == 0:  # fail
-            logger.error(f'Approval call failed at tx {str(receipt["transactionHash"])}')
+            logger.error(f'Approval call failed at tx {Web3.toHex(primitive=receipt["transactionHash"])}')
             return False
         time.sleep(10)  # let tx propagate
         logger.success('Approved wallet for trading.')
@@ -253,9 +253,9 @@ class Network:
         amount_bnb: Wei,
         slippage_percent: int,
         gas_price: Optional[str],
-        gas_limit: Wei = Wei(300000),
         v2: bool = True,
-    ) -> Tuple[bool, Decimal]:
+        gas_limit: Wei = Wei(300000),
+    ) -> Tuple[bool, Decimal, str]:
         slippage_ratio = (Decimal(100) - Decimal(slippage_percent)) / Decimal(100)
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith('+'):
@@ -275,8 +275,9 @@ class Network:
             v2=v2,
         )
         if receipt['status'] == 0:  # fail
-            logger.error('Buy transaction failed')
-            return False, Decimal(0)
+            txhash = Web3.toHex(primitive=receipt["transactionHash"])
+            logger.error(f'Buy transaction failed at tx {txhash}')
+            return False, Decimal(0), txhash
         print(receipt)
         amount_out = Decimal(0)
         for log in receipt['logs']:
@@ -292,7 +293,7 @@ class Network:
             out_token_wei = Web3.toWei(Web3.toInt(hexstr=log['data']))
             out_token = Decimal(out_token_wei) / Decimal(10 ** self.get_token_decimals(token_address))
             amount_out += out_token
-        return True, amount_out
+        return True, amount_out, Web3.toHex(primitive=receipt["transactionHash"])
 
     def buy_tokens_with_params(
         self,

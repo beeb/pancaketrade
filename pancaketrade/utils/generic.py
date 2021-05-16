@@ -1,7 +1,8 @@
 """Generic utilities."""
 import functools
 import logging
-from typing import Callable
+import threading
+from typing import Any, Callable, Iterable
 
 from loguru import logger
 from telegram import Update
@@ -54,3 +55,9 @@ def check_chat_id(func: Callable) -> Callable:
         context.bot.send_message(chat_id=chat_id, text='This bot is not public, you are not allowed to use it.')
 
     return wrapper_check_chat_id
+
+
+def start_in_thread(func: Callable, args: Iterable[Any] = []) -> None:
+    t = threading.Thread(target=func, args=args)
+    t.daemon = True
+    t.start()

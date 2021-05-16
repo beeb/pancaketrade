@@ -5,6 +5,7 @@ from typing import Optional
 from loguru import logger
 from pancaketrade.network import Network
 from pancaketrade.persistence import Order, Token
+from pancaketrade.utils.generic import start_in_thread
 from web3.types import Wei
 
 
@@ -116,8 +117,22 @@ class OrderWatcher:
         version = 'v2' if v2 else 'v1'
         if self.type == 'buy':
             logger.info(f'Buying tokens on {version}')
+            start_in_thread(self.buy, args=(v2,))
         else:
             logger.info(f'Selling tokens on {version}')
+
+    def buy(self, v2: bool):
+        res, tokens_out, txhash = self.net.buy_tokens(
+            self.token_record.address,
+            amount_bnb=self.amount,
+            slippage_percent=self.slippage,
+            gas_price=self.gas_price,
+            v2=v2,
+        )
+        if not res:
+            logger.error(f'Transaction failed at {txhash}')
+            return
+        logger.success(f'Buy transaction succeeded. Received {tokens_out:.3g} {self.token_record.symbol}')
 
     def get_type_name(self) -> str:
         return (
