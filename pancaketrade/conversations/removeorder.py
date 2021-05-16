@@ -67,8 +67,7 @@ class RemoveOrderConversation:
             return ConversationHandler.END
         assert query.data
         token: TokenWatcher = self.parent.watchers[context.user_data['removeorder']['token_address']]
-        context.bot.send_message(
-            chat_id=update.effective_chat.id,
+        query.edit_message_text(
             text=f'Are you sure you want to delete order #{query.data} for {token.name}?',
             reply_markup=InlineKeyboardMarkup(
                 [
