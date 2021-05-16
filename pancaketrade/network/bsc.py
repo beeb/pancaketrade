@@ -1,14 +1,16 @@
 from decimal import Decimal
 from typing import NamedTuple, Optional, Tuple
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 from cachetools import LRUCache, TTLCache, cached
 from loguru import logger
 from pancaketrade.utils.config import ConfigSecrets
 from pancaketrade.utils.network import fetch_abi
 from web3 import Web3
-from web3.contract import Contract
+from web3.contract import Contract, ContractFunction
 from web3.exceptions import ABIFunctionNotFound, ContractLogicError
-from web3.types import ChecksumAddress, Wei
+from web3.types import ChecksumAddress, HexBytes, Nonce, TxParams, Wei
 
 
 class NetworkAddresses(NamedTuple):
@@ -46,6 +48,23 @@ class Network:
         self.max_approval_int = int(self.max_approval_hex, 16)
         self.max_approval_check_hex = f"0x{15 * '0'}{49 * 'f'}"
         self.max_approval_check_int = int(self.max_approval_check_hex, 16)
+        self.last_nonce = self.w3.eth.get_transaction_count(self.wallet)
+        self.nonce_scheduler = BackgroundScheduler(
+            job_defaults={
+                'coalesce': True,
+                'max_instances': 1,
+                'misfire_grace_time': 8,
+            }
+        )
+        self.start_nonce_update()
+
+    def start_nonce_update(self):
+        trigger = IntervalTrigger(seconds=10)
+        self.status_scheduler.add_job(self.update_nonce, trigger=trigger)
+        self.status_scheduler.start()
+
+    def update_nonce(self):
+        self.last_nonce = max(self.last_nonce, self.w3.eth.get_transaction_count(self.wallet))
 
     def get_bnb_balance(self) -> Decimal:
         return Decimal(self.w3.eth.get_balance(self.wallet)) / Decimal(10 ** 18)
@@ -205,3 +224,31 @@ class Network:
         router_address = self.addr.router_v2 if v2 else self.addr.router_v1
         amount = token_contract.functions.allowance(self.wallet, router_address).call()
         return amount >= self.max_approval_check_int
+
+    def approve(self, token_address: ChecksumAddress, max_approval: Optional[int] = None, v2: bool = False) -> None:
+        max_approval = self.max_approval_int if not max_approval else max_approval
+        token_contract = self.get_token_contract(token_address=token_address)
+        router_address = self.addr.router_v2 if v2 else self.addr.router_v1
+        func = token_contract.functions.approve(router_address, max_approval)
+
+    def build_and_send_tx(self, func: ContractFunction, tx_params: Optional[TxParams] = None) -> HexBytes:
+        if not tx_params:
+            tx_params = self.get_tx_params()
+        transaction = func.buildTransaction(tx_params)
+        signed_tx = self.w3.eth.account.sign_transaction(transaction, private_key=self.secrets._pk)
+        try:
+            return self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        finally:
+            self.last_nonce = Nonce(tx_params["nonce"] + 1)
+
+    def get_tx_params(self, value: Wei = Wei(0), gas: Wei = Wei(50000), gas_price: Optional[Wei] = None) -> TxParams:
+        # 50000 gas is OK for approval tx, for other tx use 300000
+        params: TxParams = {
+            'from': self.wallet,
+            'value': value,
+            'gas': gas,
+            'nonce': self.last_nonce,
+        }
+        if gas_price:
+            params['gasPrice'] = gas_price
+        return params

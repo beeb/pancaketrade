@@ -3,15 +3,20 @@ from typing import List, Optional
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from loguru import logger
 from pancaketrade.network import Network
 from pancaketrade.persistence import Token
 from pancaketrade.watchers.order import OrderWatcher
+from telegram.ext import Dispatcher
 from web3 import Web3
 
 
 class TokenWatcher:
-    def __init__(self, token_record: Token, net: Network, interval: float = 5, orders: List = []):
+    def __init__(
+        self, token_record: Token, net: Network, dispatcher: Dispatcher, interval: float = 5, orders: List = list()
+    ):
         self.net = net
+        self.dispatcher = dispatcher
         self.token_record = token_record
         self.address = Web3.toChecksumAddress(token_record.address)
         self.decimals = int(token_record.decimals)
@@ -48,4 +53,8 @@ class TokenWatcher:
             buy_price = sell_price
             buy_v2 = sell_v2
         for order in self.orders:
+            v2 = buy_v2 if order.type == 'buy' else sell_v2
+            if not self.net.is_approved(token_address=self.address, v2=v2):
+                version = 'v2' if v2 else 'v1'
+                logger.info(f'Need to approve {self.symbol} for trading on PancakeSwap {version}.')
             order.price_update(sell_price=sell_price, buy_price=buy_price, sell_v2=sell_v2, buy_v2=buy_v2)

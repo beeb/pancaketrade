@@ -6,7 +6,7 @@ from pancaketrade.network import Network
 from pancaketrade.persistence import Order, db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.generic import check_chat_id
-from pancaketrade.watchers import OrderWatcher
+from pancaketrade.watchers import OrderWatcher, TokenWatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     CallbackContext,
@@ -465,7 +465,7 @@ class CreateOrderConversation:
             query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
             return ConversationHandler.END
         add = context.user_data['createorder']
-        token = self.parent.watchers[add['token_address']]
+        token: TokenWatcher = self.parent.watchers[add['token_address']]
         del add['token_address']
         try:
             db.connect()
@@ -479,7 +479,7 @@ class CreateOrderConversation:
             del context.user_data['createorder']
             db.close()
         order = OrderWatcher(order_record=order_record, net=self.net)
-        self.parent.watchers[token.address].orders.append(order)
+        token.orders.append(order)
         query.edit_message_text('✅ Order was added successfully!')
         return ConversationHandler.END
 

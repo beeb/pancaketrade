@@ -21,6 +21,7 @@ class ConfigSecrets:
     bscscan_api_key: str
     telegram_token: str
     admin_chat_id: int
+    _pk: str = field(repr=False, default='')
 
 
 @dataclass
@@ -37,7 +38,7 @@ class Config:
 
     def __post_init__(self):
         self.wallet = Web3.toChecksumAddress(self.wallet)
-        self.secrets = ConfigSecrets(**self.secrets)
+        self.secrets = ConfigSecrets(**self.secrets, _pk=self._pk)
 
 
 class PrivateKeyValidator(Validator):
