@@ -130,13 +130,15 @@ class TradeBot:
                 InlineKeyboardButton('➕ Create order...', callback_data=f'create_order:{token.address}'),
             ],
             [
-                InlineKeyboardButton('💰 Sell...', callback_data=f'sell:{token.address}'),
-                InlineKeyboardButton('💷 Buy...', callback_data=f'buy:{token.address}'),
-            ],
-            [
                 InlineKeyboardButton('❗️ Sell all now!', callback_data=f'quick_sell:{token.address}'),
             ],
         ]
+        """
+            [
+                InlineKeyboardButton('💰 Sell...', callback_data=f'sell:{token.address}'),
+                InlineKeyboardButton('💷 Buy...', callback_data=f'buy:{token.address}'),
+            ],
+        """
         if len(token.orders):
             buttons[0].append(
                 InlineKeyboardButton('➖ Delete order...', callback_data=f'delete_order:{token.address}'),
