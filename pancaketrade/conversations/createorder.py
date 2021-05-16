@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from typing import Mapping, NamedTuple
 
@@ -111,8 +112,19 @@ class CreateOrderConversation:
             order['above'] = False  # below
             order['trailing_stop'] = None
             # we don't use trailing stop loss here
-            query.edit_message_text('OK, the order will sell when price is below target price.')
-            return self.next.AMOUNT
+            token = self.parent.watchers[order['token_address']]
+            current_price = self.net.get_token_price(
+                token_address=token.address, token_decimals=token.decimals, sell=True
+            )
+            query.edit_message_text(
+                'OK, the order will sell as soon as the price is below target price.\n'
+                + f'Next, please indicate the price in <b>BNB per {token.symbol}</b> '
+                + 'at which the order will activate.\n'
+                + f'You can use scientific notation like <code>{current_price:.1E}</code> if you want.\n'
+                + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.',
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]]),
+            )
+            return self.next.PRICE
         elif query.data == 'limit_sell':
             order['type'] = 'sell'
             order['above'] = True  # above
@@ -414,7 +426,7 @@ class CreateOrderConversation:
             + f'Amount: {amount:.6g} {unit}\n'
             + f'Price {comparision} {Decimal(order["limit_price"]):.3g} BNB per token\n'
             + f'Slippage: {order["slippage"]}%\n'
-            + f'Gas: {gas_price}\n'
+            + f'Gas: {gas_price}'
         )
         context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -445,10 +457,10 @@ class CreateOrderConversation:
         try:
             db.connect()
             with db.atomic():
-                order_record = Order.create(token=token.token_record, **add)
+                order_record = Order.create(token=token.token_record, created=datetime.now(), **add)
         except Exception:
             query.edit_message_text('⛔ Failed to create database record.')
-            del context.user_data['addtoken']
+            del context.user_data['createorder']
             return ConversationHandler.END
         finally:
             del context.user_data['createorder']
@@ -470,7 +482,7 @@ class CreateOrderConversation:
         )
 
     def get_comparison_symbol(self, order: Mapping) -> str:
-        return '>' if order['above'] else '<'
+        return '&gt;' if order['above'] else '&lt;'
 
     def get_human_amount(self, order: Mapping, token) -> Decimal:
         decimals = token.decimals if order['type'] == 'sell' else 18

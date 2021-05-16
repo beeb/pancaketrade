@@ -37,8 +37,8 @@ class OrderWatcher:
         unit = self.get_amount_unit()
         trailing = f' tsl {self.trailing_stop}%' if self.trailing_stop is not None else ''
         return (
-            f'(#{self.order_record.id}) {self.token_record.symbol} {comparision} {self.limit_price:.3E} BNB - '
-            + f'{type_name} {amount:g} {unit}{trailing}'
+            f'(#{self.order_record.id}) {self.token_record.symbol} {comparision} {self.limit_price:.3g} BNB - '
+            + f'{type_name} {amount:.6g} {unit}{trailing}'
         )
 
     def long_repr(self) -> str:
@@ -52,8 +52,8 @@ class OrderWatcher:
         return (
             f'{icon}{self.token_record.symbol} - (#{self.order_record.id}) {type_name}\n'
             + trailing
-            + f'Amount: {amount:g} {unit}\n'
-            + f'Price {comparision} {self.limit_price:.3E} BNB\n'
+            + f'Amount: {amount:.6g} {unit}\n'
+            + f'Price {comparision} {self.limit_price:.3g} BNB\n'
             + f'Slippage: {self.slippage}%\n'
             + f'Gas: {gas_price}'
         )
@@ -130,7 +130,7 @@ class OrderWatcher:
         )
 
     def get_comparison_symbol(self) -> str:
-        return '>' if self.above else '<'
+        return '&gt;' if self.above else '&lt;'
 
     def get_human_amount(self) -> Decimal:
         decimals = self.token_record.decimals if self.type == 'sell' else 18

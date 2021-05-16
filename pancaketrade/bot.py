@@ -78,10 +78,17 @@ class TradeBot:
             token_balance = self.net.get_token_balance(token_address=token.address)
             token_balance_bnb = self.net.get_token_balance_bnb(token_address=token.address, balance=token_balance)
             token_balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance=token_balance)
+            token_price = self.net.get_token_price(
+                token_address=token.address, token_decimals=token.decimals, sell=True
+            )
+            token_price_usd = self.net.get_token_price_usd(
+                token_address=token.address, token_decimals=token.decimals, sell=True
+            )
             orders = [str(order) for order in token.orders]
             token_status[token.address] = (
                 f'<b>{token.name}</b>: {token_balance:,.1f}\n'
-                + f'<b>Value</b>: {token_balance_bnb:.4f} (${token_balance_usd:.2f})\n'
+                + f'<b>Value</b>: {token_balance_bnb:.3g} BNB (${token_balance_usd:.2f})\n'
+                + f'<b>Price</b>: {token_price:.3g} BNB per token (${token_price_usd:.3g})\n'
                 + '<b>Orders</b>:\n'
                 + '\n'.join(orders)
             )
