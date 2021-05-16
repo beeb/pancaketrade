@@ -274,8 +274,8 @@ class Network:
             gas_price=final_gas_price,
             v2=v2,
         )
+        txhash = Web3.toHex(primitive=receipt["transactionHash"])
         if receipt['status'] == 0:  # fail
-            txhash = Web3.toHex(primitive=receipt["transactionHash"])
             logger.error(f'Buy transaction failed at tx {txhash}')
             return False, Decimal(0), txhash
         print(receipt)
@@ -289,11 +289,11 @@ class Network:
                 continue
             if log['topics'][2] != Web3.toBytes(hexstr=self.wallet):  # transfer to our wallet
                 continue
-            # topic == 0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822
             out_token_wei = Web3.toWei(Web3.toInt(hexstr=log['data']))
             out_token = Decimal(out_token_wei) / Decimal(10 ** self.get_token_decimals(token_address))
             amount_out += out_token
-        return True, amount_out, Web3.toHex(primitive=receipt["transactionHash"])
+        logger.success(f'Buy transaction succeeded at tx {txhash}')
+        return True, amount_out, txhash
 
     def buy_tokens_with_params(
         self,
@@ -311,6 +311,56 @@ class Network:
         params = self.get_tx_params(value=amount_bnb, gas=gas_limit, gas_price=gas_price)
         tx = self.build_and_send_tx(func=func, tx_params=params)
         return self.w3.eth.wait_for_transaction_receipt(tx, timeout=60)
+
+    def sell_tokens(
+        self,
+        token_address: ChecksumAddress,
+        amount_tokens: Wei,
+        slippage_percent: int,
+        gas_price: Optional[str],
+        v2: bool = True,
+        gas_limit: Wei = Wei(300000),
+    ) -> Tuple[bool, Decimal, str]:
+        slippage_ratio = (Decimal(100) - Decimal(slippage_percent)) / Decimal(100)
+        final_gas_price = self.w3.eth.gas_price
+        if gas_price is not None and gas_price.startswith('+'):
+            offset = Web3.toWei(Decimal(gas_price) * Decimal(10 ** 9))
+            final_gas_price += offset
+        elif gas_price is not None:
+            final_gas_price = Web3.toWei(gas_price)
+        router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
+        predicted_out = router_contract.functions.getAmountsOut(amount_tokens, [token_address, self.addr.wbnb]).call()[
+            -1
+        ]
+        min_output_bnb = Web3.toWei(slippage_ratio * predicted_out)
+        receipt = self.sell_tokens_with_params(
+            token_address=token_address,
+            amount_tokens=amount_tokens,
+            min_output_bnb=min_output_bnb,
+            gas_limit=gas_limit,
+            gas_price=final_gas_price,
+            v2=v2,
+        )
+        txhash = Web3.toHex(primitive=receipt["transactionHash"])
+        if receipt['status'] == 0:  # fail
+            logger.error(f'Sell transaction failed at tx {txhash}')
+            return False, Decimal(0), txhash
+        print(receipt)
+        amount_out = Decimal(0)
+        for log in receipt['logs']:
+            if log['address'] != self.addr.wbnb:
+                continue
+            # topic for withdrawal function
+            topic = Web3.toBytes(hexstr='0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65')
+            if log['topics'][0] != topic:
+                continue
+            if log['topics'][1] != Web3.toBytes(hexstr=router_contract.address):  # transfer to PcS router
+                continue
+            out_bnb_wei = Web3.toWei(Web3.toInt(hexstr=log['data']))
+            out_bnb = Decimal(out_bnb_wei) / Decimal(10 ** 18)
+            amount_out += out_bnb
+        logger.success(f'Sell transaction succeeded at tx {txhash}')
+        return True, amount_out, txhash
 
     def sell_tokens_with_params(
         self,
