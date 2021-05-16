@@ -7,7 +7,12 @@ from loguru import logger
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Update
 from telegram.ext import CallbackContext, CommandHandler, Defaults, PicklePersistence, Updater
 
-from pancaketrade.conversations import AddTokenConversation, CreateOrderConversation, RemoveTokenConversation
+from pancaketrade.conversations import (
+    AddTokenConversation,
+    CreateOrderConversation,
+    RemoveOrderConversation,
+    RemoveTokenConversation,
+)
 from pancaketrade.network import Network
 from pancaketrade.persistence import db
 from pancaketrade.utils.config import Config
@@ -37,6 +42,7 @@ class TradeBot:
             'addtoken': AddTokenConversation(parent=self, config=self.config),
             'removetoken': RemoveTokenConversation(parent=self, config=self.config),
             'createorder': CreateOrderConversation(parent=self, config=self.config),
+            'removeorder': RemoveOrderConversation(parent=self, config=self.config),
         }
         self.setup_telegram()
         self.watchers: Dict[str, TokenWatcher] = get_token_watchers(net=self.net, interval=self.config.monitor_interval)
@@ -59,7 +65,7 @@ class TradeBot:
             ('status', 'display all tokens and their price, orders'),
             ('addtoken', 'add a token that you want to trade'),
             ('removetoken', 'remove a token that you added previously'),
-            ('cancelorder', 'cancel the current order creation process (if bot is stuck for instance)'),
+            ('cancelorder', 'cancel the current order creation/removal process (if bot is stuck for instance)'),
         ]
         self.dispatcher.bot.set_my_commands(commands=commands)
 

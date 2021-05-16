@@ -30,3 +30,7 @@ def get_token_watchers(net, interval: float) -> Dict[str, TokenWatcher]:
 
 def remove_token(token_record: Token):
     token_record.delete_instance(recursive=True)
+
+
+def remove_order(order_record: Order):
+    order_record.delete_instance()

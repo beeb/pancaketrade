@@ -9,7 +9,8 @@ from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, 
 
 
 class RemoveTokenResponses(NamedTuple):
-    TOKENCHOICE: int = 0
+    CONFIRM: int = 0
+    TOKENCHOICE: int = 1
 
 
 class RemoveTokenConversation:
@@ -20,7 +21,10 @@ class RemoveTokenConversation:
         self.next = RemoveTokenResponses()
         self.handler = ConversationHandler(
             entry_points=[CommandHandler('removetoken', self.command_removetoken)],
-            states={self.next.TOKENCHOICE: [CallbackQueryHandler(self.command_removetoken_tokenchoice)]},
+            states={
+                self.next.CONFIRM: [CallbackQueryHandler(self.command_removetoken_confirm)],
+                self.next.TOKENCHOICE: [CallbackQueryHandler(self.command_removetoken_tokenchoice)],
+            },
             fallbacks=[CommandHandler('cancelremovetoken', self.command_cancelremovetoken)],
             name='removetoken_conversation',
             persistent=True,
@@ -37,6 +41,30 @@ class RemoveTokenConversation:
         buttons_layout.append([InlineKeyboardButton('❌ Cancel', callback_data='cancel')])
         reply_markup = InlineKeyboardMarkup(buttons_layout)
         update.message.reply_html('Choose the token to remove from the list below.', reply_markup=reply_markup)
+        return self.next.CONFIRM
+
+    @check_chat_id
+    def command_removetoken_confirm(self, update: Update, context: CallbackContext):
+        assert update.callback_query and update.effective_chat
+        query = update.callback_query
+        query.answer()
+        if query.data == 'cancel':
+            query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
+            return ConversationHandler.END
+        assert query.data
+        token = self.parent.watchers[query.data]
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f'Are you sure you want to delete {token.name}?',
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton('✅ Confirm', callback_data=query.data),
+                        InlineKeyboardButton('❌ Cancel', callback_data='cancel'),
+                    ]
+                ]
+            ),
+        )
         return self.next.TOKENCHOICE
 
     @check_chat_id
