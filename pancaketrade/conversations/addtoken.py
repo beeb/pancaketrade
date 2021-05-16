@@ -163,7 +163,7 @@ class AddTokenConversation:
 
     @check_chat_id
     def command_canceltoken(self, update: Update, context: CallbackContext):
-        assert update.message and context.user_data is not None
+        assert update.effective_chat and context.user_data is not None
         del context.user_data['addtoken']
-        update.message.reply_html('⚠️ OK, I\'m cancelling this command.')
+        context.bot.send_message(chat_id=update.effective_chat.id, text='⚠️ OK, I\'m cancelling this command.')
         return ConversationHandler.END

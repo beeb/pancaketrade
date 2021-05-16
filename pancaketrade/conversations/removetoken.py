@@ -54,7 +54,7 @@ class RemoveTokenConversation:
         return ConversationHandler.END
 
     @check_chat_id
-    def command_cancelremovetoken(self, update: Update, _: CallbackContext):
-        assert update.message
-        update.message.reply_html('⚠️ OK, I\'m cancelling this command.')
+    def command_cancelremovetoken(self, update: Update, context: CallbackContext):
+        assert update.effective_chat
+        context.bot.send_message(chat_id=update.effective_chat.id, text='⚠️ OK, I\'m cancelling this command.')
         return ConversationHandler.END

@@ -19,9 +19,10 @@ from telegram.ext import (
 class CreateOrderResponses(NamedTuple):
     TYPE: int = 0
     TRAILING: int = 1
-    AMOUNT: int = 2
-    SLIPPAGE: int = 3
-    GAS: int = 4
+    PRICE: int = 2
+    AMOUNT: int = 3
+    SLIPPAGE: int = 4
+    GAS: int = 5
 
 
 class CreateOrderConversation:
@@ -37,6 +38,9 @@ class CreateOrderConversation:
                 self.next.TRAILING: [
                     CallbackQueryHandler(self.command_createorder_trailing, pattern='^[^:]*$'),
                     MessageHandler(Filters.text & ~Filters.command, self.command_createorder_trailing_custom),
+                ],
+                self.next.PRICE: [
+                    MessageHandler(Filters.text & ~Filters.command, self.command_createorder_price),
                 ],
                 self.next.AMOUNT: [
                     MessageHandler(Filters.text & ~Filters.command, self.command_createorder_amount),
@@ -83,7 +87,6 @@ class CreateOrderConversation:
         query.answer()
         if query.data == 'cancel':
             del context.user_data['createorder']
-            query.edit_message_reply_markup(reply_markup=None)
             query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
             return ConversationHandler.END
         order = context.user_data['createorder']
@@ -92,7 +95,6 @@ class CreateOrderConversation:
             order['above'] = False  # below
             order['trailing_stop'] = None
             # we don't use trailing stop loss here
-            query.edit_message_reply_markup(reply_markup=None)
             query.edit_message_text('OK, the order will sell when price is below target price.')
             return self.next.AMOUNT
         elif query.data == 'limit_sell':
@@ -103,7 +105,6 @@ class CreateOrderConversation:
             order['above'] = False  # below
         else:
             del context.user_data['createorder']
-            query.edit_message_reply_markup(reply_markup=None)
             query.edit_message_text('⛔ That type of order is not supported.')
             return ConversationHandler.END
         reply_markup = InlineKeyboardMarkup(
@@ -120,12 +121,12 @@ class CreateOrderConversation:
                 ],
             ]
         )
-        query.edit_message_reply_markup(reply_markup=reply_markup)
         query.edit_message_text(
             f'OK, the order will {order["type"]} when price is '
             + f'{"above" if order["above"] else "below"} target price.\n'
             + 'Do you want to enable trailing stop loss? If yes, what is the callback rate?\n'
-            + 'You can also message me a custom value in percent.'
+            + 'You can also message me a custom value in percent.',
+            reply_markup=reply_markup,
         )
         return self.next.TRAILING
 
@@ -136,38 +137,40 @@ class CreateOrderConversation:
         query.answer()
         assert query.data
         logger.info(query.data)
-        query.edit_message_reply_markup(reply_markup=None)
         if query.data == 'cancel':
             del context.user_data['createorder']
-            query.edit_message_reply_markup(reply_markup=None)
             query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
             return ConversationHandler.END
         order = context.user_data['createorder']
         token = self.parent.watchers[order['token_address']]
-        unit = 'BNB' if order['type'] == 'buy' else token.symbol
+        current_price = self.net.get_token_price(
+            token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
+        )
         if query.data == 'None':
             order['trailing_stop'] = None
             query.edit_message_text(
                 'OK, the order will use no trailing stop loss.\n'
-                + f'Next, please indicate the value in <b>{unit}</b> you would like to {order["type"]}.\n'
-                + 'You can use scientific notation like <code>1.3E-4</code> if you want.'
+                + f'Next, please indicate the price in <b>BNB per {token.symbol}</b> '
+                + 'at which the order will activate.\n'
+                + 'You can use scientific notation like <code>1.3E-4</code> if you want.\n'
+                + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.'
             )
-            return self.next.AMOUNT
+            return self.next.PRICE
 
         try:
             callback_rate = int(query.data)
         except ValueError:
             del context.user_data['createorder']
-            query.edit_message_reply_markup(reply_markup=None)
             query.edit_message_text('⛔ The callback rate is not recognized.')
             return ConversationHandler.END
         order['trailing_stop'] = callback_rate
         query.edit_message_text(
             f'OK, the order will use trailing stop loss with {callback_rate}% callback.\n'
-            + f'Next, please indicate the value in <b>{unit}</b> you would like to {order["type"]}.\n'
-            + 'You can use scientific notation like <code>1.3E-4</code> if you want.'
+            + f'Next, please indicate the price in <b>BNB per {token.symbol}</b> at which the order will activate.\n'
+            + 'You can use scientific notation like <code>1.3E-4</code> if you want.\n'
+            + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.'
         )
-        return self.next.AMOUNT
+        return self.next.PRICE
 
     @check_chat_id
     def command_createorder_trailing_custom(self, update: Update, context: CallbackContext):
@@ -181,11 +184,41 @@ class CreateOrderConversation:
             return ConversationHandler.END
         order['trailing_stop'] = callback_rate
         token = self.parent.watchers[order['token_address']]
-        unit = 'BNB' if order['type'] == 'buy' else token.symbol
+        current_price = self.net.get_token_price(
+            token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
+        )
         update.message.reply_html(
             f'OK, the order will use trailing stop loss with {callback_rate}% callback.\n'
-            + f'Next, please indicate the value in <b>{unit}</b> you would like to {order["type"]}.\n'
-            + 'You can use scientific notation like <code>1.3E-4</code> if you want.'
+            + f'Next, please indicate the price in <b>BNB per {token.symbol}</b> at which the order will activate.\n'
+            + 'You can use scientific notation like <code>1.3E-4</code> if you want.\n'
+            + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.'
+        )
+        return self.next.PRICE
+
+    @check_chat_id
+    def command_createorder_price(self, update: Update, context: CallbackContext):
+        assert update.message and update.message.text and update.effective_chat and context.user_data is not None
+        order = context.user_data['createorder']
+        try:
+            price = Decimal(update.message.text.strip())
+        except Exception:
+            update.message.reply_html('⚠️ The price you inserted is not valid. Try again:')
+            return self.next.PRICE
+        token = self.parent.watchers[order['token_address']]
+        order['limit_price'] = str(price)
+        unit = 'BNB' if order['type'] == 'buy' else token.symbol
+        # if selling tokens, add options 25/50/75/100% with buttons
+        balance = (
+            self.net.get_bnb_balance()
+            if order['type'] == 'buy'
+            else self.net.get_token_balance(token_address=token.address)
+        )
+        update.message.reply_html(
+            f'OK, I will {order["type"]} when the price of {token.symbol} reaches {price:.6g} BNB per token'
+            + ' BNB per token.\n'
+            + f'Next, how much {unit} do you want me to use for {order["type"]}ing?\n'
+            + 'You can use scientific notation like <code>1.3E-4</code> if you want.\n'
+            + f'Current balance: <b>{balance:.6g} {unit}</b>'
         )
         return self.next.AMOUNT
 
@@ -196,7 +229,6 @@ class CreateOrderConversation:
         try:
             amount = Decimal(update.message.text.strip())
         except Exception:
-            del context.user_data['createorder']
             update.message.reply_html('⚠️ The amount you inserted is not valid. Try again:')
             return self.next.AMOUNT
         token = self.parent.watchers[order['token_address']]
@@ -208,7 +240,7 @@ class CreateOrderConversation:
 
     @check_chat_id
     def command_cancelorder(self, update: Update, context: CallbackContext):
-        assert update.message and context.user_data is not None
+        assert update.effective_chat and context.user_data is not None
         del context.user_data['createorder']
-        update.message.reply_html('⚠️ OK, I\'m cancelling this command.')
+        context.bot.send_message(chat_id=update.effective_chat.id, text='⚠️ OK, I\'m cancelling this command.')
         return ConversationHandler.END
