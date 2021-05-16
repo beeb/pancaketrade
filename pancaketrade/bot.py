@@ -1,5 +1,5 @@
 """Bot class."""
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -44,10 +44,11 @@ class TradeBot:
             job_defaults={
                 'coalesce': True,
                 'max_instances': 1,
-                'misfire_grace_time': 0.8 * self.config.monitor_interval,
+                'misfire_grace_time': 8,
             }
         )
         self.start_status_update()
+        self.last_status_message_id: Optional[int] = None
 
     def setup_telegram(self):
         self.dispatcher.add_handler(CommandHandler('start', self.command_start))
@@ -85,9 +86,10 @@ class TradeBot:
         assert update.message and update.effective_chat
         balance_bnb = self.net.get_bnb_balance()
         price_bnb = self.net.get_bnb_price()
-        update.message.reply_html(
-            '<u>STATUS</u>\n' + f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})\n\n'
+        stat_msg = update.message.reply_html(
+            '<u>STATUS</u>\n' + f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})'
         )
+        self.last_status_message_id = stat_msg.message_id
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
         for token in sorted_tokens:
             status, buttons = self.get_token_status(token)
@@ -96,6 +98,13 @@ class TradeBot:
             self.watchers[token.address].last_status_message_id = msg.message_id
 
     def update_status(self):
+        balance_bnb = self.net.get_bnb_balance()
+        price_bnb = self.net.get_bnb_price()
+        self.dispatcher.bot.edit_message_text(
+            '<u>STATUS</u>\n' + f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})',
+            chat_id=self.config.secrets.admin_chat_id,
+            message_id=self.last_status_message_id,
+        )
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
         for token in sorted_tokens:
             if token.last_status_message_id is None:
