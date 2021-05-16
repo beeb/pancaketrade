@@ -220,6 +220,7 @@ class Network:
     def get_gas_price(self) -> Wei:
         return self.w3.eth.gas_price
 
+    @cached(cache=LRUCache(maxsize=256))
     def is_approved(self, token_address: ChecksumAddress, v2: bool = False) -> bool:
         token_contract = self.get_token_contract(token_address=token_address)
         router_address = self.addr.router_v2 if v2 else self.addr.router_v1
