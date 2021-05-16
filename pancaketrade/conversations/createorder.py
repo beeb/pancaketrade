@@ -406,7 +406,7 @@ class CreateOrderConversation:
                 del context.user_data['createorder']
                 update.message.reply_html('⛔ The gas price is not recognized.')
                 return self.next.GAS
-        order['gas_price'] = Web3.toWei(gas_price_gwei, 'gwei')
+        order['gas_price'] = str(Web3.toWei(gas_price_gwei, 'gwei'))
         update.message.reply_html(
             text=f'OK, the order will use {gas_price_gwei:.6g} Gwei for gas price.\nConfirm the order below!'
         )
@@ -424,7 +424,11 @@ class CreateOrderConversation:
             f'Trailing stop loss {order["trailing_stop"]}% callback\n' if order["trailing_stop"] is not None else ''
         )
         gas_price = (
-            f'{Decimal(order["gas_price"]) / Decimal(10 ** 9):.1g} Gwei' if order["gas_price"] else 'network default'
+            f'{Decimal(order["gas_price"]) / Decimal(10 ** 9):.1g} Gwei'
+            if order["gas_price"] and not order["gas_price"].startswith('+')
+            else 'network default'
+            if order["gas_price"] is None
+            else f'network default {order["gas_price"]} Gwei'
         )
         message = (
             '<u>Preview:</u>\n'

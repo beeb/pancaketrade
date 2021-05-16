@@ -20,9 +20,8 @@ class OrderWatcher:
         self.trailing_stop: Optional[int] = order_record.trailing_stop  # in percent
         self.amount = Wei(int(order_record.amount))  # in wei, either BNB (buy) or token (sell) depending on "type"
         self.slippage = order_record.slippage
-        self.gas_price: Optional[Wei] = (
-            Wei(int(order_record.gas_price)) if order_record.gas_price else None
-        )  # in wei, if null then use network gas price
+        # gas price in wei or offset from default in gwei (starts with +), if null then use network gas price
+        self.gas_price: Optional[str] = order_record.gas_price
         self.created = order_record.created
         self.active = True
         self.min_price: Optional[Decimal] = None
@@ -48,7 +47,13 @@ class OrderWatcher:
         amount = self.get_human_amount()
         unit = self.get_amount_unit()
         trailing = f'Trailing stop loss {self.trailing_stop}% callback\n' if self.trailing_stop is not None else ''
-        gas_price = f'{Decimal(self.gas_price) / Decimal(10 ** 9):.1g} Gwei' if self.gas_price else 'network default'
+        gas_price = (
+            f'{Decimal(self.gas_price) / Decimal(10 ** 9):.1g} Gwei'
+            if self.gas_price and not self.gas_price.startswith('+')
+            else 'network default'
+            if self.gas_price is None
+            else f'network default {self.gas_price} Gwei'
+        )
         return (
             f'{icon}{self.token_record.symbol} - (#{self.order_record.id}) {type_name}\n'
             + trailing

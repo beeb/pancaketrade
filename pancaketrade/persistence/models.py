@@ -40,7 +40,9 @@ class Order(Model):
     trailing_stop = SmallIntegerField(null=True)  # in percent
     amount = CharField()  # in wei, either BNB or token depending on "type"
     slippage = SmallIntegerField()
-    gas_price = CharField(null=True)  # in wei, if null then use network gas price
+    # gas price in wei, if null then use network gas price.
+    # If starts with "+", then we add this amount of gwei to default network price
+    gas_price = CharField(null=True)
     created = DateTimeField()
 
     class Meta:
