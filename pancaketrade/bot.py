@@ -50,6 +50,7 @@ class TradeBot:
             ('status', 'display all tokens and their price, orders'),
             ('addtoken', 'add a token that you want to trade'),
             ('removetoken', 'remove a token that you added previously'),
+            ('cancelorder', 'cancel the current order creation process (if bot is stuck for instance)'),
         ]
         self.dispatcher.bot.set_my_commands(commands=commands)
 
