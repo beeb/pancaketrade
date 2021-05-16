@@ -62,19 +62,19 @@ class OrderWatcher:
             + f'Gas: {gas_price}'
         )
 
-    def price_update(self, sell_price: Decimal, buy_price: Decimal):
+    def price_update(self, sell_price: Decimal, buy_price: Decimal, sell_v2: bool, buy_v2: bool):
         if not self.active:
             return
 
         if self.type == 'buy':
-            self.price_update_buy(buy_price=buy_price)
+            self.price_update_buy(buy_price=buy_price, v2=buy_v2)
         else:
-            self.price_update_sell(sell_price=sell_price)
+            self.price_update_sell(sell_price=sell_price, v2=sell_v2)
 
-    def price_update_buy(self, buy_price: Decimal):
+    def price_update_buy(self, buy_price: Decimal, v2: bool):
         if self.trailing_stop is None and not self.above and buy_price <= self.limit_price:
             logger.success(f'Limit buy triggered at price {buy_price:.3E} BNB')  # buy
-            self.close()
+            self.close(v2=v2)
             return
         elif self.trailing_stop and not self.above and (buy_price <= self.limit_price or self.min_price is not None):
             if self.min_price is None:
@@ -86,17 +86,17 @@ class OrderWatcher:
                 return
             elif rise > self.trailing_stop:
                 logger.success(f'Trailing stop loss triggered at price {buy_price:.3E} BNB')  # buy
-                self.close()
+                self.close(v2=v2)
                 return
 
-    def price_update_sell(self, sell_price: Decimal):
+    def price_update_sell(self, sell_price: Decimal, v2: bool):
         if self.trailing_stop is None and not self.above and sell_price <= self.limit_price:
             logger.warning(f'Stop loss triggered at price {sell_price:.3E} BNB')
-            self.close()
+            self.close(v2=v2)
             return
         elif self.trailing_stop is None and self.above and sell_price >= self.limit_price:
             logger.success(f'Take profit triggered at price {sell_price:.3E} BNB')
-            self.close()
+            self.close(v2=v2)
             return
         elif self.trailing_stop and self.above and (sell_price >= self.limit_price or self.max_price is not None):
             if self.max_price is None:
@@ -108,15 +108,16 @@ class OrderWatcher:
                 return
             elif drop > self.trailing_stop:
                 logger.success(f'Trailing stop loss triggered at price {sell_price:.3E} BNB')
-                self.close()
+                self.close(v2=v2)
                 return
 
-    def close(self):
+    def close(self, v2: bool):
         self.active = False
+        version = 'v2' if v2 else 'v1'
         if self.type == 'buy':
-            logger.info('Buying tokens')
+            logger.info(f'Buying tokens on {version}')
         else:
-            logger.info('Selling tokens')
+            logger.info(f'Selling tokens on {version}')
 
     def get_type_name(self) -> str:
         return (

@@ -146,7 +146,7 @@ class TradeBot:
         token_balance = self.net.get_token_balance(token_address=token.address)
         token_balance_bnb = self.net.get_token_balance_bnb(token_address=token.address, balance=token_balance)
         token_balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance=token_balance)
-        token_price = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
+        token_price, _ = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
         token_price_usd = self.net.get_token_price_usd(
             token_address=token.address, token_decimals=token.decimals, sell=True
         )

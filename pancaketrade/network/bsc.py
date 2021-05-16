@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Optional, Tuple
 
 from cachetools import LRUCache, TTLCache, cached
 from loguru import logger
@@ -7,8 +7,8 @@ from pancaketrade.utils.config import ConfigSecrets
 from pancaketrade.utils.network import fetch_abi
 from web3 import Web3
 from web3.contract import Contract
-from web3.types import ChecksumAddress, Wei
 from web3.exceptions import ABIFunctionNotFound, ContractLogicError
+from web3.types import ChecksumAddress, Wei
 
 
 class NetworkAddresses(NamedTuple):
@@ -42,6 +42,10 @@ class Network:
         self.w3 = Web3(provider=w3_provider)
         self.addr = NetworkAddresses()
         self.contracts = NetworkContracts(addr=self.addr, w3=self.w3, api_key=secrets.bscscan_api_key)
+        self.max_approval_hex = f"0x{64 * 'f'}"
+        self.max_approval_int = int(self.max_approval_hex, 16)
+        self.max_approval_check_hex = f"0x{15 * '0'}{49 * 'f'}"
+        self.max_approval_check_int = int(self.max_approval_check_hex, 16)
 
     def get_bnb_balance(self) -> Decimal:
         return Decimal(self.w3.eth.get_balance(self.wallet)) / Decimal(10 ** 18)
@@ -54,7 +58,7 @@ class Network:
     def get_token_balance_bnb(self, token_address: ChecksumAddress, balance: Optional[Decimal] = None) -> Decimal:
         if balance is None:
             balance = self.get_token_balance(token_address=token_address)
-        token_price = self.get_token_price(token_address=token_address)
+        token_price, _ = self.get_token_price(token_address=token_address)
         return token_price * balance
 
     def get_token_balance(self, token_address: ChecksumAddress) -> Decimal:
@@ -71,28 +75,34 @@ class Network:
     def get_token_price_usd(
         self, token_address: ChecksumAddress, token_decimals: Optional[int] = None, sell: bool = True
     ) -> Decimal:
-        bnb_per_token = self.get_token_price(token_address=token_address, token_decimals=token_decimals, sell=sell)
+        bnb_per_token, _ = self.get_token_price(token_address=token_address, token_decimals=token_decimals, sell=sell)
         usd_per_bnb = self.get_bnb_price()
         return bnb_per_token * usd_per_bnb
 
     @cached(cache=TTLCache(maxsize=256, ttl=1))
     def get_token_price(
         self, token_address: ChecksumAddress, token_decimals: Optional[int] = None, sell: bool = True
-    ) -> Decimal:
+    ) -> Tuple[Decimal, bool]:
         if token_decimals is None:
             token_decimals = self.get_token_decimals(token_address=token_address)
         token_contract = self.get_token_contract(token_address)
         lp_v1 = self.find_lp_address(token_address=token_address, v2=False)
         lp_v2 = self.find_lp_address(token_address=token_address, v2=True)
         if lp_v1 is None and lp_v2 is None:  # no lp
-            return Decimal(0)
+            return Decimal(0), True
         elif lp_v2 is None and lp_v1:  # only v1
-            return self.get_token_price_by_lp(
-                token_contract=token_contract, token_lp=lp_v1, token_decimals=token_decimals
+            return (
+                self.get_token_price_by_lp(
+                    token_contract=token_contract, token_lp=lp_v1, token_decimals=token_decimals
+                ),
+                False,
             )
         elif lp_v1 is None and lp_v2:  # only v2
-            return self.get_token_price_by_lp(
-                token_contract=token_contract, token_lp=lp_v2, token_decimals=token_decimals
+            return (
+                self.get_token_price_by_lp(
+                    token_contract=token_contract, token_lp=lp_v2, token_decimals=token_decimals
+                ),
+                True,
             )
         # both exist
         assert lp_v1 and lp_v2
@@ -104,20 +114,24 @@ class Network:
         )
         # if the BNB in pool or tokens in pool is zero, we get a price of zero. Also if LP is too empty
         if price_v1 == 0 and price_v2 == 0:  # both lp's are too small, we choose the largest
-            return self.get_token_price_by_lp(
-                token_contract=token_contract,
-                token_lp=self.get_biggest_lp(lp1=lp_v1, lp2=lp_v2),
-                token_decimals=token_decimals,
-                ignore_poolsize=True,
+            biggest_lp, v2 = self.get_biggest_lp(lp1=lp_v1, lp2=lp_v2)
+            return (
+                self.get_token_price_by_lp(
+                    token_contract=token_contract,
+                    token_lp=biggest_lp,
+                    token_decimals=token_decimals,
+                    ignore_poolsize=True,
+                ),
+                v2,
             )
         elif price_v1 == 0:
-            return price_v2
+            return price_v2, True
         elif price_v2 == 0:
-            return price_v1
+            return price_v1, False
 
         if sell:
-            return max(price_v1, price_v2)
-        return min(price_v1, price_v2)
+            return max(price_v1, price_v2), price_v2 > price_v1
+        return min(price_v1, price_v2), price_v2 < price_v1
 
     def get_token_price_by_lp(
         self, token_contract: Contract, token_lp: ChecksumAddress, token_decimals: int, ignore_poolsize: bool = False
@@ -156,10 +170,12 @@ class Network:
         symbol = token_contract.functions.symbol().call()
         return symbol
 
-    def get_biggest_lp(self, lp1: ChecksumAddress, lp2: ChecksumAddress) -> ChecksumAddress:
+    def get_biggest_lp(self, lp1: ChecksumAddress, lp2: ChecksumAddress) -> Tuple[ChecksumAddress, bool]:
         bnb_amount1 = Decimal(self.contracts.wbnb.functions.balanceOf(lp1).call())
         bnb_amount2 = Decimal(self.contracts.wbnb.functions.balanceOf(lp2).call())
-        return lp1 if bnb_amount1 > bnb_amount2 else lp2
+        if bnb_amount1 > bnb_amount2:
+            return lp1, False
+        return lp2, True
 
     @cached(cache=LRUCache(maxsize=256))
     def get_token_contract(self, token_address: ChecksumAddress) -> Contract:
@@ -183,3 +199,9 @@ class Network:
 
     def get_gas_price(self) -> Wei:
         return self.w3.eth.gas_price
+
+    def is_approved(self, token_address: ChecksumAddress, v2: bool = False) -> bool:
+        token_contract = self.get_token_contract(token_address=token_address)
+        router_address = self.addr.router_v2 if v2 else self.addr.router_v1
+        amount = token_contract.functions.allowance(self.wallet, router_address).call()
+        return amount >= self.max_approval_check_int
