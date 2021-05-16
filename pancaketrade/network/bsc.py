@@ -61,8 +61,8 @@ class Network:
 
     def start_nonce_update(self):
         trigger = IntervalTrigger(seconds=10)
-        self.status_scheduler.add_job(self.update_nonce, trigger=trigger)
-        self.status_scheduler.start()
+        self.nonce_scheduler.add_job(self.update_nonce, trigger=trigger)
+        self.nonce_scheduler.start()
 
     def update_nonce(self):
         self.last_nonce = max(self.last_nonce, self.w3.eth.get_transaction_count(self.wallet))
