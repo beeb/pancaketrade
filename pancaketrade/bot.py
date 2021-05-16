@@ -1,5 +1,5 @@
 """Bot class."""
-from typing import Dict, List
+from typing import Dict
 
 from loguru import logger
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Update
@@ -84,17 +84,12 @@ class TradeBot:
             token_price_usd = self.net.get_token_price_usd(
                 token_address=token.address, token_decimals=token.decimals, sell=True
             )
-            orders: List[str] = []
-            for order in token.orders:
-                if order.max_price or order.min_price:  # order is tracking trailing stop loss
-                    orders.append(f'<b>{order}</b>')
-                else:
-                    orders.append(str(order))
+            orders = [str(order) for order in token.orders]
             token_status[token.address] = (
                 f'<b>{token.name}</b>: {token_balance:,.1f}\n'
                 + f'<b>Value</b>: {token_balance_bnb:.3g} BNB (${token_balance_usd:.2f})\n'
                 + f'<b>Price</b>: {token_price:.3g} BNB per token (${token_price_usd:.3g})\n'
-                + '<b>Orders</b>: (bold = tracking trailing stop loss)\n'
+                + '<b>Orders</b>: (underlined = tracking trailing stop loss)\n'
                 + '\n'.join(orders)
             )
 

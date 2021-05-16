@@ -33,9 +33,10 @@ class OrderWatcher:
         amount = self.get_human_amount()
         unit = self.get_amount_unit()
         trailing = f' tsl {self.trailing_stop}%' if self.trailing_stop is not None else ''
+        order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
         return (
-            f'(#{self.order_record.id}) {self.token_record.symbol} {comparision} {self.limit_price:.3g} BNB - '
-            + f'{type_name} {amount:.6g} {unit}{trailing}'
+            f'({order_id}) {self.token_record.symbol} {comparision} {self.limit_price:.3g} BNB - '
+            + f'<b>{type_name}</b> {amount:.6g} {unit}{trailing}'
         )
 
     def long_repr(self) -> str:
