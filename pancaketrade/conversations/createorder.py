@@ -365,9 +365,12 @@ class CreateOrderConversation:
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
-                        InlineKeyboardButton('Default', callback_data='None'),
-                        InlineKeyboardButton('❌ Cancel', callback_data='cancel'),
-                    ]
+                        InlineKeyboardButton('network default', callback_data='None'),
+                        InlineKeyboardButton('default + 0.1 Gwei', callback_data='+0.1'),
+                        InlineKeyboardButton('default + 1 Gwei', callback_data='+1'),
+                        InlineKeyboardButton('default + 2 Gwei', callback_data='+2'),
+                    ],
+                    [InlineKeyboardButton('❌ Cancel', callback_data='cancel')],
                 ]
             ),
         )
@@ -386,10 +389,14 @@ class CreateOrderConversation:
                 del context.user_data['createorder']
                 query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
                 return ConversationHandler.END
-            if query.data == 'None':
+            elif query.data == 'None':
                 order['gas_price'] = None
                 query.edit_message_text('OK, the order will use default network gas price.\nConfirm the order below!')
-                # add summary
+            elif query.data.startswith('+'):
+                order['gas_price'] = query.data
+                query.edit_message_text(
+                    f'OK, the order will use default network gas price {query.data} Gwei.\nConfirm the order below!'
+                )
             return self.print_summary(update, context)
         else:
             assert update.message and update.message.text
