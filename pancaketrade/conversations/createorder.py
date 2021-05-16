@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import NamedTuple
+from typing import Mapping, NamedTuple
 
 from pancaketrade.network import Network
 from pancaketrade.utils.config import Config
@@ -13,6 +13,7 @@ from telegram.ext import (
     Filters,
     MessageHandler,
 )
+from web3 import Web3
 
 
 class CreateOrderResponses(NamedTuple):
@@ -22,6 +23,7 @@ class CreateOrderResponses(NamedTuple):
     AMOUNT: int = 3
     SLIPPAGE: int = 4
     GAS: int = 5
+    SUMMARY: int = 6
 
 
 class CreateOrderConversation:
@@ -53,6 +55,9 @@ class CreateOrderConversation:
                 self.next.GAS: [
                     CallbackQueryHandler(self.command_createorder_gas, pattern='^[^:]*$'),
                     MessageHandler(Filters.text & ~Filters.command, self.command_createorder_gas),
+                ],
+                self.next.SUMMARY: [
+                    CallbackQueryHandler(self.command_createorder_summary, pattern='^[^:]*$'),
                 ],
             },
             fallbacks=[CommandHandler('cancelorder', self.command_cancelorder)],
@@ -335,11 +340,13 @@ class CreateOrderConversation:
                 update.message.reply_html('⛔ The slippage is not recognized.')
                 return ConversationHandler.END
         order['slippage'] = slippage_percent
+        network_gas_price = Decimal(self.net.w3.eth.gas_price) / Decimal(10 ** 9)
         context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=f'OK, the order will use slippage of {slippage_percent}%.\n'
-            + 'Finally, please indicate the gas price in GWEI for this order.\n'
-            + 'Choose "Default" to use the default network price at the moment of the transaction '
+            + 'Finally, please indicate the gas price in Gwei for this order.\n'
+            + 'Choose "Default" to use the default network price at the moment '
+            + f'of the transaction (currently {network_gas_price:.1g} Gwei)'
             + 'or message me the value.',
             reply_markup=InlineKeyboardMarkup(
                 [
@@ -354,7 +361,95 @@ class CreateOrderConversation:
 
     @check_chat_id
     def command_createorder_gas(self, update: Update, context: CallbackContext):
-        pass
+        assert update.effective_chat and context.user_data is not None
+        order = context.user_data['createorder']
+        if update.message is None:
+            assert update.callback_query
+            query = update.callback_query
+            query.answer()
+            assert query.data
+            if query.data == 'cancel':
+                del context.user_data['createorder']
+                query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
+                return ConversationHandler.END
+            if query.data == 'None':
+                order['gas_price'] = None
+                query.edit_message_text('OK, the order will use default network gas price.\nConfirm the order below!')
+                # add summary
+            return self.print_summary(update, context)
+        else:
+            assert update.message and update.message.text
+            try:
+                gas_price_gwei = Decimal(update.message.text.strip())
+            except ValueError:
+                del context.user_data['createorder']
+                update.message.reply_html('⛔ The gas price is not recognized.')
+                return self.next.GAS
+        order['gas_price'] = Web3.toWei(gas_price_gwei, 'gwei')
+        update.message.reply_html(
+            text=f'OK, the order will use {gas_price_gwei:.6g} Gwei for gas price.\nConfirm the order below!'
+        )
+        return self.print_summary(update, context)
+
+    def print_summary(self, update: Update, context: CallbackContext):
+        assert update.effective_chat and context.user_data is not None
+        order = context.user_data['createorder']
+        token = self.parent.watchers[order['token_address']]
+        type_name = self.get_type_name(order)
+        comparision = self.get_comparison_symbol(order)
+        amount = self.get_human_amount(order, token)
+        unit = self.get_amount_unit(order, token)
+        trailing = (
+            f'Trailing stop loss {order["trailing_stop"]}% callback\n' if order["trailing_stop"] is not None else ''
+        )
+        gas_price = Decimal(order["gas_price"]) / Decimal(10 ** 9)
+        message = (
+            '<u>Preview:</u>\n'
+            + f'{token.name} - {type_name}\n'
+            + trailing
+            + f'Amount: {amount:g} {unit}\n'
+            + f'Price {comparision} {Decimal(order["limit_price"]):.3g} BNB\n'
+            + f'Slippage: {order["slippage"]}%\n'
+            + f'Gas: {gas_price} Gwei\n'
+        )
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=message,
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton('✅ Validate', callback_data='ok'),
+                        InlineKeyboardButton('❌ Cancel', callback_data='cancel'),
+                    ]
+                ]
+            ),
+        )
+        return self.next.SUMMARY
+
+    @check_chat_id
+    def command_createorder_summary(self, update: Update, context: CallbackContext):
+        return ConversationHandler.END
+
+    def get_type_name(self, order: Mapping) -> str:
+        return (
+            'limit buy'
+            if order['type'] == 'buy' and not order['above']
+            else 'stop loss'
+            if order['type'] == 'sell' and not order['above']
+            else 'limit sell'
+            if order['type'] == 'sell' and order['above']
+            else 'unknown'
+        )
+
+    def get_comparison_symbol(self, order: Mapping) -> str:
+        return '>' if order['above'] else '<'
+
+    def get_human_amount(self, order: Mapping, token) -> Decimal:
+        decimals = token.decimals if order['type'] == 'sell' else 18
+        return Decimal(order['amount']) / Decimal(10 ** decimals)
+
+    def get_amount_unit(self, order: Mapping, token) -> str:
+        return token.symbol if order['type'] == 'sell' else 'BNB'
 
     @check_chat_id
     def command_cancelorder(self, update: Update, context: CallbackContext):

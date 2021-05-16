@@ -48,11 +48,14 @@ class OrderWatcher:
         amount = self.get_human_amount()
         unit = self.get_amount_unit()
         trailing = f'Trailing stop loss {self.trailing_stop}% callback\n' if self.trailing_stop is not None else ''
+        gas_price = f'{Decimal(self.gas_price) / Decimal(10 ** 9):.1g} Gwei' if self.gas_price else 'network default'
         return (
             f'{icon}{self.token_record.symbol} - (#{self.order_record.id}) {type_name}\n'
             + trailing
             + f'Amount: {amount:g} {unit}\n'
-            + f'Price {comparision} {self.limit_price:.3E} BNB'
+            + f'Price {comparision} {self.limit_price:.3E} BNB\n'
+            + f'Slippage: {self.slippage}%\n'
+            + f'Gas: {gas_price}'
         )
 
     def price_update(self, sell_price: Decimal, buy_price: Decimal):
