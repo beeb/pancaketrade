@@ -167,7 +167,7 @@ class CreateOrderConversation:
                     'OK, the order will use no trailing stop loss.\n'
                     + f'Next, please indicate the price in <b>BNB per {token.symbol}</b> '
                     + 'at which the order will activate.\n'
-                    + 'You can use scientific notation like <code>1.3E-4</code> if you want.\n'
+                    + f'You can use scientific notation like <code>{current_price:.1E}</code> if you want.\n'
                     + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.',
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]]),
                 )
@@ -191,7 +191,7 @@ class CreateOrderConversation:
             chat_id=update.effective_chat.id,
             text=f'OK, the order will use trailing stop loss with {callback_rate}% callback.\n'
             + f'Next, please indicate the price in <b>BNB per {token.symbol}</b> at which the order will activate.\n'
-            + 'You can use scientific notation like <code>1.3E-4</code> if you want.\n'
+            + f'You can use scientific notation like <code>{current_price:.1E}</code> if you want.\n'
             + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.',
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]]),
         )
@@ -243,7 +243,7 @@ class CreateOrderConversation:
         update.message.reply_html(
             f'OK, I will {order["type"]} when the price of {token.symbol} reaches {price:.6g} BNB per token.\n'
             + f'Next, how much {unit} do you want me to use for {order["type"]}ing?\n'
-            + 'You can use scientific notation like <code>1.3E-4</code> if you want.\n'
+            + f'You can use scientific notation like <code>{balance:.1E}</code> if you want.\n'
             + f'Current balance: <b>{balance:.6g} {unit}</b>',
             reply_markup=reply_markup,
         )
@@ -402,7 +402,9 @@ class CreateOrderConversation:
         trailing = (
             f'Trailing stop loss {order["trailing_stop"]}% callback\n' if order["trailing_stop"] is not None else ''
         )
-        gas_price = Decimal(order["gas_price"]) / Decimal(10 ** 9)
+        gas_price = (
+            f'{Decimal(order["gas_price"]) / Decimal(10 ** 9):.1g} Gwei' if order["gas_price"] else 'network default'
+        )
         message = (
             '<u>Preview:</u>\n'
             + f'{token.name} - {type_name}\n'
@@ -410,7 +412,7 @@ class CreateOrderConversation:
             + f'Amount: {amount:g} {unit}\n'
             + f'Price {comparision} {Decimal(order["limit_price"]):.3g} BNB\n'
             + f'Slippage: {order["slippage"]}%\n'
-            + f'Gas: {gas_price} Gwei\n'
+            + f'Gas: {gas_price}\n'
         )
         context.bot.send_message(
             chat_id=update.effective_chat.id,
