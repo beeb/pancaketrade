@@ -25,6 +25,7 @@ class OrderWatcher:
         self.gas_price: Optional[str] = order_record.gas_price
         self.created = order_record.created
         self.active = True
+        self.finished = False
         self.min_price: Optional[Decimal] = None
         self.max_price: Optional[Decimal] = None
 
@@ -120,6 +121,7 @@ class OrderWatcher:
             start_in_thread(self.buy, args=(v2,))
         else:
             logger.info(f'Selling tokens on {version}')
+            start_in_thread(self.sell, args=(v2,))
 
     def buy(self, v2: bool):
         res, tokens_out, txhash = self.net.buy_tokens(
@@ -133,6 +135,23 @@ class OrderWatcher:
             logger.error(f'Transaction failed at {txhash}')
             return
         logger.success(f'Buy transaction succeeded. Received {tokens_out:.3g} {self.token_record.symbol}')
+        self.order_record.delete_instance()
+        self.finished = True  # will trigger deletion of the object
+
+    def sell(self, v2: bool):
+        res, bnb_out, txhash = self.net.sell_tokens(
+            self.token_record.address,
+            amount_tokens=self.amount,
+            slippage_percent=self.slippage,
+            gas_price=self.gas_price,
+            v2=v2,
+        )
+        if not res:
+            logger.error(f'Transaction failed at {txhash}')
+            return
+        logger.success(f'Buy transaction succeeded. Received {bnb_out:.3g} BNB')
+        self.order_record.delete_instance()
+        self.finished = True  # will trigger deletion of the object
 
     def get_type_name(self) -> str:
         return (
