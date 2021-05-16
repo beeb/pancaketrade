@@ -35,7 +35,7 @@ class OrderWatcher:
         trailing = f' tsl {self.trailing_stop}%' if self.trailing_stop is not None else ''
         order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
         return (
-            f'({order_id}) {self.token_record.symbol} {comparision} {self.limit_price:.3g} BNB - '
+            f'{order_id} {self.token_record.symbol} {comparision} {self.limit_price:.3g} BNB - '
             + f'<b>{type_name}</b> {amount:.6g} {unit}{trailing}'
         )
 
@@ -65,10 +65,6 @@ class OrderWatcher:
     def price_update(self, sell_price: Decimal, buy_price: Decimal):
         if not self.active:
             return
-        if self.type == 'buy':
-            logger.info(buy_price)
-        else:
-            logger.info(sell_price)
 
         if self.type == 'buy':
             self.price_update_buy(buy_price=buy_price)

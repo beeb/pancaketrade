@@ -55,7 +55,6 @@ class TradeBot:
         for convo in self.convos.values():
             self.dispatcher.add_handler(convo.handler)
         commands = [
-            ('start', 'start interaction with the bot'),
             ('status', 'display all tokens and their price, orders'),
             ('addtoken', 'add a token that you want to trade'),
             ('removetoken', 'remove a token that you added previously'),
@@ -64,7 +63,7 @@ class TradeBot:
         self.dispatcher.bot.set_my_commands(commands=commands)
 
     def start_status_update(self):
-        trigger = IntervalTrigger(seconds=self.config.monitor_interval)
+        trigger = IntervalTrigger(seconds=10)
         self.status_scheduler.add_job(self.update_status, trigger=trigger)
         self.status_scheduler.start()
 
