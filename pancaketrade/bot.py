@@ -45,7 +45,9 @@ class TradeBot:
             'removeorder': RemoveOrderConversation(parent=self, config=self.config),
         }
         self.setup_telegram()
-        self.watchers: Dict[str, TokenWatcher] = get_token_watchers(net=self.net, interval=self.config.monitor_interval)
+        self.watchers: Dict[str, TokenWatcher] = get_token_watchers(
+            net=self.net, dispatcher=self.dispatcher, config=self.config
+        )
         self.status_scheduler = BackgroundScheduler(
             job_defaults={
                 'coalesce': True,

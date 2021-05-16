@@ -7,16 +7,23 @@ from loguru import logger
 from pancaketrade.network import Network
 from pancaketrade.persistence import Token
 from pancaketrade.watchers.order import OrderWatcher
+from pancaketrade.utils.config import Config
 from telegram.ext import Dispatcher
 from web3 import Web3
 
 
 class TokenWatcher:
     def __init__(
-        self, token_record: Token, net: Network, dispatcher: Dispatcher, interval: float = 5, orders: List = list()
+        self,
+        token_record: Token,
+        net: Network,
+        dispatcher: Dispatcher,
+        config: Config,
+        orders: List = list(),
     ):
         self.net = net
         self.dispatcher = dispatcher
+        self.config = config
         self.token_record = token_record
         self.address = Web3.toChecksumAddress(token_record.address)
         self.decimals = int(token_record.decimals)
@@ -27,9 +34,9 @@ class TokenWatcher:
         self.orders: List[OrderWatcher] = [
             OrderWatcher(order_record=order_record, net=self.net) for order_record in orders
         ]
-        self.interval = interval
+        self.interval = self.config.monitor_interval
         self.scheduler = BackgroundScheduler(
-            job_defaults={'coalesce': True, 'max_instances': 1, 'misfire_grace_time': 0.8 * interval}
+            job_defaults={'coalesce': True, 'max_instances': 1, 'misfire_grace_time': 0.8 * self.interval}
         )
         self.last_status_message_id: Optional[int] = None
         self.start_monitoring()
@@ -57,4 +64,13 @@ class TokenWatcher:
             if not self.net.is_approved(token_address=self.address, v2=v2):
                 version = 'v2' if v2 else 'v1'
                 logger.info(f'Need to approve {self.symbol} for trading on PancakeSwap {version}.')
+                msg = self.dispatcher.bot.send_message(
+                    chat_id=self.config.secrets.admin_chat_id,
+                    text=f'Approving {self.symbol} for trading on PancakeSwap {version}...',
+                )
+                res = self.net.approve(token_address=self.address, v2=v2)
+                if res:
+                    msg.edit_text(text='✅ Approval successful!')
+                else:
+                    msg.edit_text(text='⛔ Approval failed')
             order.price_update(sell_price=sell_price, buy_price=buy_price, sell_v2=sell_v2, buy_v2=buy_v2)

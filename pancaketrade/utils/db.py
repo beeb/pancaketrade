@@ -5,6 +5,8 @@ from pancaketrade.persistence import Abi, Order, Token, db
 from pancaketrade.watchers import TokenWatcher
 from peewee import fn
 from web3.types import ChecksumAddress
+from telegram.ext import Dispatcher
+from pancaketrade.utils.config import Config
 
 
 def init_db() -> None:
@@ -18,12 +20,16 @@ def token_exists(address: ChecksumAddress) -> bool:
     return count > 0
 
 
-def get_token_watchers(net, interval: float) -> Dict[str, TokenWatcher]:
+def get_token_watchers(net, dispatcher: Dispatcher, config: Config) -> Dict[str, TokenWatcher]:
     out: Dict[str, TokenWatcher] = {}
     with db:
         for token_record in Token.select().order_by(fn.Lower(Token.symbol)).prefetch(Order):
             out[token_record.address] = TokenWatcher(
-                token_record=token_record, net=net, interval=interval, orders=token_record.orders
+                token_record=token_record,
+                net=net,
+                dispatcher=dispatcher,
+                config=config,
+                orders=token_record.orders,
             )
     return out
 

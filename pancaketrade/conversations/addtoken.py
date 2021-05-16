@@ -152,7 +152,7 @@ class AddTokenConversation:
         finally:
             del context.user_data['addtoken']
             db.close()
-        token = TokenWatcher(token_record=token_record, net=self.net, interval=self.config.monitor_interval)
+        token = TokenWatcher(token_record=token_record, net=self.net, dispatcher=context.dispatcher, config=self.config)
         self.parent.watchers[token.address] = token
         balance = self.net.get_token_balance(token_address=token.address)
         balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance=balance)

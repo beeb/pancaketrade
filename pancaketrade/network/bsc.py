@@ -1,3 +1,4 @@
+import time
 from decimal import Decimal
 from typing import NamedTuple, Optional, Tuple
 
@@ -225,7 +226,7 @@ class Network:
         amount = token_contract.functions.allowance(self.wallet, router_address).call()
         return amount >= self.max_approval_check_int
 
-    def approve(self, token_address: ChecksumAddress, v2: bool = False, max_approval: Optional[int] = None) -> None:
+    def approve(self, token_address: ChecksumAddress, v2: bool = False, max_approval: Optional[int] = None) -> bool:
         max_approval = self.max_approval_int if not max_approval else max_approval
         token_contract = self.get_token_contract(token_address=token_address)
         router_address = self.addr.router_v2 if v2 else self.addr.router_v1
@@ -234,9 +235,11 @@ class Network:
         tx = self.build_and_send_tx(func)
         receipt = self.w3.eth.wait_for_transaction_receipt(tx, timeout=6000)
         if receipt['status'] == 0:  # fail
-            logger.error(f'Approval call failed for tx {str(receipt["transactionHash"])}')
-        else:
-            logger.success('Approved wallet for trading.')
+            logger.error(f'Approval call failed at tx {str(receipt["transactionHash"])}')
+            return False
+        logger.success('Approved wallet for trading.')
+        time.sleep(5)  # let tx propagate
+        return True
 
     def build_and_send_tx(self, func: ContractFunction, tx_params: Optional[TxParams] = None) -> HexBytes:
         if not tx_params:
