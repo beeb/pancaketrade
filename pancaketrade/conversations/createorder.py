@@ -2,8 +2,10 @@ from decimal import Decimal
 from typing import Mapping, NamedTuple
 
 from pancaketrade.network import Network
+from pancaketrade.persistence import Order, db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.generic import check_chat_id
+from pancaketrade.watchers import OrderWatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     CallbackContext,
@@ -409,8 +411,8 @@ class CreateOrderConversation:
             '<u>Preview:</u>\n'
             + f'{token.name} - {type_name}\n'
             + trailing
-            + f'Amount: {amount:g} {unit}\n'
-            + f'Price {comparision} {Decimal(order["limit_price"]):.3g} BNB\n'
+            + f'Amount: {amount:.6g} {unit}\n'
+            + f'Price {comparision} {Decimal(order["limit_price"]):.3g} BNB per token\n'
             + f'Slippage: {order["slippage"]}%\n'
             + f'Gas: {gas_price}\n'
         )
@@ -430,6 +432,30 @@ class CreateOrderConversation:
 
     @check_chat_id
     def command_createorder_summary(self, update: Update, context: CallbackContext):
+        assert update.callback_query and context.user_data is not None
+        query = update.callback_query
+        query.answer()
+        if query.data != 'ok':
+            del context.user_data['createorder']
+            query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
+            return ConversationHandler.END
+        add = context.user_data['createorder']
+        token = self.parent.watchers[add['token_address']]
+        del add['token_address']
+        try:
+            db.connect()
+            with db.atomic():
+                order_record = Order.create(token=token.token_record, **add)
+        except Exception:
+            query.edit_message_text('⛔ Failed to create database record.')
+            del context.user_data['addtoken']
+            return ConversationHandler.END
+        finally:
+            del context.user_data['createorder']
+            db.close()
+        order = OrderWatcher(order_record=order_record, net=self.net)
+        self.parent.watchers[token.address].orders.append(order)
+        query.edit_message_text('✅ Order was added successfully!')
         return ConversationHandler.END
 
     def get_type_name(self, order: Mapping) -> str:

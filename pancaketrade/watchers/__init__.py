@@ -1,2 +1,2 @@
-from .order import Order
+from .order import OrderWatcher
 from .token import TokenWatcher
