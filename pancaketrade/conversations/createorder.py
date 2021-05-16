@@ -43,7 +43,11 @@ class CreateOrderConversation:
                     MessageHandler(Filters.text & ~Filters.command, self.command_createorder_price),
                 ],
                 self.next.AMOUNT: [
+                    CallbackQueryHandler(self.command_createorder_amount, pattern='^[^:]*$'),
                     MessageHandler(Filters.text & ~Filters.command, self.command_createorder_amount),
+                ],
+                self.next.SLIPPAGE: [
+                    CallbackQueryHandler(self.command_createorder_slippage, pattern='^[^:]*$'),
                 ],
             },
             fallbacks=[CommandHandler('cancelorder', self.command_cancelorder)],
@@ -153,7 +157,8 @@ class CreateOrderConversation:
                 + f'Next, please indicate the price in <b>BNB per {token.symbol}</b> '
                 + 'at which the order will activate.\n'
                 + 'You can use scientific notation like <code>1.3E-4</code> if you want.\n'
-                + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.'
+                + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.',
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]]),
             )
             return self.next.PRICE
 
@@ -168,7 +173,8 @@ class CreateOrderConversation:
             f'OK, the order will use trailing stop loss with {callback_rate}% callback.\n'
             + f'Next, please indicate the price in <b>BNB per {token.symbol}</b> at which the order will activate.\n'
             + 'You can use scientific notation like <code>1.3E-4</code> if you want.\n'
-            + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.'
+            + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.',
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]]),
         )
         return self.next.PRICE
 
@@ -191,14 +197,23 @@ class CreateOrderConversation:
             f'OK, the order will use trailing stop loss with {callback_rate}% callback.\n'
             + f'Next, please indicate the price in <b>BNB per {token.symbol}</b> at which the order will activate.\n'
             + 'You can use scientific notation like <code>1.3E-4</code> if you want.\n'
-            + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.'
+            + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.',
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]]),
         )
         return self.next.PRICE
 
     @check_chat_id
     def command_createorder_price(self, update: Update, context: CallbackContext):
-        assert update.message and update.message.text and update.effective_chat and context.user_data is not None
+        assert update.effective_chat and context.user_data is not None
         order = context.user_data['createorder']
+        if update.message is None:  # we got a cancel callback
+            assert update.callback_query
+            query = update.callback_query
+            query.answer()
+            del context.user_data['createorder']
+            context.bot.send_message(chat_id=update.effective_chat.id, text='⚠️ OK, I\'m cancelling this command.')
+            return ConversationHandler.END
+        assert update.message and update.message.text
         try:
             price = Decimal(update.message.text.strip())
         except Exception:
@@ -207,36 +222,79 @@ class CreateOrderConversation:
         token = self.parent.watchers[order['token_address']]
         order['limit_price'] = str(price)
         unit = 'BNB' if order['type'] == 'buy' else token.symbol
-        # if selling tokens, add options 25/50/75/100% with buttons
         balance = (
             self.net.get_bnb_balance()
             if order['type'] == 'buy'
             else self.net.get_token_balance(token_address=token.address)
         )
+        # if selling tokens, add options 25/50/75/100% with buttons
+        reply_markup = (
+            InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton('25%', callback_data='0.25'),
+                        InlineKeyboardButton('50%', callback_data='0.5'),
+                        InlineKeyboardButton('75%', callback_data='0.75'),
+                        InlineKeyboardButton('100%', callback_data='1.0'),
+                    ],
+                    [
+                        InlineKeyboardButton('❌ Cancel', callback_data='cancel'),
+                    ],
+                ]
+            )
+            if order['type'] == 'sell'
+            else InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]])
+        )
         update.message.reply_html(
-            f'OK, I will {order["type"]} when the price of {token.symbol} reaches {price:.6g} BNB per token'
-            + ' BNB per token.\n'
+            f'OK, I will {order["type"]} when the price of {token.symbol} reaches {price:.6g} BNB per token\n.'
             + f'Next, how much {unit} do you want me to use for {order["type"]}ing?\n'
             + 'You can use scientific notation like <code>1.3E-4</code> if you want.\n'
-            + f'Current balance: <b>{balance:.6g} {unit}</b>'
+            + f'Current balance: <b>{balance:.6g} {unit}</b>',
+            reply_markup=reply_markup,
         )
         return self.next.AMOUNT
 
     @check_chat_id
     def command_createorder_amount(self, update: Update, context: CallbackContext):
-        assert update.message and update.message.text and update.effective_chat and context.user_data is not None
+        assert update.effective_chat and context.user_data is not None
         order = context.user_data['createorder']
-        try:
-            amount = Decimal(update.message.text.strip())
-        except Exception:
-            update.message.reply_html('⚠️ The amount you inserted is not valid. Try again:')
-            return self.next.AMOUNT
         token = self.parent.watchers[order['token_address']]
+        if update.message is None:  # we got a button callback, either cancel or fraction of balance
+            assert update.callback_query
+            query = update.callback_query
+            query.answer()
+            if query.data == 'cancel':
+                del context.user_data['createorder']
+                query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
+                return ConversationHandler.END
+            assert query.data is not None
+            try:
+                balance_fraction = Decimal(query.data)
+            except Exception:
+                del context.user_data['createorder']
+                query.edit_message_text(text='⛔ The callback rate is not recognized.')
+                return ConversationHandler.END
+            balance = self.net.get_token_balance(token_address=token.address)
+            amount = balance_fraction * balance
+        else:
+            assert update.message and update.message.text
+            try:
+                amount = Decimal(update.message.text.strip())
+            except Exception:
+                update.message.reply_html('⚠️ The amount you inserted is not valid. Try again:')
+                return self.next.AMOUNT
         decimals = 18 if order['type'] == 'buy' else token.decimals
-        unit = 'BNB' if order['type'] == 'buy' else token.symbol
+        unit = f'BNB worth of {token.symbol}' if order['type'] == 'buy' else token.symbol
         order['amount'] = str(int(amount * Decimal(10 ** decimals)))
-        update.message.reply_html(f'OK, I will {order["type"]} {amount:g} {unit} when the condition is reached.')
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f'OK, I will {order["type"]} {amount:.6g} {unit} when the condition is reached.',
+        )
         return self.next.SLIPPAGE
+
+    @check_chat_id
+    def command_createorder_slippage(self, update: Update, context: CallbackContext):
+        return ConversationHandler.END
 
     @check_chat_id
     def command_cancelorder(self, update: Update, context: CallbackContext):
