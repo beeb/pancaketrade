@@ -17,7 +17,7 @@ from pancaketrade.network import Network
 from pancaketrade.persistence import db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.db import get_token_watchers, init_db
-from pancaketrade.utils.generic import check_chat_id
+from pancaketrade.utils.generic import chat_message, check_chat_id
 from pancaketrade.watchers import OrderWatcher, TokenWatcher
 
 
@@ -85,10 +85,13 @@ class TradeBot:
         self.updater.idle()
 
     @check_chat_id
-    def command_start(self, update: Update, _: CallbackContext):
+    def command_start(self, update: Update, context: CallbackContext):
         assert update.message and update.effective_chat
-        update.message.reply_html(
-            'Hi! You can start adding tokens that you want to trade with the <a href="/addtoken">/addtoken</a> command.'
+        chat_message(
+            update,
+            context,
+            text='Hi! You can start adding tokens that you want to trade with the '
+            + '<a href="/addtoken">/addtoken</a> command.',
         )
 
     @check_chat_id
@@ -112,12 +115,12 @@ class TradeBot:
         assert update.message
         error_msg = 'You need to provide the order ID number as argument to this command.'
         if context.args is None:
-            update.message.reply_html(error_msg)
+            chat_message(update, context, text=error_msg)
             return
         try:
             order_id = int(context.args[0])
         except Exception:
-            update.message.reply_html(error_msg)
+            chat_message(update, context, text=error_msg)
             return
         order: Optional[OrderWatcher] = None
         for token in self.watchers.values():
@@ -126,9 +129,9 @@ class TradeBot:
                     continue
                 order = o
         if not order:
-            update.message.reply_html('⛔️ Could not find order with this ID.')
+            chat_message(update, context, text='⛔️ Could not find order with this ID.')
             return
-        update.message.reply_html(order.long_repr())
+        chat_message(update, context, text=order.long_repr())
 
     def update_status(self):
         balance_bnb = self.net.get_bnb_balance()

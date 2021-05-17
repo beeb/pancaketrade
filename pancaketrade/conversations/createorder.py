@@ -95,6 +95,7 @@ class CreateOrderConversation:
             context,
             text=f'Creating order for token {token.name}.\nWhich type of order would you like to create?',
             reply_markup=reply_markup,
+            edit=False,
         )
         return self.next.TYPE
 
@@ -205,7 +206,7 @@ class CreateOrderConversation:
                 callback_rate = int(update.message.text.strip())
             except ValueError:
                 del context.user_data['createorder']
-                update.message.reply_html('⛔ The callback rate is not recognized.')
+                chat_message(update, context, text='⛔ The callback rate is not recognized.')
                 return ConversationHandler.END
         order['trailing_stop'] = callback_rate
         chat_message(
@@ -234,7 +235,7 @@ class CreateOrderConversation:
         try:
             price = Decimal(update.message.text.strip())
         except Exception:
-            update.message.reply_html('⚠️ The price you inserted is not valid. Try again:')
+            chat_message(update, context, text='⚠️ The price you inserted is not valid. Try again:')
             return self.next.PRICE
         token = self.parent.watchers[order['token_address']]
         order['limit_price'] = str(price)
@@ -262,8 +263,10 @@ class CreateOrderConversation:
             if order['type'] == 'sell'
             else InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]])
         )
-        update.message.reply_html(
-            f'OK, I will {order["type"]} when the price of {token.symbol} reaches {price:.6g} BNB per token.\n'
+        chat_message(
+            update,
+            context,
+            text=f'OK, I will {order["type"]} when the price of {token.symbol} reaches {price:.6g} BNB per token.\n'
             + f'Next, how much {unit} do you want me to use for {order["type"]}ing?\n'
             + f'You can use scientific notation like <code>{balance:.1E}</code> if you want.\n'
             + f'Current balance: <b>{balance:.6g} {unit}</b>',
@@ -298,7 +301,7 @@ class CreateOrderConversation:
             try:
                 amount = Decimal(update.message.text.strip())
             except Exception:
-                update.message.reply_html('⚠️ The amount you inserted is not valid. Try again:')
+                chat_message(update, context, text='⚠️ The amount you inserted is not valid. Try again:')
                 return self.next.AMOUNT
         decimals = 18 if order['type'] == 'buy' else token.decimals
         unit = f'BNB worth of {token.symbol}' if order['type'] == 'buy' else token.symbol
@@ -360,7 +363,7 @@ class CreateOrderConversation:
                 slippage_percent = int(update.message.text.strip())
             except ValueError:
                 del context.user_data['createorder']
-                update.message.reply_html('⛔ The slippage is not recognized.')
+                chat_message(update, context, text='⛔ The slippage is not recognized.')
                 return ConversationHandler.END
         order['slippage'] = slippage_percent
         network_gas_price = Decimal(self.net.w3.eth.gas_price) / Decimal(10 ** 9)
@@ -421,11 +424,13 @@ class CreateOrderConversation:
                 gas_price_gwei = Decimal(update.message.text.strip())
             except ValueError:
                 del context.user_data['createorder']
-                update.message.reply_html('⛔ The gas price is not recognized.')
+                chat_message(update, context, text='⛔ The gas price is not recognized.')
                 return self.next.GAS
         order['gas_price'] = str(Web3.toWei(gas_price_gwei, 'gwei'))
-        update.message.reply_html(
-            text=f'OK, the order will use {gas_price_gwei:.6g} Gwei for gas price.\nConfirm the order below!'
+        chat_message(
+            update,
+            context,
+            text=f'OK, the order will use {gas_price_gwei:.6g} Gwei for gas price.\nConfirm the order below!',
         )
         return self.print_summary(update, context)
 

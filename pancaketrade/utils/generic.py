@@ -65,20 +65,18 @@ def chat_message(
     reply_markup: Optional[InlineKeyboardMarkup] = None,
 ):
     assert update.effective_chat
-    if edit and update.callback_query is not None:
-        query = update.callback_query
-        query.edit_message_text(
-            text=text,
-            reply_markup=reply_markup,
-        )
-        return
-    elif not edit and update.callback_query is not None:
-        context.dispatcher.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
-        return
-    elif edit and update.message is not None:
-        update.message.edit_text(text=text, reply_markup=reply_markup)
-        return
-    # not edit and update.message is not None:
+    if update.callback_query is not None:
+        if edit:
+            query = update.callback_query
+            query.edit_message_text(
+                text=text,
+                reply_markup=reply_markup,
+            )
+            return
+        else:
+            context.dispatcher.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
+            return
+    # always reply to normal messages
     assert update.message is not None
     update.message.reply_html(text=text, reply_markup=reply_markup)
 
