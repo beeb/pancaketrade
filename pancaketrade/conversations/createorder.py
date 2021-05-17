@@ -65,7 +65,7 @@ class CreateOrderConversation:
             },
             fallbacks=[CommandHandler('cancelorder', self.command_cancelorder)],
             name='createorder_conversation',
-            conversation_timeout=120,
+            conversation_timeout=600,
         )
 
     @check_chat_id
