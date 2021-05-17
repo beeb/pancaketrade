@@ -72,6 +72,7 @@ class TradeBot:
             ('order', 'display detailled order information. Pass the order ID as argument.'),
         ]
         self.dispatcher.bot.set_my_commands(commands=commands)
+        self.dispatcher.add_error_handler(self.error_handler)
 
     def start_status_update(self):
         trigger = IntervalTrigger(seconds=30)
@@ -95,19 +96,20 @@ class TradeBot:
         )
 
     @check_chat_id
-    def command_status(self, update: Update, _: CallbackContext):
+    def command_status(self, update: Update, context: CallbackContext):
         assert update.message and update.effective_chat
         balance_bnb = self.net.get_bnb_balance()
         price_bnb = self.net.get_bnb_price()
-        stat_msg = update.message.reply_html(
-            '<u>STATUS</u>\n' + f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})'
+        stat_msg = context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text='<u>STATUS</u>\n' + f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})',
         )
         self.last_status_message_id = stat_msg.message_id
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
         for token in sorted_tokens:
             status, buttons = self.get_token_status(token)
             reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
-            msg = update.message.reply_html(status, reply_markup=reply_markup)
+            msg = context.bot.send_message(chat_id=update.effective_chat.id, text=status, reply_markup=reply_markup)
             self.watchers[token.address].last_status_message_id = msg.message_id
 
     @check_chat_id
@@ -189,3 +191,7 @@ class TradeBot:
             + '\n'.join(orders)
         )
         return message, buttons
+
+    def error_handler(self, update: Update, context: CallbackContext) -> None:
+        logger.error('Exception while handling an update')
+        logger.opt(raw=True).error(context.error)

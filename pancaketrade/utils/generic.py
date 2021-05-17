@@ -61,7 +61,7 @@ def chat_message(
     update: Update,
     context: CallbackContext,
     text: str,
-    edit: bool = False,
+    edit: bool = True,
     reply_markup: Optional[InlineKeyboardMarkup] = None,
 ):
     assert update.effective_chat
@@ -74,11 +74,11 @@ def chat_message(
             )
             return
         else:
-            context.dispatcher.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
+            context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
             return
     # always reply to normal messages
     assert update.message is not None
-    update.message.reply_html(text=text, reply_markup=reply_markup)
+    context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
 
 
 def start_in_thread(func: Callable, args: Iterable[Any] = []) -> None:
