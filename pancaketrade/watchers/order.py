@@ -7,13 +7,16 @@ from pancaketrade.network import Network
 from pancaketrade.persistence import Order, Token
 from pancaketrade.utils.generic import start_in_thread
 from web3.types import Wei
+from telegram.ext import Dispatcher
 
 
 class OrderWatcher:
-    def __init__(self, order_record: Order, net: Network):
+    def __init__(self, order_record: Order, net: Network, dispatcher: Dispatcher, chat_id: int):
         self.order_record = order_record
         self.token_record: Token = order_record.token
         self.net = net
+        self.dispatcher = dispatcher
+        self.chat_id = chat_id
 
         self.type = order_record.type  # buy (tokens for BNB) or sell (tokens for BNB)
         self.limit_price = Decimal(order_record.limit_price)  # decimal stored as string
@@ -133,8 +136,17 @@ class OrderWatcher:
         )
         if not res:
             logger.error(f'Transaction failed at {txhash}')
+            self.dispatcher.bot.send_message(
+                chat_id=self.chat_id,
+                text=f'⛔️ Transaction failed at <a href="https://bscscan.com/tx/{txhash}">{txhash}</a>',
+            )
             return
         logger.success(f'Buy transaction succeeded. Received {tokens_out:.3g} {self.token_record.symbol}')
+        self.dispatcher.bot.send_message(
+            chat_id=self.chat_id,
+            text=f'✅ Got {tokens_out:.3g} {self.token_record.symbol} at '
+            + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash}</a>',
+        )
         self.order_record.delete_instance()
         self.finished = True  # will trigger deletion of the object
 

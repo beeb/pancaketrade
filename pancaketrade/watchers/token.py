@@ -32,7 +32,13 @@ class TokenWatcher:
         self.name = emoji + self.symbol
         self.default_slippage = token_record.default_slippage
         self.orders: List[OrderWatcher] = [
-            OrderWatcher(order_record=order_record, net=self.net) for order_record in orders
+            OrderWatcher(
+                order_record=order_record,
+                net=self.net,
+                dispatcher=self.dispatcher,
+                chat_id=self.config.secrets.admin_chat_id,
+            )
+            for order_record in orders
         ]
         self.interval = self.config.monitor_interval
         self.scheduler = BackgroundScheduler(

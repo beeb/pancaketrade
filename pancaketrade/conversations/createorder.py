@@ -457,7 +457,7 @@ class CreateOrderConversation:
 
     @check_chat_id
     def command_createorder_summary(self, update: Update, context: CallbackContext):
-        assert update.callback_query and context.user_data is not None
+        assert update.effective_chat and update.callback_query and context.user_data is not None
         query = update.callback_query
         query.answer()
         if query.data != 'ok':
@@ -478,7 +478,9 @@ class CreateOrderConversation:
         finally:
             del context.user_data['createorder']
             db.close()
-        order = OrderWatcher(order_record=order_record, net=self.net)
+        order = OrderWatcher(
+            order_record=order_record, net=self.net, dispatcher=context.dispatcher, chat_id=update.effective_chat.id
+        )
         token.orders.append(order)
         query.edit_message_text('✅ Order was added successfully!')
         return ConversationHandler.END
