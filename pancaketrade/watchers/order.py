@@ -154,14 +154,14 @@ class OrderWatcher:
             logger.error(f'Transaction failed at {txhash}')
             self.dispatcher.bot.send_message(
                 chat_id=self.chat_id,
-                text=f'⛔️ Transaction failed at <a href="https://bscscan.com/tx/{txhash}">{txhash}</a>',
+                text=f'⛔️ Transaction failed at <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}...</a>',
             )
             return
         logger.success(f'Buy transaction succeeded. Received {tokens_out:.3g} {self.token_record.symbol}')
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id,
             text=f'✅ Got {tokens_out:.3g} {self.token_record.symbol} at '
-            + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash}</a>',
+            + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}...</a>',
         )
         self.order_record.delete_instance()
         self.finished = True  # will trigger deletion of the object
