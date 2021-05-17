@@ -284,10 +284,11 @@ class Network:
             if log['address'] != token_address:
                 continue
             # topic for transfer function
-            topic = Web3.toBytes(hexstr='0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef')
-            if log['topics'][0] != topic:
+            if log['topics'][0] != HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'):
                 continue
-            if log['topics'][2] != Web3.toBytes(hexstr=self.wallet):  # transfer to our wallet
+            if len(log['topics']) < 3:
+                continue
+            if Web3.toInt(primitive=log['topics'][2]) != Web3.toInt(hexstr=self.wallet):  # transfer to our wallet
                 continue
             out_token_wei = Web3.toWei(Web3.toInt(hexstr=log['data']), unit='wei')
             out_token = Decimal(out_token_wei) / Decimal(10 ** self.get_token_decimals(token_address))
@@ -355,10 +356,13 @@ class Network:
             if log['address'] != self.addr.wbnb:
                 continue
             # topic for withdrawal function
-            topic = Web3.toBytes(hexstr='0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65')
-            if log['topics'][0] != topic:
+            if log['topics'][0] != HexBytes('0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65'):
                 continue
-            if log['topics'][1] != Web3.toBytes(hexstr=router_contract.address):  # transfer to PcS router
+            if len(log['topics']) < 2:
+                continue
+            if Web3.toInt(primitive=log['topics'][1]) != Web3.toInt(
+                hexstr=router_contract.address
+            ):  # transfer to PcS router
                 continue
             out_bnb_wei = Web3.toWei(Web3.toInt(hexstr=log['data']), unit='wei')
             out_bnb = Decimal(out_bnb_wei) / Decimal(10 ** 18)
