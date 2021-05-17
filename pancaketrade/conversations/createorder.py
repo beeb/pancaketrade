@@ -303,7 +303,8 @@ class CreateOrderConversation:
                 chat_message(update, context, text='⚠️ The amount you inserted is not valid. Try again:')
                 return self.next.AMOUNT
         decimals = 18 if order['type'] == 'buy' else token.decimals
-        unit = f'BNB worth of {token.symbol}' if order['type'] == 'buy' else token.symbol
+        bnb_price = self.net.get_bnb_price()
+        unit = f'BNB worth of {token.symbol} (${amount * bnb_price:.2f})' if order['type'] == 'buy' else token.symbol
         order['amount'] = str(int(amount * Decimal(10 ** decimals)))
         reply_markup = InlineKeyboardMarkup(
             inline_keyboard=[
@@ -451,11 +452,12 @@ class CreateOrderConversation:
             if order["gas_price"] is None
             else f'network default {order["gas_price"]} Gwei'
         )
+        usd_amount = f' (${self.net.get_bnb_price() * amount:.2f})' if order['type'] == 'buy' else ''
         message = (
             '<u>Preview:</u>\n'
             + f'{token.name} - {type_name}\n'
             + trailing
-            + f'Amount: {amount:.6g} {unit}\n'
+            + f'Amount: {amount:.6g} {unit}{usd_amount}\n'
             + f'Price {comparision} {Decimal(order["limit_price"]):.3g} BNB per token\n'
             + f'Slippage: {order["slippage"]}%\n'
             + f'Gas: {gas_price}'
