@@ -259,13 +259,13 @@ class Network:
         slippage_ratio = (Decimal(100) - Decimal(slippage_percent)) / Decimal(100)
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith('+'):
-            offset = Web3.toWei(Decimal(gas_price) * Decimal(10 ** 9))
+            offset = Web3.toWei(Decimal(gas_price) * Decimal(10 ** 9), unit='wei')
             final_gas_price += offset
         elif gas_price is not None:
-            final_gas_price = Web3.toWei(gas_price)
+            final_gas_price = Web3.toWei(gas_price, unit='wei')
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
         predicted_out = router_contract.functions.getAmountsOut(amount_bnb, [self.addr.wbnb, token_address]).call()[-1]
-        min_output_tokens = Web3.toWei(slippage_ratio * predicted_out)
+        min_output_tokens = Web3.toWei(slippage_ratio * predicted_out, unit='wei')
         receipt = self.buy_tokens_with_params(
             token_address=token_address,
             amount_bnb=amount_bnb,
@@ -289,7 +289,7 @@ class Network:
                 continue
             if log['topics'][2] != Web3.toBytes(hexstr=self.wallet):  # transfer to our wallet
                 continue
-            out_token_wei = Web3.toWei(Web3.toInt(hexstr=log['data']))
+            out_token_wei = Web3.toWei(Web3.toInt(hexstr=log['data']), unit='wei')
             out_token = Decimal(out_token_wei) / Decimal(10 ** self.get_token_decimals(token_address))
             amount_out += out_token
         logger.success(f'Buy transaction succeeded at tx {txhash}')
@@ -328,15 +328,15 @@ class Network:
         slippage_ratio = (Decimal(100) - Decimal(slippage_percent)) / Decimal(100)
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith('+'):
-            offset = Web3.toWei(Decimal(gas_price) * Decimal(10 ** 9))
+            offset = Web3.toWei(Decimal(gas_price) * Decimal(10 ** 9), unit='wei')
             final_gas_price += offset
         elif gas_price is not None:
-            final_gas_price = Web3.toWei(gas_price)
+            final_gas_price = Web3.toWei(gas_price, unit='wei')
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
         predicted_out = router_contract.functions.getAmountsOut(amount_tokens, [token_address, self.addr.wbnb]).call()[
             -1
         ]
-        min_output_bnb = Web3.toWei(slippage_ratio * predicted_out)
+        min_output_bnb = Web3.toWei(slippage_ratio * predicted_out, unit='wei')
         receipt = self.sell_tokens_with_params(
             token_address=token_address,
             amount_tokens=amount_tokens,
@@ -360,7 +360,7 @@ class Network:
                 continue
             if log['topics'][1] != Web3.toBytes(hexstr=router_contract.address):  # transfer to PcS router
                 continue
-            out_bnb_wei = Web3.toWei(Web3.toInt(hexstr=log['data']))
+            out_bnb_wei = Web3.toWei(Web3.toInt(hexstr=log['data']), unit='wei')
             out_bnb = Decimal(out_bnb_wei) / Decimal(10 ** 18)
             amount_out += out_bnb
         logger.success(f'Sell transaction succeeded at tx {txhash}')

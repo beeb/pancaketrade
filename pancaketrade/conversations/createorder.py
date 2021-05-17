@@ -425,7 +425,7 @@ class CreateOrderConversation:
                 del context.user_data['createorder']
                 chat_message(update, context, text='⛔ The gas price is not recognized.')
                 return self.next.GAS
-        order['gas_price'] = str(Web3.toWei(gas_price_gwei, 'gwei'))
+        order['gas_price'] = str(Web3.toWei(gas_price_gwei, unit='gwei'))
         chat_message(
             update,
             context,
