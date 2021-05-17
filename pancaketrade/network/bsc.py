@@ -310,8 +310,8 @@ class Network:
         )
         try:
             print(func.estimateGas())
-        except Exception:
-            pass
+        except Exception as e:
+            print(e)
         params = self.get_tx_params(value=amount_bnb, gas=gas_limit, gas_price=gas_price)
         tx = self.build_and_send_tx(func=func, tx_params=params)
         return self.w3.eth.wait_for_transaction_receipt(tx, timeout=60)
@@ -381,8 +381,8 @@ class Network:
         )
         try:
             print(func.estimateGas())
-        except Exception:
-            pass
+        except Exception as e:
+            print(e)
         params = self.get_tx_params(value=Wei(0), gas=gas_limit, gas_price=gas_price)
         tx = self.build_and_send_tx(func=func, tx_params=params)
         return self.w3.eth.wait_for_transaction_receipt(tx, timeout=60)
