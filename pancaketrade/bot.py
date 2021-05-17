@@ -52,7 +52,7 @@ class TradeBot:
             job_defaults={
                 'coalesce': True,
                 'max_instances': 1,
-                'misfire_grace_time': 8,
+                'misfire_grace_time': 20,
             }
         )
         self.start_status_update()
@@ -72,7 +72,7 @@ class TradeBot:
         self.dispatcher.bot.set_my_commands(commands=commands)
 
     def start_status_update(self):
-        trigger = IntervalTrigger(seconds=10)
+        trigger = IntervalTrigger(seconds=30)
         self.status_scheduler.add_job(self.update_status, trigger=trigger)
         self.status_scheduler.start()
 

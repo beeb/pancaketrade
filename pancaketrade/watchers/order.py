@@ -149,7 +149,7 @@ class OrderWatcher:
         if not res:
             logger.error(f'Transaction failed at {txhash}')
             return
-        logger.success(f'Buy transaction succeeded. Received {bnb_out:.3g} BNB')
+        logger.success(f'Sell transaction succeeded. Received {bnb_out:.3g} BNB')
         self.order_record.delete_instance()
         self.finished = True  # will trigger deletion of the object
 

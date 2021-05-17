@@ -59,7 +59,11 @@ class TokenWatcher:
         else:
             buy_price = sell_price
             buy_v2 = sell_v2
-        for order in self.orders:
+        indices_to_remove: List[int] = []
+        for i, order in enumerate(self.orders):
+            if order.finished:
+                indices_to_remove.append(i)
+                continue
             v2 = buy_v2 if order.type == 'buy' else sell_v2
             if not self.net.is_approved(token_address=self.address, v2=v2):
                 version = 'v2' if v2 else 'v1'
@@ -74,3 +78,4 @@ class TokenWatcher:
                 else:
                     msg.edit_text(text='⛔ Approval failed')
             order.price_update(sell_price=sell_price, buy_price=buy_price, sell_v2=sell_v2, buy_v2=buy_v2)
+        self.orders = [o for i, o in enumerate(self.orders) if i not in indices_to_remove]
