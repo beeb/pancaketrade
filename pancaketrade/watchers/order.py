@@ -160,8 +160,16 @@ class OrderWatcher:
         )
         if not res:
             logger.error(f'Transaction failed at {txhash}')
+            self.dispatcher.bot.send_message(
+                chat_id=self.chat_id,
+                text=f'⛔️ Transaction failed at <a href="https://bscscan.com/tx/{txhash}">{txhash}</a>',
+            )
             return
         logger.success(f'Sell transaction succeeded. Received {bnb_out:.3g} BNB')
+        self.dispatcher.bot.send_message(
+            chat_id=self.chat_id,
+            text=f'✅ Got {bnb_out:.3g} BNB at ' + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash}</a>',
+        )
         self.order_record.delete_instance()
         self.finished = True  # will trigger deletion of the object
 
