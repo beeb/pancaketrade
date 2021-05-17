@@ -256,6 +256,10 @@ class Network:
         v2: bool = True,
         gas_limit: Wei = Wei(400000),
     ) -> Tuple[bool, Decimal, str]:
+        balance_bnb = self.w3.eth.get_balance(self.wallet)
+        if amount_bnb > balance_bnb - Wei(2000000000000000):  # leave 0.002 BNB for future gas fees
+            logger.error('Not enough BNB balance')
+            return False, Decimal(0), ''
         slippage_ratio = (Decimal(100) - Decimal(slippage_percent)) / Decimal(100)
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith('+'):
@@ -326,6 +330,12 @@ class Network:
         v2: bool = True,
         gas_limit: Wei = Wei(400000),
     ) -> Tuple[bool, Decimal, str]:
+        balance_tokens = Web3.toWei(
+            self.get_token_balance(token_address=token_address)
+            * Decimal(10 ** self.get_token_decimals(token_address=token_address)),
+            unit='wei',
+        )
+        amount_tokens = min(amount_tokens, balance_tokens)  # partially fill order if possible
         slippage_ratio = (Decimal(100) - Decimal(slippage_percent)) / Decimal(100)
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith('+'):
