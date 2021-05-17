@@ -34,13 +34,14 @@ class OrderWatcher:
 
     def __repr__(self) -> str:
         type_name = self.get_type_name()
-        comparision = self.get_comparison_symbol()
+        comparison = self.get_comparison_symbol()
         amount = self.get_human_amount()
         unit = self.get_amount_unit()
         trailing = f' tsl {self.trailing_stop}%' if self.trailing_stop is not None else ''
         order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
+        icon = '🟢' if self.type == 'buy' else '🔴'
         return (
-            f'{order_id} {self.token_record.symbol} {comparision} {self.limit_price:.3g} BNB - '
+            f'{icon} {order_id} {self.token_record.symbol} {comparison} {self.limit_price:.3g} BNB - '
             + f'<b>{type_name}</b> {amount:.6g} {unit}{trailing}'
         )
 
