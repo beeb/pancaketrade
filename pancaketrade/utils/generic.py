@@ -2,10 +2,10 @@
 import functools
 import logging
 import threading
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Optional
 
 from loguru import logger
-from telegram import Update
+from telegram import InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext
 
 
@@ -55,6 +55,32 @@ def check_chat_id(func: Callable) -> Callable:
         context.bot.send_message(chat_id=chat_id, text='This bot is not public, you are not allowed to use it.')
 
     return wrapper_check_chat_id
+
+
+def chat_message(
+    update: Update,
+    context: CallbackContext,
+    text: str,
+    edit: bool = False,
+    reply_markup: Optional[InlineKeyboardMarkup] = None,
+):
+    assert update.effective_chat
+    if edit and update.callback_query is not None:
+        query = update.callback_query
+        query.edit_message_text(
+            text=text,
+            reply_markup=reply_markup,
+        )
+        return
+    elif not edit and update.callback_query is not None:
+        context.dispatcher.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
+        return
+    elif edit and update.message is not None:
+        update.message.edit_text(text=text, reply_markup=reply_markup)
+        return
+    # not edit and update.message is not None:
+    assert update.message is not None
+    update.message.reply_html(text=text, reply_markup=reply_markup)
 
 
 def start_in_thread(func: Callable, args: Iterable[Any] = []) -> None:

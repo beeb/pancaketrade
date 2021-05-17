@@ -4,7 +4,7 @@ from pancaketrade.network import Network
 from pancaketrade.persistence import Token, db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.db import token_exists
-from pancaketrade.utils.generic import check_chat_id
+from pancaketrade.utils.generic import check_chat_id, chat_message
 from pancaketrade.watchers import TokenWatcher
 from peewee import IntegrityError
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -111,9 +111,11 @@ class AddTokenConversation:
         query.answer()
         add = context.user_data['addtoken']
         add['icon'] = None
-        query.edit_message_text(
-            f'Alright, the token will show as <b>"{add["symbol"]}"</b>. '
-            + 'What is the default slippage in % to use for swapping on PancakeSwap?'
+        chat_message(
+            update,
+            context,
+            text=f'Alright, the token will show as <b>"{add["symbol"]}"</b>. '
+            + 'What is the default slippage in % to use for swapping on PancakeSwap?',
         )
         return self.next.SLIPPAGE
 
@@ -165,5 +167,5 @@ class AddTokenConversation:
     def command_canceltoken(self, update: Update, context: CallbackContext):
         assert update.effective_chat and context.user_data is not None
         del context.user_data['addtoken']
-        context.bot.send_message(chat_id=update.effective_chat.id, text='⚠️ OK, I\'m cancelling this command.')
+        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
         return ConversationHandler.END

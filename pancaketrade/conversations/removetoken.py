@@ -3,7 +3,7 @@ from typing import List, NamedTuple
 from pancaketrade.network import Network
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.db import remove_token
-from pancaketrade.utils.generic import check_chat_id
+from pancaketrade.utils.generic import chat_message, check_chat_id
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, ConversationHandler
 
@@ -49,12 +49,13 @@ class RemoveTokenConversation:
         query = update.callback_query
         query.answer()
         if query.data == 'cancel':
-            query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
+            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
             return ConversationHandler.END
         assert query.data
         token = self.parent.watchers[query.data]
-        context.bot.send_message(
-            chat_id=update.effective_chat.id,
+        chat_message(
+            update,
+            context,
             text=f'Are you sure you want to delete {token.name}?',
             reply_markup=InlineKeyboardMarkup(
                 [
@@ -68,21 +69,21 @@ class RemoveTokenConversation:
         return self.next.TOKENCHOICE
 
     @check_chat_id
-    def command_removetoken_tokenchoice(self, update: Update, _: CallbackContext):
+    def command_removetoken_tokenchoice(self, update: Update, context: CallbackContext):
         assert update.callback_query
         query = update.callback_query
         query.answer()
         if query.data == 'cancel':
-            query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
+            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
             return ConversationHandler.END
         remove_token(self.parent.watchers[query.data].token_record)
         token_name = self.parent.watchers[query.data].name
         del self.parent.watchers[query.data]
-        query.edit_message_text(f'✅ Alright, the token <b>"{token_name}"</b> was removed.')
+        chat_message(update, context, text=f'✅ Alright, the token <b>"{token_name}"</b> was removed.')
         return ConversationHandler.END
 
     @check_chat_id
     def command_cancelremovetoken(self, update: Update, context: CallbackContext):
         assert update.effective_chat
-        context.bot.send_message(chat_id=update.effective_chat.id, text='⚠️ OK, I\'m cancelling this command.')
+        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
         return ConversationHandler.END

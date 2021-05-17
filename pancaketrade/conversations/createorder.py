@@ -5,7 +5,7 @@ from typing import Mapping, NamedTuple
 from pancaketrade.network import Network
 from pancaketrade.persistence import Order, db
 from pancaketrade.utils.config import Config
-from pancaketrade.utils.generic import check_chat_id
+from pancaketrade.utils.generic import chat_message, check_chat_id
 from pancaketrade.watchers import OrderWatcher, TokenWatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -90,8 +90,9 @@ class CreateOrderConversation:
                 ],
             ]
         )
-        context.dispatcher.bot.send_message(
-            chat_id=update.effective_chat.id,
+        chat_message(
+            update,
+            context,
             text=f'Creating order for token {token.name}.\nWhich type of order would you like to create?',
             reply_markup=reply_markup,
         )
@@ -104,7 +105,7 @@ class CreateOrderConversation:
         query.answer()
         if query.data == 'cancel':
             del context.user_data['createorder']
-            query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
+            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
             return ConversationHandler.END
         order = context.user_data['createorder']
         if query.data == 'stop_loss':
@@ -116,8 +117,10 @@ class CreateOrderConversation:
             current_price, _ = self.net.get_token_price(
                 token_address=token.address, token_decimals=token.decimals, sell=True
             )
-            query.edit_message_text(
-                'OK, the order will sell as soon as the price is below target price.\n'
+            chat_message(
+                update,
+                context,
+                text='OK, the order will sell as soon as the price is below target price.\n'
                 + f'Next, please indicate the price in <b>BNB per {token.symbol}</b> '
                 + 'at which the order will activate.\n'
                 + f'You can use scientific notation like <code>{current_price:.1E}</code> if you want.\n'
@@ -133,7 +136,7 @@ class CreateOrderConversation:
             order['above'] = False  # below
         else:
             del context.user_data['createorder']
-            query.edit_message_text('⛔ That type of order is not supported.')
+            chat_message(update, context, text='⛔ That type of order is not supported.')
             return ConversationHandler.END
         reply_markup = InlineKeyboardMarkup(
             inline_keyboard=[
@@ -149,8 +152,10 @@ class CreateOrderConversation:
                 ],
             ]
         )
-        query.edit_message_text(
-            f'OK, the order will {order["type"]} when price is '
+        chat_message(
+            update,
+            context,
+            text=f'OK, the order will {order["type"]} when price is '
             + f'{"above" if order["above"] else "below"} target price.\n'
             + 'Do you want to enable trailing stop loss? If yes, what is the callback rate?\n'
             + 'You can also message me a custom value in percent.',
@@ -173,12 +178,14 @@ class CreateOrderConversation:
             assert query.data
             if query.data == 'cancel':
                 del context.user_data['createorder']
-                query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
+                chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
                 return ConversationHandler.END
             if query.data == 'None':
                 order['trailing_stop'] = None
-                query.edit_message_text(
-                    'OK, the order will use no trailing stop loss.\n'
+                chat_message(
+                    update,
+                    context,
+                    text='OK, the order will use no trailing stop loss.\n'
                     + f'Next, please indicate the price in <b>BNB per {token.symbol}</b> '
                     + 'at which the order will activate.\n'
                     + f'You can use scientific notation like <code>{current_price:.1E}</code> if you want.\n'
@@ -190,7 +197,7 @@ class CreateOrderConversation:
                 callback_rate = int(query.data)
             except ValueError:
                 del context.user_data['createorder']
-                query.edit_message_text('⛔ The callback rate is not recognized.')
+                chat_message(update, context, text='⛔ The callback rate is not recognized.')
                 return ConversationHandler.END
         else:
             assert update.message and update.message.text
@@ -201,8 +208,9 @@ class CreateOrderConversation:
                 update.message.reply_html('⛔ The callback rate is not recognized.')
                 return ConversationHandler.END
         order['trailing_stop'] = callback_rate
-        context.bot.send_message(
-            chat_id=update.effective_chat.id,
+        chat_message(
+            update,
+            context,
             text=f'OK, the order will use trailing stop loss with {callback_rate}% callback.\n'
             + f'Next, please indicate the price in <b>BNB per {token.symbol}</b> at which the order will activate.\n'
             + f'You can use scientific notation like <code>{current_price:.1E}</code> if you want.\n'
@@ -220,7 +228,7 @@ class CreateOrderConversation:
             query = update.callback_query
             query.answer()
             del context.user_data['createorder']
-            context.bot.send_message(chat_id=update.effective_chat.id, text='⚠️ OK, I\'m cancelling this command.')
+            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
             return ConversationHandler.END
         assert update.message and update.message.text
         try:
@@ -274,14 +282,14 @@ class CreateOrderConversation:
             query.answer()
             if query.data == 'cancel':
                 del context.user_data['createorder']
-                query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
+                chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
                 return ConversationHandler.END
             assert query.data is not None
             try:
                 balance_fraction = Decimal(query.data)
             except Exception:
                 del context.user_data['createorder']
-                query.edit_message_text(text='⛔ The callback rate is not recognized.')
+                chat_message(update, context, text='⛔ The callback rate is not recognized.')
                 return ConversationHandler.END
             balance = self.net.get_token_balance(token_address=token.address)
             amount = balance_fraction * balance
@@ -317,8 +325,9 @@ class CreateOrderConversation:
             ]
         )
 
-        context.bot.send_message(
-            chat_id=update.effective_chat.id,
+        chat_message(
+            update,
+            context,
             text=f'OK, I will {order["type"]} {amount:.6g} {unit} when the condition is reached.\n'
             + 'Next, please indicate the slippage in percent you want to use for this order.\n'
             + 'You can also message me a custom value in percent.',
@@ -337,13 +346,13 @@ class CreateOrderConversation:
             assert query.data
             if query.data == 'cancel':
                 del context.user_data['createorder']
-                query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
+                chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
                 return ConversationHandler.END
             try:
                 slippage_percent = int(query.data)
             except ValueError:
                 del context.user_data['createorder']
-                query.edit_message_text('⛔ The slippage is not recognized.')
+                chat_message(update, context, text='⛔ The slippage is not recognized.')
                 return ConversationHandler.END
         else:
             assert update.message and update.message.text
@@ -355,8 +364,9 @@ class CreateOrderConversation:
                 return ConversationHandler.END
         order['slippage'] = slippage_percent
         network_gas_price = Decimal(self.net.w3.eth.gas_price) / Decimal(10 ** 9)
-        context.bot.send_message(
-            chat_id=update.effective_chat.id,
+        chat_message(
+            update,
+            context,
             text=f'OK, the order will use slippage of {slippage_percent}%.\n'
             + 'Finally, please indicate the gas price in Gwei for this order.\n'
             + 'Choose "Default" to use the default network price at the moment '
@@ -389,15 +399,20 @@ class CreateOrderConversation:
             assert query.data
             if query.data == 'cancel':
                 del context.user_data['createorder']
-                query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
+                chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
                 return ConversationHandler.END
             elif query.data == 'None':
                 order['gas_price'] = None
-                query.edit_message_text('OK, the order will use default network gas price.\nConfirm the order below!')
+                chat_message(
+                    update, context, text='OK, the order will use default network gas price.\nConfirm the order below!'
+                )
             elif query.data.startswith('+'):
                 order['gas_price'] = query.data
-                query.edit_message_text(
-                    f'OK, the order will use default network gas price {query.data} Gwei.\nConfirm the order below!'
+                chat_message(
+                    update,
+                    context,
+                    text=f'OK, the order will use default network gas price {query.data} Gwei.\n'
+                    + 'Confirm the order below!',
                 )
             return self.print_summary(update, context)
         else:
@@ -441,8 +456,9 @@ class CreateOrderConversation:
             + f'Slippage: {order["slippage"]}%\n'
             + f'Gas: {gas_price}'
         )
-        context.bot.send_message(
-            chat_id=update.effective_chat.id,
+        chat_message(
+            update,
+            context,
             text=message,
             reply_markup=InlineKeyboardMarkup(
                 [
@@ -462,7 +478,7 @@ class CreateOrderConversation:
         query.answer()
         if query.data != 'ok':
             del context.user_data['createorder']
-            query.edit_message_text('⚠️ OK, I\'m cancelling this command.')
+            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
             return ConversationHandler.END
         add = context.user_data['createorder']
         token: TokenWatcher = self.parent.watchers[add['token_address']]
@@ -472,7 +488,7 @@ class CreateOrderConversation:
             with db.atomic():
                 order_record = Order.create(token=token.token_record, created=datetime.now(), **add)
         except Exception:
-            query.edit_message_text('⛔ Failed to create database record.')
+            chat_message(update, context, text='⛔ Failed to create database record.')
             del context.user_data['createorder']
             return ConversationHandler.END
         finally:
@@ -482,7 +498,7 @@ class CreateOrderConversation:
             order_record=order_record, net=self.net, dispatcher=context.dispatcher, chat_id=update.effective_chat.id
         )
         token.orders.append(order)
-        query.edit_message_text('✅ Order was added successfully!')
+        chat_message(update, context, text='✅ Order was added successfully!')
         return ConversationHandler.END
 
     def get_type_name(self, order: Mapping) -> str:
@@ -510,5 +526,5 @@ class CreateOrderConversation:
     def command_cancelorder(self, update: Update, context: CallbackContext):
         assert update.effective_chat and context.user_data is not None
         del context.user_data['createorder']
-        context.bot.send_message(chat_id=update.effective_chat.id, text='⚠️ OK, I\'m cancelling this command.')
+        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
         return ConversationHandler.END
