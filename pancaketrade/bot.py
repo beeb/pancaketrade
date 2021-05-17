@@ -18,7 +18,7 @@ from pancaketrade.persistence import db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.db import get_token_watchers, init_db
 from pancaketrade.utils.generic import check_chat_id
-from pancaketrade.watchers import TokenWatcher
+from pancaketrade.watchers import OrderWatcher, TokenWatcher
 
 
 class TradeBot:
@@ -61,6 +61,7 @@ class TradeBot:
     def setup_telegram(self):
         self.dispatcher.add_handler(CommandHandler('start', self.command_start))
         self.dispatcher.add_handler(CommandHandler('status', self.command_status))
+        self.dispatcher.add_handler(CommandHandler('order', self.command_order))
         for convo in self.convos.values():
             self.dispatcher.add_handler(convo.handler)
         commands = [
@@ -68,6 +69,7 @@ class TradeBot:
             ('addtoken', 'add a token that you want to trade'),
             ('removetoken', 'remove a token that you added previously'),
             ('cancelorder', 'cancel the current order creation/removal process (if bot is stuck for instance)'),
+            ('order', 'display detailled order information. Pass the order ID as argument.'),
         ]
         self.dispatcher.bot.set_my_commands(commands=commands)
 
@@ -104,6 +106,29 @@ class TradeBot:
             reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
             msg = update.message.reply_html(status, reply_markup=reply_markup)
             self.watchers[token.address].last_status_message_id = msg.message_id
+
+    @check_chat_id
+    def command_order(self, update: Update, context: CallbackContext):
+        assert update.message
+        error_msg = 'You need to provide the order ID number as argument to this command.'
+        if context.args is None:
+            update.message.reply_html(error_msg)
+            return
+        try:
+            order_id = int(context.args[0])
+        except Exception:
+            update.message.reply_html(error_msg)
+            return
+        order: Optional[OrderWatcher] = None
+        for token in self.watchers.values():
+            for o in token.orders:
+                if o.order_record.id != order_id:
+                    continue
+                order = o
+        if not order:
+            update.message.reply_html('⛔️ Could not find order with this ID.')
+            return
+        update.message.reply_html(order.long_repr())
 
     def update_status(self):
         balance_bnb = self.net.get_bnb_balance()
