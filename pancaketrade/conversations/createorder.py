@@ -304,7 +304,9 @@ class CreateOrderConversation:
                 return self.next.AMOUNT
         decimals = 18 if order['type'] == 'buy' else token.decimals
         bnb_price = self.net.get_bnb_price()
-        unit = f'BNB worth of {token.symbol} (${amount * bnb_price:.2f})' if order['type'] == 'buy' else token.symbol
+        limit_price = Decimal(order["limit_price"])
+        usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * limit_price * amount
+        unit = f'BNB worth of {token.symbol}' if order['type'] == 'buy' else token.symbol
         order['amount'] = str(int(amount * Decimal(10 ** decimals)))
         reply_markup = InlineKeyboardMarkup(
             inline_keyboard=[
@@ -331,7 +333,7 @@ class CreateOrderConversation:
         chat_message(
             update,
             context,
-            text=f'OK, I will {order["type"]} {amount:.6g} {unit} when the condition is reached.\n'
+            text=f'OK, I will {order["type"]} {amount:.6g} {unit} (~${usd_amount:.2f}) when the condition is reached.\n'
             + 'Next, please indicate the slippage in percent you want to use for this order.\n'
             + 'You can also message me a custom value in percent.',
             reply_markup=reply_markup,
@@ -452,13 +454,15 @@ class CreateOrderConversation:
             if order["gas_price"] is None
             else f'network default {order["gas_price"]} Gwei'
         )
-        usd_amount = f' (${self.net.get_bnb_price() * amount:.2f})' if order['type'] == 'buy' else ''
+        limit_price = Decimal(order["limit_price"])
+        bnb_price = self.net.get_bnb_price()
+        usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * limit_price * amount
         message = (
             '<u>Preview:</u>\n'
             + f'{token.name} - {type_name}\n'
             + trailing
-            + f'Amount: {amount:.6g} {unit}{usd_amount}\n'
-            + f'Price {comparision} {Decimal(order["limit_price"]):.3g} BNB per token\n'
+            + f'Amount: {amount:.6g} {unit} (${usd_amount:.2f})\n'
+            + f'Price {comparision} {limit_price:.3g} BNB per token\n'
             + f'Slippage: {order["slippage"]}%\n'
             + f'Gas: {gas_price}'
         )
