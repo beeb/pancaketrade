@@ -86,6 +86,9 @@ class OrderWatcher:
         elif self.trailing_stop and not self.above and (buy_price <= self.limit_price or self.min_price is not None):
             if self.min_price is None:
                 logger.info(f'Limit condition reached at price {buy_price:.3E} BNB')
+                self.dispatcher.bot.send_message(
+                    chat_id=self.chat_id, text=f'🔹 Order #{self.order_record.id} activated trailing stop loss.'
+                )
                 self.min_price = buy_price
             rise = ((buy_price / self.min_price) - Decimal(1)) * Decimal(100)
             if buy_price < self.min_price:
@@ -108,6 +111,9 @@ class OrderWatcher:
         elif self.trailing_stop and self.above and (sell_price >= self.limit_price or self.max_price is not None):
             if self.max_price is None:
                 logger.info(f'Limit condition reached at price {sell_price:.3E} BNB')
+                self.dispatcher.bot.send_message(
+                    chat_id=self.chat_id, text=f'🔹 Order #{self.order_record.id} activated trailing stop loss.'
+                )
                 self.max_price = sell_price
             drop = (Decimal(1) - (sell_price / self.max_price)) * Decimal(100)
             if sell_price > self.max_price:
@@ -123,9 +129,17 @@ class OrderWatcher:
         version = 'v2' if v2 else 'v1'
         if self.type == 'buy':
             logger.info(f'Buying tokens on {version}')
+            amount = Decimal(self.amount) / Decimal(10 ** 18)
+            self.dispatcher.bot.send_message(
+                chat_id=self.chat_id, text=f'🔸 Trying to buy for {amount:.3g} BNB of {self.token_record.symbol}...'
+            )
             start_in_thread(self.buy, args=(v2,))
         else:
             logger.info(f'Selling tokens on {version}')
+            amount = Decimal(self.amount) / Decimal(10 ** self.token_record.decimals)
+            self.dispatcher.bot.send_message(
+                chat_id=self.chat_id, text=f'🔸 Trying to sell {amount:.3g} {self.token_record.symbol}...'
+            )
             start_in_thread(self.sell, args=(v2,))
 
     def buy(self, v2: bool):
