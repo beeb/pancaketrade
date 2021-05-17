@@ -375,7 +375,7 @@ class CreateOrderConversation:
             text=f'OK, the order will use slippage of {slippage_percent}%.\n'
             + 'Finally, please indicate the gas price in Gwei for this order.\n'
             + 'Choose "Default" to use the default network price at the moment '
-            + f'of the transaction (currently {network_gas_price:.1g} Gwei)'
+            + f'of the transaction (currently {network_gas_price:.1g} Gwei) '
             + 'or message me the value.',
             reply_markup=InlineKeyboardMarkup(
                 [
