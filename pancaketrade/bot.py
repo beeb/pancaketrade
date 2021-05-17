@@ -194,4 +194,4 @@ class TradeBot:
 
     def error_handler(self, update: Update, context: CallbackContext) -> None:
         logger.error('Exception while handling an update')
-        logger.opt(raw=True).error(context.error)
+        logger.error(context.error)
