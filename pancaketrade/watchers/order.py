@@ -58,13 +58,15 @@ class OrderWatcher:
             if self.gas_price is None
             else f'network default {self.gas_price} Gwei'
         )
+        order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
         return (
-            f'{icon}{self.token_record.symbol} - (#{self.order_record.id}) {type_name}\n'
+            f'{icon}{self.token_record.symbol} - ({order_id}) {type_name}\n'
             + trailing
             + f'Amount: {amount:.6g} {unit}\n'
             + f'Price {comparision} {self.limit_price:.3g} BNB\n'
             + f'Slippage: {self.slippage}%\n'
-            + f'Gas: {gas_price}'
+            + f'Gas: {gas_price}\n'
+            + f'Created: {self.created}'
         )
 
     def price_update(self, sell_price: Decimal, buy_price: Decimal, sell_v2: bool, buy_v2: bool):
