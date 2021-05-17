@@ -153,11 +153,22 @@ class OrderWatcher:
             v2=v2,
         )
         if not res:
+            if txhash == '':
+                req_amount = Decimal(self.amount) / Decimal(10 ** 18)
+                self.dispatcher.bot.send_message(
+                    chat_id=self.chat_id,
+                    text=f'⛔️ Not enough BNB balance for this order (required {req_amount:.3g} BNB)',
+                )
+                self.order_record.delete_instance()
+                self.finished = True  # will trigger deletion of the object
+                return
             logger.error(f'Transaction failed at {txhash}')
             self.dispatcher.bot.send_message(
                 chat_id=self.chat_id,
                 text=f'⛔️ Transaction failed at <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}...</a>',
             )
+            self.order_record.delete_instance()
+            self.finished = True  # will trigger deletion of the object
             return
         logger.success(f'Buy transaction succeeded. Received {tokens_out:.3g} {self.token_record.symbol}')
         self.dispatcher.bot.send_message(
@@ -182,6 +193,8 @@ class OrderWatcher:
                 chat_id=self.chat_id,
                 text=f'⛔️ Transaction failed at <a href="https://bscscan.com/tx/{txhash}">{txhash}</a>',
             )
+            self.order_record.delete_instance()
+            self.finished = True  # will trigger deletion of the object
             return
         logger.success(f'Sell transaction succeeded. Received {bnb_out:.3g} BNB')
         self.dispatcher.bot.send_message(
