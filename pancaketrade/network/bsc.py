@@ -254,7 +254,7 @@ class Network:
         slippage_percent: int,
         gas_price: Optional[str],
         v2: bool = True,
-        gas_limit: Wei = Wei(300000),
+        gas_limit: Wei = Wei(400000),
     ) -> Tuple[bool, Decimal, str]:
         slippage_ratio = (Decimal(100) - Decimal(slippage_percent)) / Decimal(100)
         final_gas_price = self.w3.eth.gas_price
@@ -324,7 +324,7 @@ class Network:
         slippage_percent: int,
         gas_price: Optional[str],
         v2: bool = True,
-        gas_limit: Wei = Wei(300000),
+        gas_limit: Wei = Wei(400000),
     ) -> Tuple[bool, Decimal, str]:
         slippage_ratio = (Decimal(100) - Decimal(slippage_percent)) / Decimal(100)
         final_gas_price = self.w3.eth.gas_price
