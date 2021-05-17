@@ -74,14 +74,20 @@ class TokenWatcher:
             if not self.net.is_approved(token_address=self.address, v2=v2):
                 version = 'v2' if v2 else 'v1'
                 logger.info(f'Need to approve {self.symbol} for trading on PancakeSwap {version}.')
-                msg = self.dispatcher.bot.send_message(
+                self.dispatcher.bot.send_message(
                     chat_id=self.config.secrets.admin_chat_id,
                     text=f'Approving {self.symbol} for trading on PancakeSwap {version}...',
                 )
                 res = self.net.approve(token_address=self.address, v2=v2)
                 if res:
-                    msg.edit_text(text='✅ Approval successful!')
+                    self.dispatcher.bot.send_message(
+                        chat_id=self.config.secrets.admin_chat_id,
+                        text='✅ Approval successful!',
+                    )
                 else:
-                    msg.edit_text(text='⛔ Approval failed')
+                    self.dispatcher.bot.send_message(
+                        chat_id=self.config.secrets.admin_chat_id,
+                        text='⛔ Approval failed',
+                    )
             order.price_update(sell_price=sell_price, buy_price=buy_price, sell_v2=sell_v2, buy_v2=buy_v2)
         self.orders = [o for i, o in enumerate(self.orders) if i not in indices_to_remove]
