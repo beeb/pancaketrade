@@ -44,7 +44,6 @@ class AddTokenConversation:
             },
             fallbacks=[CommandHandler('canceltoken', self.command_canceltoken)],
             name='addtoken_conversation',
-            persistent=True,
             conversation_timeout=120,
         )
 
@@ -113,8 +112,8 @@ class AddTokenConversation:
     @check_chat_id
     def command_addtoken_noemoji(self, update: Update, context: CallbackContext):
         assert context.user_data is not None and update.callback_query
-        query = update.callback_query
-        query.answer()
+        # query = update.callback_query
+        # query.answer()
         add = context.user_data['addtoken']
         add['icon'] = None
         chat_message(

@@ -31,6 +31,8 @@ def check_chat_id(func: Callable) -> Callable:
 
     @functools.wraps(func)
     def wrapper_check_chat_id(this, update: Update, context: CallbackContext, *args, **kwargs):
+        if update.callback_query:
+            update.callback_query.answer()
         if update.effective_chat is None:
             logger.debug('No chat ID')
             return
@@ -50,8 +52,6 @@ def check_chat_id(func: Callable) -> Callable:
         context.bot.send_message(
             chat_id=this.config.secrets.admin_chat_id, text=f'Prevented user {chat_id} to interact.'
         )
-        if update.callback_query:
-            update.callback_query.answer()
         context.bot.send_message(chat_id=chat_id, text='This bot is not public, you are not allowed to use it.')
 
     return wrapper_check_chat_id

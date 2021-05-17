@@ -27,7 +27,6 @@ class RemoveTokenConversation:
             },
             fallbacks=[CommandHandler('cancelremovetoken', self.command_cancelremovetoken)],
             name='removetoken_conversation',
-            persistent=True,
             conversation_timeout=60,
         )
 
@@ -47,7 +46,7 @@ class RemoveTokenConversation:
     def command_removetoken_confirm(self, update: Update, context: CallbackContext):
         assert update.callback_query and update.effective_chat
         query = update.callback_query
-        query.answer()
+        # query.answer()
         if query.data == 'cancel':
             chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
             return ConversationHandler.END
@@ -72,7 +71,7 @@ class RemoveTokenConversation:
     def command_removetoken_tokenchoice(self, update: Update, context: CallbackContext):
         assert update.callback_query
         query = update.callback_query
-        query.answer()
+        # query.answer()
         if query.data == 'cancel':
             chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
             return ConversationHandler.END

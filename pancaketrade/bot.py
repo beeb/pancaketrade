@@ -5,7 +5,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from loguru import logger
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Update
-from telegram.ext import CallbackContext, CommandHandler, Defaults, PicklePersistence, Updater
+from telegram.ext import CallbackContext, CommandHandler, Defaults, Updater
 
 from pancaketrade.conversations import (
     AddTokenConversation,
@@ -35,8 +35,8 @@ class TradeBot:
             secrets=self.config.secrets,
         )
         defaults = Defaults(parse_mode=ParseMode.HTML, disable_web_page_preview=True, timeout=120)
-        persistence = PicklePersistence(filename='botpersistence')
-        self.updater = Updater(token=config.secrets.telegram_token, persistence=persistence, defaults=defaults)
+        # persistence = PicklePersistence(filename='botpersistence')
+        self.updater = Updater(token=config.secrets.telegram_token, persistence=None, defaults=defaults)
         self.dispatcher = self.updater.dispatcher
         self.convos = {
             'addtoken': AddTokenConversation(parent=self, config=self.config),

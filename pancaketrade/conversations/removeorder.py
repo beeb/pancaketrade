@@ -28,7 +28,6 @@ class RemoveOrderConversation:
             },
             fallbacks=[CommandHandler('cancelorder', self.command_cancelorder)],
             name='removeorder_conversation',
-            persistent=False,
             conversation_timeout=60,
         )
 
@@ -36,7 +35,7 @@ class RemoveOrderConversation:
     def command_removeorder(self, update: Update, context: CallbackContext):
         assert update.callback_query and update.effective_chat and context.user_data is not None
         query = update.callback_query
-        query.answer()
+        # query.answer()
         assert query.data
         token_address = query.data.split(':')[1]
         token: TokenWatcher = self.parent.watchers[token_address]
@@ -62,7 +61,7 @@ class RemoveOrderConversation:
     def command_removeorder_confirm(self, update: Update, context: CallbackContext):
         assert update.callback_query and update.effective_chat and context.user_data is not None
         query = update.callback_query
-        query.answer()
+        # query.answer()
         if query.data == 'cancel':
             del context.user_data['removeorder']
             chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
@@ -88,7 +87,7 @@ class RemoveOrderConversation:
     def command_removeorder_order(self, update: Update, context: CallbackContext):
         assert update.callback_query and context.user_data is not None
         query = update.callback_query
-        query.answer()
+        # query.answer()
         if query.data == 'cancel':
             del context.user_data['removeorder']
             chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
