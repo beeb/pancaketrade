@@ -1,0 +1,14 @@
+[Unit]
+Description=PancakeSwap Trading Bot
+After=network.target
+
+[Service]
+# Set WorkingDirectory and ExecStart to your file paths accordingly
+# NOTE: %h will be resolved to /home/<username>
+WorkingDirectory=%h/pancaketrade
+ExecStart=%h/pancaketrade/.venv/bin/trade
+Environment="WALLET_PK="
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
