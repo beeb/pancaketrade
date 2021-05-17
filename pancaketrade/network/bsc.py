@@ -330,11 +330,8 @@ class Network:
         v2: bool = True,
         gas_limit: Wei = Wei(400000),
     ) -> Tuple[bool, Decimal, str]:
-        balance_tokens = Web3.toWei(
-            self.get_token_balance(token_address=token_address)
-            * Decimal(10 ** self.get_token_decimals(token_address=token_address)),
-            unit='wei',
-        )
+        token_contract = self.get_token_contract(token_address=token_address)
+        balance_tokens = Wei(token_contract.functions.balanceOf(self.wallet).call())
         amount_tokens = min(amount_tokens, balance_tokens)  # partially fill order if possible
         slippage_ratio = (Decimal(100) - Decimal(slippage_percent)) / Decimal(100)
         final_gas_price = self.w3.eth.gas_price
