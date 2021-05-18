@@ -166,12 +166,13 @@ class TradeBot:
                 InlineKeyboardButton('➕ Create order...', callback_data=f'create_order:{token.address}'),
             ],
             [
-                InlineKeyboardButton('💰 Buy/Sell...', callback_data=f'buy_sell:{token.address}'),
                 InlineKeyboardButton('❗️ Sell all now!', callback_data=f'sell_all:{token.address}'),
+                InlineKeyboardButton('💰 Buy/Sell...', callback_data=f'buy_sell:{token.address}'),
             ],
         ]
         if len(token.orders):
-            buttons[0].append(
+            buttons[0].insert(
+                0,
                 InlineKeyboardButton('➖ Delete order...', callback_data=f'delete_order:{token.address}'),
             )
         token_balance = self.net.get_token_balance(token_address=token.address)
