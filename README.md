@@ -11,6 +11,7 @@ We strongly recommend you to have coding and Python knowledge. Do not hesitate t
 ## Requirements
 
 In order to use this bot, you will need the following:
+
 - A server or computer that can run the script continuously (linux or macOS)
 - Python version between 3.7.1 and 3.9.x
 - [Poetry](https://github.com/python-poetry/poetry)
@@ -35,10 +36,25 @@ cp config.example.yml config.yml
 
 Next, open the `config.yml` file with a text editor and populate the `wallet` and `secrets` section.
 
-Finally, run the bot
+The bot needs your wallet's private key in order to sign and execute orders on your behalf. You can either run the
+command below and enter your private key in the prompt that will be shown, or you can provide an environment variable
+named `WALLET_PK` that will be used by the bot.
+
+Run the bot:
 
 ```bash
 poetry run trade
+```
+
+## Run as a service
+
+On systems that support `systemd`, you can use the included `pancaketrade.service` file to run this script as a service.
+
+```bash
+cp pancaketrade.service ~/.config/systemd/user/
+# edit the new file in .config/systemd/user with your wallet private key
+systemctl --user start pancaketrade.service
+systemctl --user enable pancaketrade.service # run at launch
 ```
 
 ## Donations
