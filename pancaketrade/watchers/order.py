@@ -169,7 +169,7 @@ class OrderWatcher:
             start_in_thread(self.sell, args=(v2,))
 
     def buy(self, v2: bool):
-        res, tokens_out, txhash = self.net.buy_tokens(
+        res, tokens_out, txhash_or_error = self.net.buy_tokens(
             self.token_record.address,
             amount_bnb=self.amount,
             slippage_percent=self.slippage,
@@ -177,20 +177,14 @@ class OrderWatcher:
             v2=v2,
         )
         if not res:
-            if txhash == '':
-                self.dispatcher.bot.send_message(
-                    chat_id=self.chat_id,
-                    text='⛔️ <u>Not enough BNB balance for order below, order deleted</u>.\n' + self.long_repr(),
-                )
-                self.remove_order()
-                self.finished = True  # will trigger deletion of the object
-                return
-            logger.error(f'Transaction failed at {txhash}')
+            if len(txhash_or_error) == 66:
+                reason_or_link = f'<a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>'
+            else:
+                reason_or_link = txhash_or_error
+            logger.error(f'Transaction failed: {reason_or_link}')
             self.dispatcher.bot.send_message(
                 chat_id=self.chat_id,
-                text=f'⛔️ <u>Transaction failed at</u> <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}...</a> '
-                + '<u>for order below, order deleted.</u>\n'
-                + self.long_repr(),
+                text=f'⛔️ <u>Transaction failed:</u> {txhash_or_error}\n' + 'Order below deleted:\n' + self.long_repr(),
             )
             self.remove_order()
             self.finished = True  # will trigger deletion of the object
@@ -199,7 +193,7 @@ class OrderWatcher:
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id,
             text=f'✅ Got {tokens_out:,.1f} {self.token_record.symbol} at '
-            + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}...</a>',
+            + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>',
         )
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_repr()
@@ -208,7 +202,7 @@ class OrderWatcher:
         self.finished = True  # will trigger deletion of the object
 
     def sell(self, v2: bool):
-        res, bnb_out, txhash = self.net.sell_tokens(
+        res, bnb_out, txhash_or_error = self.net.sell_tokens(
             self.token_record.address,
             amount_tokens=self.amount,
             slippage_percent=self.slippage,
@@ -216,12 +210,14 @@ class OrderWatcher:
             v2=v2,
         )
         if not res:
-            logger.error(f'Transaction failed at {txhash}')
+            logger.error(f'Transaction failed: {txhash_or_error}')
+            if len(txhash_or_error) == 66:
+                reason_or_link = f'<a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>'
+            else:
+                reason_or_link = txhash_or_error
             self.dispatcher.bot.send_message(
                 chat_id=self.chat_id,
-                text=f'⛔️ <u>Transaction failed at</u> <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}...</a> '
-                + '<u>for order below, order deleted.</u>\n'
-                + self.long_repr(),
+                text=f'⛔️ <u>Transaction failed:</u> {reason_or_link}\n' + 'Order below deleted.\n' + self.long_repr(),
             )
             self.remove_order()
             self.finished = True  # will trigger deletion of the object
@@ -229,7 +225,8 @@ class OrderWatcher:
         logger.success(f'Sell transaction succeeded. Received {bnb_out:.3g} BNB')
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id,
-            text=f'✅ Got {bnb_out:.3g} BNB at ' + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}</a>',
+            text=f'✅ Got {bnb_out:.3g} BNB at '
+            + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>',
         )
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_repr()
