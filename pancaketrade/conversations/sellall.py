@@ -7,7 +7,6 @@ from pancaketrade.watchers import TokenWatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, ConversationHandler
 from web3 import Web3
-from web3.types import Wei
 
 
 class SellAllResponses(NamedTuple):
@@ -66,8 +65,7 @@ class SellAllConversation:
             return ConversationHandler.END
         token: TokenWatcher = self.parent.watchers[query.data]
         _, v2 = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
-        token_contract = self.net.get_token_contract(token_address=token.address)
-        balance_tokens = Wei(token_contract.functions.balanceOf(self.net.wallet).call())
+        balance_tokens = self.net.get_token_balance_wei(token_address=token.address)
         res, bnb_out, txhash = self.net.sell_tokens(
             token.address,
             amount_tokens=balance_tokens,
