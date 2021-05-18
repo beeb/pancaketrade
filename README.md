@@ -1,12 +1,15 @@
 # PancakeTrade - Limit orders and more for PancakeSwap on Binance Smart Chain
 
-PancakeTrade helps you create limit orders and more for your BEP-20 tokens that swap against BNB on PancakeSwap. The bot is controlled by Telegram so you can interact from anywhere.
+PancakeTrade helps you create limit orders and more for your BEP-20 tokens that swap against BNB on PancakeSwap.
+The bot is controlled by Telegram so you can interact from anywhere.
 
 ## DISCLAIMER
 
-This software is for educational purposes only. Do not risk money which you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS AND ALL AFFILIATES ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS.
+This software is for educational purposes only. Do not risk money which you are afraid to lose. USE THE SOFTWARE AT
+YOUR OWN RISK. THE AUTHORS AND ALL AFFILIATES ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS.
 
-We strongly recommend you to have coding and Python knowledge. Do not hesitate to read the source code and understand the mechanism of this bot.
+We strongly recommend you to have coding and Python knowledge. Do not hesitate to read the source code and understand
+the mechanism of this bot.
 
 ## Requirements
 
@@ -23,7 +26,8 @@ In order to use this bot, you will need the following:
 ## Quick Start
 
 Before you start, make sure you have your BscScan API key and Telegram Bot token + user ID available.
-Initiate the chat with your bot on Telegram (click the "Start" button) to initialize the chat ID before you start the bot the first time.
+Initiate the chat with your bot on Telegram (click the "Start" button) to initialize the chat ID before you start the
+bot the first time.
 
 Run the following commands
 
@@ -45,6 +49,9 @@ Run the bot:
 ```bash
 poetry run trade
 ```
+
+You will receive a notification in the Telegram chat. You can then start by adding your tokens with the `/addtoken`
+chat command.
 
 ## Configuration file
 
@@ -83,7 +90,8 @@ systemctl --user enable pancaketrade.service # run at launch
 
 ## Donations
 
-If you feel like this project has helped you and you wish to donate to the developer, you can do so on the Ethereum or Binance Smart Chain networks at the address:
+If you feel like this project has helped you and you wish to donate to the developer, you can do so on the Ethereum or
+Binance Smart Chain networks at the address:
 
 `0x026E539B566DcFF02af980d938deCcb11255d519`
 
