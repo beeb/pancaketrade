@@ -331,7 +331,10 @@ class Network:
         try:
             gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
         except Exception as e:
-            logger.warning(f'Error estimating gas price, trying again: {e}')
+            logger.warning(f'Error estimating gas price, trying again with older method: {e}')
+            func = router_contract.functions.swapExactETHForTokens(
+                min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
+            )
             try:
                 gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
             except Exception:
@@ -414,7 +417,10 @@ class Network:
         try:
             gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
         except Exception as e:
-            logger.warning(f'Error estimating gas price, trying again: {e}')
+            logger.warning(f'Error estimating gas price, trying again with older method: {e}')
+            func = router_contract.functions.swapExactTokensForETH(
+                amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
+            )
             try:
                 gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
             except Exception:
