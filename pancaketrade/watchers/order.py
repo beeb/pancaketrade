@@ -38,6 +38,7 @@ class OrderWatcher:
         type_name = self.get_type_name()
         comparison = self.get_comparison_symbol()
         amount = self.get_human_amount()
+        amount_formatted = f'{amount:.6g}' if self.type == 'buy' else f'{amount:.1f}'  # tokens are display in float
         unit = self.get_amount_unit()
         trailing = f' tsl {self.trailing_stop}%' if self.trailing_stop is not None else ''
         order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
@@ -45,7 +46,7 @@ class OrderWatcher:
         limit_price = f'{self.limit_price:.3g} BNB' if self.limit_price is not None else 'market price'
         return (
             f'{icon} {order_id} {self.token_record.symbol} {comparison} {limit_price} - '
-            + f'<b>{type_name}</b> {amount:.6g} {unit}{trailing}'
+            + f'<b>{type_name}</b> {amount_formatted} {unit}{trailing}'
         )
 
     def long_repr(self) -> str:
@@ -53,6 +54,7 @@ class OrderWatcher:
         type_name = self.get_type_name()
         comparision = self.get_comparison_symbol()
         amount = self.get_human_amount()
+        amount_formatted = f'{amount:.6g}' if self.type == 'buy' else f'{amount:.1f}'  # tokens are display in float
         unit = self.get_amount_unit()
         trailing = f'Trailing stop loss {self.trailing_stop}% callback\n' if self.trailing_stop is not None else ''
         gas_price = (
@@ -68,7 +70,7 @@ class OrderWatcher:
         return (
             f'{icon}{self.token_record.symbol} - ({order_id}) {type_name} {icon}\n'
             + trailing
-            + f'Amount: {amount:.6g} {unit}\n'
+            + f'Amount: {amount_formatted} {unit}\n'
             + f'Price {comparision} {limit_price}\n'
             + f'Slippage: {self.slippage}%\n'
             + f'Gas: {gas_price}\n'
