@@ -6,7 +6,6 @@ from pancaketrade.utils.config import Config
 from pancaketrade.utils.db import token_exists
 from pancaketrade.utils.generic import check_chat_id, chat_message
 from pancaketrade.watchers import TokenWatcher
-from peewee import IntegrityError
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     CallbackContext,
@@ -158,8 +157,8 @@ class AddTokenConversation:
             db.connect()
             with db.atomic():
                 token_record = Token.create(**add)
-        except IntegrityError:
-            chat_message(update, context, text='⛔ Failed to create database record.')
+        except Exception as e:
+            chat_message(update, context, text=f'⛔ Failed to create database record: {e}')
             del context.user_data['addtoken']
             return ConversationHandler.END
         finally:

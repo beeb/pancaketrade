@@ -490,8 +490,8 @@ class CreateOrderConversation:
             db.connect()
             with db.atomic():
                 order_record = Order.create(token=token.token_record, created=datetime.now(), **add)
-        except Exception:
-            self.command_error(update, context, text='Failed to create database record.')
+        except Exception as e:
+            self.command_error(update, context, text=f'Failed to create database record: {e}')
             return ConversationHandler.END
         finally:
             del context.user_data['createorder']

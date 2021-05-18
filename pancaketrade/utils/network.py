@@ -5,7 +5,6 @@ from pathlib import Path
 import requests
 from loguru import logger
 from pancaketrade.persistence import Abi, db
-from peewee import IntegrityError
 from web3.types import ChecksumAddress
 
 
@@ -40,7 +39,7 @@ def fetch_abi(contract: ChecksumAddress, api_key: str) -> str:
             db.connect()
             with db.atomic():
                 Abi.create(address=contract, abi=res['result'])
-        except IntegrityError:
-            logger.error('Failed to create database record.')
+        except Exception as e:
+            logger.error(f'Failed to create database record: {e}')
             return ''
     return out
