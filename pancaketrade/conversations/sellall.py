@@ -93,6 +93,13 @@ class SellAllConversation:
             context,
             text=f'✅ Got {bnb_out:.3g} BNB at ' + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}</a>',
         )
+        if len(token.orders) > 0:
+            chat_message(
+                update,
+                context,
+                text=f'⚠️ You still have pending orders for {token.name}. '
+                + 'Please delete them in case they are not relevant anymore.',
+            )
         return ConversationHandler.END
 
     @check_chat_id

@@ -43,6 +43,7 @@ Next, open the `config.yml` file with a text editor and populate the `wallet` an
 The bot needs your wallet's private key in order to sign and execute orders on your behalf. You can either run the
 command below and enter your private key in the prompt that will be shown, or you can provide an environment variable
 named `WALLET_PK` that will be used by the bot.
+The private key is **not** the same as the seed words. You need the 64-characters hexadecimal private key.
 
 Run the bot:
 
@@ -50,8 +51,8 @@ Run the bot:
 poetry run trade
 ```
 
-You will receive a notification in the Telegram chat. You can then start by adding your tokens with the `/addtoken`
-chat command.
+You will receive a notification in the Telegram chat after entering your private key. You can then start by adding your
+tokens with the `/addtoken` chat command.
 
 The other most useful command is the `/status` command that will display all your tokens and the existing orders.
 
