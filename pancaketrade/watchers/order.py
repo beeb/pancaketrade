@@ -4,11 +4,20 @@ from typing import Optional
 
 from loguru import logger
 from pancaketrade.network import Network
-from pancaketrade.persistence import Order, Token
-from pancaketrade.utils.db import remove_order
+from pancaketrade.persistence import Order, Token, db
 from pancaketrade.utils.generic import start_in_thread
 from telegram.ext import Dispatcher
 from web3.types import Wei
+
+
+def remove_order(order_record: Order):
+    db.connect()
+    try:
+        order_record.delete_instance()
+    except Exception as e:
+        logger.error(f'Database error: {e}')
+    finally:
+        db.close()
 
 
 class OrderWatcher:

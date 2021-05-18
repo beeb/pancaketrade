@@ -4,9 +4,9 @@ import sys
 import click
 from loguru import logger
 
+from pancaketrade.bot import TradeBot
 from pancaketrade.utils.config import read_config
 from pancaketrade.utils.generic import InterceptHandler
-from pancaketrade.bot import TradeBot
 
 logger.remove()
 logger.add(

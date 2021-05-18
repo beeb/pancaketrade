@@ -4,7 +4,7 @@ from typing import Dict
 from loguru import logger
 from pancaketrade.persistence import Abi, Order, Token, db
 from pancaketrade.utils.config import Config
-from pancaketrade.watchers import TokenWatcher
+from pancaketrade.watchers.token import TokenWatcher
 from peewee import fn
 from telegram.ext import Dispatcher
 from web3.types import ChecksumAddress
