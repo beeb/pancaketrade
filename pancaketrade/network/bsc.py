@@ -93,6 +93,14 @@ class Network:
             return Decimal(0)
         return balance
 
+    def get_token_balance_wei(self, token_address: ChecksumAddress) -> Wei:
+        token_contract = self.get_token_contract(token_address)
+        try:
+            return Wei(token_contract.functions.balanceOf(self.wallet).call())
+        except (ABIFunctionNotFound, ContractLogicError):
+            logger.error(f'Contract {token_address} does not have function "balanceOf"')
+        return Wei(0)
+
     def get_token_price_usd(
         self, token_address: ChecksumAddress, token_decimals: Optional[int] = None, sell: bool = True
     ) -> Decimal:
@@ -330,8 +338,7 @@ class Network:
         v2: bool = True,
         gas_limit: Wei = Wei(400000),
     ) -> Tuple[bool, Decimal, str]:
-        token_contract = self.get_token_contract(token_address=token_address)
-        balance_tokens = Wei(token_contract.functions.balanceOf(self.wallet).call())
+        balance_tokens = self.get_token_balance_wei(token_address=token_address)
         amount_tokens = min(amount_tokens, balance_tokens)  # partially fill order if possible
         slippage_ratio = (Decimal(100) - Decimal(slippage_percent)) / Decimal(100)
         final_gas_price = self.w3.eth.gas_price
