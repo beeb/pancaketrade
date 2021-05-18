@@ -445,7 +445,7 @@ class Network:
             self.last_nonce = Nonce(tx_params["nonce"] + 1)
 
     def get_tx_params(self, value: Wei = Wei(0), gas: Wei = Wei(50000), gas_price: Optional[Wei] = None) -> TxParams:
-        # 50000 gas is OK for approval tx, for other tx use 300000
+        # 50000 gas is OK for approval tx, so it's the default
         params: TxParams = {
             'from': self.wallet,
             'value': value,

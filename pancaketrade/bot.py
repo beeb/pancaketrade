@@ -167,7 +167,7 @@ class TradeBot:
             ],
             [
                 InlineKeyboardButton('❗️ Sell all now!', callback_data=f'sell_all:{token.address}'),
-                InlineKeyboardButton('💰 Buy/Sell...', callback_data=f'buy_sell:{token.address}'),
+                InlineKeyboardButton('💰 Buy/Sell now...', callback_data=f'buy_sell:{token.address}'),
             ],
         ]
         if len(token.orders):
@@ -186,8 +186,8 @@ class TradeBot:
         message = (
             f'<b>{token.name}</b>: {token_balance:,.1f}        '
             + f'<a href="https://poocoin.app/tokens/{token.address}">Chart</a>\n'
-            + f'<b>Value</b>: {token_balance_bnb:.3g} BNB (${token_balance_usd:.2f})\n'
-            + f'<b>Price</b>: {token_price:.3g} BNB per token (${token_price_usd:.3g})\n'
+            + f'<b>Value</b>: <code>{token_balance_bnb:.3g}</code> BNB (${token_balance_usd:.2f})\n'
+            + f'<b>Price</b>: <code>{token_price:.3g}</code> BNB per token (${token_price_usd:.3g})\n'
             + '<b>Orders</b>: (underlined = tracking trailing stop loss)\n'
             + '\n'.join(orders)
         )

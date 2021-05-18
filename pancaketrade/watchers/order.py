@@ -38,14 +38,14 @@ class OrderWatcher:
         type_name = self.get_type_name()
         comparison = self.get_comparison_symbol()
         amount = self.get_human_amount()
-        amount_formatted = f'{amount:.6g}' if self.type == 'buy' else f'{amount:,.1f}'  # tokens are display in float
+        amount_formatted = f'{amount:.4g}' if self.type == 'buy' else f'{amount:,.1f}'  # tokens are display in float
         unit = self.get_amount_unit()
         trailing = f' tsl {self.trailing_stop}%' if self.trailing_stop is not None else ''
         order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
         icon = '🟢' if self.type == 'buy' else '🔴'
         limit_price = f'{self.limit_price:.3g} BNB' if self.limit_price is not None else 'market price'
         return (
-            f'{icon} {order_id} {self.token_record.symbol} {comparison} {limit_price} - '
+            f'{icon} {order_id}: {self.token_record.symbol} <code>{comparison} {limit_price}</code> - '
             + f'<b>{type_name}</b> {amount_formatted} {unit}{trailing}'
         )
 
@@ -54,7 +54,7 @@ class OrderWatcher:
         type_name = self.get_type_name()
         comparision = self.get_comparison_symbol()
         amount = self.get_human_amount()
-        amount_formatted = f'{amount:.6g}' if self.type == 'buy' else f'{amount:,.1f}'  # tokens are display in float
+        amount_formatted = f'{amount:.4g}' if self.type == 'buy' else f'{amount:,.1f}'  # tokens are display in float
         unit = self.get_amount_unit()
         trailing = f'Trailing stop loss {self.trailing_stop}% callback\n' if self.trailing_stop is not None else ''
         gas_price = (
@@ -68,13 +68,13 @@ class OrderWatcher:
         type_icon = '🟢' if self.type == 'buy' else '🔴'
         limit_price = f'{self.limit_price:.3g} BNB' if self.limit_price is not None else 'market price'
         return (
-            f'{icon}{self.token_record.symbol} - ({order_id}) {type_name} {type_icon}\n'
+            f'{icon}{self.token_record.symbol} - ({order_id}) <b>{type_name}</b> {type_icon}\n'
+            + f'<b>Amount</b>: {amount_formatted} {unit}\n'
+            + f'<b>Price</b>: <code>{comparision} {limit_price}</code>\n'
             + trailing
-            + f'Amount: {amount_formatted} {unit}\n'
-            + f'Price {comparision} {limit_price}\n'
-            + f'Slippage: {self.slippage}%\n'
-            + f'Gas: {gas_price}\n'
-            + f'Created: {self.created}'
+            + f'<b>Slippage</b>: {self.slippage}%\n'
+            + f'<b>Gas</b>: {gas_price}\n'
+            + f'<b>Created</b>: {self.created.strftime("%Y-%m-%d %H:%m")}'
         )
 
     def price_update(self, sell_price: Decimal, buy_price: Decimal, sell_v2: bool, buy_v2: bool):
@@ -97,12 +97,12 @@ class OrderWatcher:
             self.limit_price if self.limit_price is not None else buy_price
         )  # fulfill condition immediately if we have no limit price
         if self.trailing_stop is None and not self.above and buy_price <= limit_price:
-            logger.success(f'Limit buy triggered at price {buy_price:.3E} BNB')  # buy
+            logger.success(f'Limit buy triggered at price {buy_price:.3e} BNB')  # buy
             self.close(v2=v2)
             return
         elif self.trailing_stop and not self.above and (buy_price <= limit_price or self.min_price is not None):
             if self.min_price is None:
-                logger.info(f'Limit condition reached at price {buy_price:.3E} BNB')
+                logger.info(f'Limit condition reached at price {buy_price:.3e} BNB')
                 self.dispatcher.bot.send_message(
                     chat_id=self.chat_id, text=f'🔹 Order #{self.order_record.id} activated trailing stop loss.'
                 )
@@ -112,7 +112,7 @@ class OrderWatcher:
                 self.min_price = buy_price
                 return
             elif rise > self.trailing_stop:
-                logger.success(f'Trailing stop loss triggered at price {buy_price:.3E} BNB')  # buy
+                logger.success(f'Trailing stop loss triggered at price {buy_price:.3e} BNB')  # buy
                 self.close(v2=v2)
                 return
 
@@ -127,16 +127,16 @@ class OrderWatcher:
             self.limit_price if self.limit_price is not None else sell_price
         )  # fulfill condition immediately if we have no limit price
         if self.trailing_stop is None and not self.above and sell_price <= limit_price:
-            logger.warning(f'Stop loss triggered at price {sell_price:.3E} BNB')
+            logger.warning(f'Stop loss triggered at price {sell_price:.3e} BNB')
             self.close(v2=v2)
             return
         elif self.trailing_stop is None and self.above and sell_price >= limit_price:
-            logger.success(f'Take profit triggered at price {sell_price:.3E} BNB')
+            logger.success(f'Take profit triggered at price {sell_price:.3e} BNB')
             self.close(v2=v2)
             return
         elif self.trailing_stop and self.above and (sell_price >= limit_price or self.max_price is not None):
             if self.max_price is None:
-                logger.info(f'Limit condition reached at price {sell_price:.3E} BNB')
+                logger.info(f'Limit condition reached at price {sell_price:.3e} BNB')
                 self.dispatcher.bot.send_message(
                     chat_id=self.chat_id, text=f'🔹 Order #{self.order_record.id} activated trailing stop loss.'
                 )
@@ -146,7 +146,7 @@ class OrderWatcher:
                 self.max_price = sell_price
                 return
             elif drop > self.trailing_stop:
-                logger.success(f'Trailing stop loss triggered at price {sell_price:.3E} BNB')
+                logger.success(f'Trailing stop loss triggered at price {sell_price:.3e} BNB')
                 self.close(v2=v2)
                 return
 
