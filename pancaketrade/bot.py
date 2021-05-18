@@ -12,6 +12,7 @@ from pancaketrade.conversations import (
     CreateOrderConversation,
     RemoveOrderConversation,
     RemoveTokenConversation,
+    SellAllConversation,
 )
 from pancaketrade.network import Network
 from pancaketrade.persistence import db
@@ -43,6 +44,7 @@ class TradeBot:
             'removetoken': RemoveTokenConversation(parent=self, config=self.config),
             'createorder': CreateOrderConversation(parent=self, config=self.config),
             'removeorder': RemoveOrderConversation(parent=self, config=self.config),
+            'sellall': SellAllConversation(parent=self, config=self.config),
         }
         self.setup_telegram()
         self.watchers: Dict[str, TokenWatcher] = get_token_watchers(
@@ -161,11 +163,11 @@ class TradeBot:
             [
                 InlineKeyboardButton('➕ Create order...', callback_data=f'create_order:{token.address}'),
             ],
-        ]
-        """
             [
                 InlineKeyboardButton('❗️ Sell all now!', callback_data=f'sell_all:{token.address}'),
             ],
+        ]
+        """
             [
                 InlineKeyboardButton('💰 Sell...', callback_data=f'sell:{token.address}'),
                 InlineKeyboardButton('💷 Buy...', callback_data=f'buy:{token.address}'),
