@@ -10,16 +10,6 @@ from telegram.ext import Dispatcher
 from web3.types import Wei
 
 
-def remove_order(order_record: Order):
-    db.connect()
-    try:
-        order_record.delete_instance()
-    except Exception as e:
-        logger.error(f'Database error: {e}')
-    finally:
-        db.close()
-
-
 class OrderWatcher:
     def __init__(self, order_record: Order, net: Network, dispatcher: Dispatcher, chat_id: int):
         self.order_record = order_record
@@ -190,7 +180,7 @@ class OrderWatcher:
                     chat_id=self.chat_id,
                     text='⛔️ <u>Not enough BNB balance for order below, order deleted</u>.\n' + self.long_repr(),
                 )
-                remove_order(self.order_record)
+                self.remove_order()
                 self.finished = True  # will trigger deletion of the object
                 return
             logger.error(f'Transaction failed at {txhash}')
@@ -200,7 +190,7 @@ class OrderWatcher:
                 + '<u>for order below, order deleted.</u>\n'
                 + self.long_repr(),
             )
-            remove_order(self.order_record)
+            self.remove_order()
             self.finished = True  # will trigger deletion of the object
             return
         logger.success(f'Buy transaction succeeded. Received {tokens_out:.3g} {self.token_record.symbol}')
@@ -212,7 +202,7 @@ class OrderWatcher:
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_repr()
         )
-        remove_order(self.order_record)
+        self.remove_order()
         self.finished = True  # will trigger deletion of the object
 
     def sell(self, v2: bool):
@@ -231,7 +221,7 @@ class OrderWatcher:
                 + '<u>for order below, order deleted.</u>\n'
                 + self.long_repr(),
             )
-            remove_order(self.order_record)
+            self.remove_order()
             self.finished = True  # will trigger deletion of the object
             return
         logger.success(f'Sell transaction succeeded. Received {bnb_out:.3g} BNB')
@@ -242,7 +232,7 @@ class OrderWatcher:
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_repr()
         )
-        remove_order(self.order_record)
+        self.remove_order()
         self.finished = True  # will trigger deletion of the object
 
     def get_type_name(self) -> str:
@@ -265,3 +255,12 @@ class OrderWatcher:
 
     def get_amount_unit(self) -> str:
         return self.token_record.symbol if self.type == 'sell' else 'BNB'
+
+    def remove_order(self):
+        db.connect()
+        try:
+            self.order_record.delete_instance()
+        except Exception as e:
+            logger.error(f'Database error: {e}')
+        finally:
+            db.close()
