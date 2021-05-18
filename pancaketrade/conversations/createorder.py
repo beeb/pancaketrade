@@ -75,6 +75,9 @@ class CreateOrderConversation:
         # query.answer()
         assert query.data
         token_address = query.data.split(':')[1]
+        if not Web3.isChecksumAddress(token_address):
+            self.command_error(update, context, text='Invalid token address.')
+            return ConversationHandler.END
         token = self.parent.watchers[token_address]
         context.user_data['createorder'] = {'token_address': token_address}
         reply_markup = InlineKeyboardMarkup(
@@ -400,7 +403,7 @@ class CreateOrderConversation:
                 chat_message(
                     update, context, text='OK, the order will use default network gas price.\nConfirm the order below!'
                 )
-            elif query.data.startswith('+'):
+            elif query.data.startswith('+') and query.data[1:].isdecimal():
                 order['gas_price'] = query.data
                 chat_message(
                     update,
@@ -408,6 +411,9 @@ class CreateOrderConversation:
                     text=f'OK, the order will use default network gas price {query.data} Gwei.\n'
                     + 'Confirm the order below!',
                 )
+            else:
+                self.command_error(update, context, text='Invalid gas price.')
+                return ConversationHandler.END
             return self.print_summary(update, context)
         else:
             assert update.message and update.message.text

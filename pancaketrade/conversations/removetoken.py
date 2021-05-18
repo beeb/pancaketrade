@@ -6,6 +6,7 @@ from pancaketrade.utils.db import remove_token
 from pancaketrade.utils.generic import chat_message, check_chat_id
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, ConversationHandler
+from web3 import Web3
 
 
 class RemoveTokenResponses(NamedTuple):
@@ -57,6 +58,9 @@ class RemoveTokenConversation:
             chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
             return ConversationHandler.END
         assert query.data
+        if not Web3.isChecksumAddress(query.data):
+            chat_message(update, context, text='⛔️ Invalid token address.')
+            return ConversationHandler.END
         token = self.parent.watchers[query.data]
         chat_message(
             update,
@@ -80,6 +84,10 @@ class RemoveTokenConversation:
         # query.answer()
         if query.data == 'cancel':
             chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+            return ConversationHandler.END
+        assert query.data
+        if not Web3.isChecksumAddress(query.data):
+            chat_message(update, context, text='⛔️ Invalid token address.')
             return ConversationHandler.END
         remove_token(self.parent.watchers[query.data].token_record)
         token_name = self.parent.watchers[query.data].name

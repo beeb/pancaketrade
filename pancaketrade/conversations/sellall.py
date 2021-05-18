@@ -37,6 +37,9 @@ class SellAllConversation:
         # query.answer()
         assert query.data
         token_address = query.data.split(':')[1]
+        if not Web3.isChecksumAddress(token_address):
+            chat_message(update, context, text='⛔️ Invalid token address.')
+            return ConversationHandler.END
         token: TokenWatcher = self.parent.watchers[token_address]
         chat_message(
             update,

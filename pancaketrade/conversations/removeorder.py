@@ -7,6 +7,7 @@ from pancaketrade.utils.generic import chat_message, check_chat_id
 from pancaketrade.watchers import OrderWatcher, TokenWatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, ConversationHandler
+from web3 import Web3
 
 
 class RemoveOrderResponses(NamedTuple):
@@ -38,6 +39,9 @@ class RemoveOrderConversation:
         # query.answer()
         assert query.data
         token_address = query.data.split(':')[1]
+        if not Web3.isChecksumAddress(token_address):
+            self.command_error(update, context, text='Invalid token address.')
+            return ConversationHandler.END
         token: TokenWatcher = self.parent.watchers[token_address]
         context.user_data['removeorder'] = {'token_address': token_address}
         orders = token.orders
@@ -63,10 +67,12 @@ class RemoveOrderConversation:
         query = update.callback_query
         # query.answer()
         if query.data == 'cancel':
-            del context.user_data['removeorder']
-            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+            self.cancel_command(update, context)
             return ConversationHandler.END
         assert query.data
+        if not query.data.isdecimal():
+            self.command_error(update, context, text='Invalid order ID')
+            return ConversationHandler.END
         token: TokenWatcher = self.parent.watchers[context.user_data['removeorder']['token_address']]
         chat_message(
             update,
@@ -89,12 +95,18 @@ class RemoveOrderConversation:
         query = update.callback_query
         # query.answer()
         if query.data == 'cancel':
-            del context.user_data['removeorder']
-            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+            self.cancel_command(update, context)
             return ConversationHandler.END
         assert query.data
+        if not query.data.isdecimal():
+            self.command_error(update, context, text='Invalid order ID')
+            return ConversationHandler.END
         token: TokenWatcher = self.parent.watchers[context.user_data['removeorder']['token_address']]
-        order = next(filter(lambda o: o.order_record.id == int(str(query.data)), token.orders))
+        try:
+            order = next(filter(lambda o: o.order_record.id == int(str(query.data)), token.orders))
+        except StopIteration:
+            self.command_error(update, context, text=f'Order {query.data} could not be found.')
+            return ConversationHandler.END
         remove_order(order_record=order.order_record)
         token.orders.remove(order)
         chat_message(update, context, text=f'✅ Alright, the order <b>#{query.data}</b> was removed from {token.name}.')
@@ -103,8 +115,7 @@ class RemoveOrderConversation:
     @check_chat_id
     def command_cancelorder(self, update: Update, context: CallbackContext):
         assert update.effective_chat and context.user_data is not None
-        del context.user_data['removeorder']
-        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+        self.cancel_command(update, context)
         return ConversationHandler.END
 
     def get_type_name(self, order: OrderWatcher) -> str:
@@ -117,3 +128,13 @@ class RemoveOrderConversation:
             if order.type == 'sell' and order.above
             else 'unknown'
         )
+
+    def cancel_command(self, update: Update, context: CallbackContext):
+        assert context.user_data is not None
+        del context.user_data['removeorder']
+        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=False)
+
+    def command_error(self, update: Update, context: CallbackContext, text: str):
+        assert context.user_data is not None
+        del context.user_data['removeorder']
+        chat_message(update, context, text=f'⛔️ {text}', edit=False)

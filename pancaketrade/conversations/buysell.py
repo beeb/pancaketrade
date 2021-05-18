@@ -16,6 +16,7 @@ from telegram.ext import (
     Filters,
     MessageHandler,
 )
+from web3 import Web3
 
 
 class BuySellResponses(NamedTuple):
@@ -59,6 +60,9 @@ class BuySellConversation:
         # query.answer()
         assert query.data
         token_address = query.data.split(':')[1]
+        if not Web3.isChecksumAddress(token_address):
+            self.command_error(update, context, text='Invalid token address.')
+            return ConversationHandler.END
         token = self.parent.watchers[token_address]
         context.user_data['buysell'] = {'token_address': token_address}
         reply_markup = InlineKeyboardMarkup(
