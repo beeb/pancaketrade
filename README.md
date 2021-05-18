@@ -15,7 +15,7 @@ the mechanism of this bot.
 
 In order to use this bot, you will need the following:
 
-- A server or computer that can run the script continuously (linux or macOS)
+- A server or computer that can run the script continuously (linux or macOS, as well as WSL have been tested)
 - Python version between 3.7.1 and 3.9.x
 - [Poetry](https://github.com/python-poetry/poetry)
 - A BscScan API key (create an account on [BscScan](https://bscscan.com/) then visit [My API Keys](https://bscscan.com/myapikey))

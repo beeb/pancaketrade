@@ -167,7 +167,7 @@ class TradeBot:
             ],
             [
                 InlineKeyboardButton('❗️ Sell all now!', callback_data=f'sell_all:{token.address}'),
-                InlineKeyboardButton('💰 Buy/Sell...', callback_data=f'buy_sell:{token.address}'),
+                InlineKeyboardButton('💰 Buy/Sell now...', callback_data=f'buy_sell:{token.address}'),
             ],
         ]
         if len(token.orders):
