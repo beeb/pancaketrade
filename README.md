@@ -17,7 +17,7 @@ In order to use this bot, you will need the following:
 - A BscScan API key (create an account on [BscScan](https://bscscan.com/) then visit [My API Keys](https://bscscan.com/myapikey))
 - A Telegram bot token (interact with [@BotFather](https://telegram.me/BotFather))
 - Your Telegram chat ID/user ID (interact with [@userinfobot](https://telegram.me/userinfobot))
-- Optional: `git` to clone this repository
+- Optional: `git` to clone this repository, you can also download the source from the github website.
 
 ## Quick Start
 
