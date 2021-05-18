@@ -39,7 +39,13 @@ class RemoveTokenConversation:
         buttons_layout = [buttons[i : i + 3] for i in range(0, len(buttons), 3)]  # noqa: E203
         buttons_layout.append([InlineKeyboardButton('❌ Cancel', callback_data='cancel')])
         reply_markup = InlineKeyboardMarkup(buttons_layout)
-        chat_message(update, context, text='Choose the token to remove from the list below.', reply_markup=reply_markup)
+        chat_message(
+            update,
+            context,
+            text='Choose the token to remove from the list below.',
+            reply_markup=reply_markup,
+            edit=False,
+        )
         return self.next.CONFIRM
 
     @check_chat_id

@@ -51,7 +51,7 @@ class AddTokenConversation:
     def command_addtoken(self, update: Update, context: CallbackContext):
         assert update.message and context.user_data is not None
         context.user_data['addtoken'] = {}
-        chat_message(update, context, text='Please send me the token contract address.')
+        chat_message(update, context, text='Please send me the token contract address.', edit=False)
         return self.next.ADDRESS
 
     @check_chat_id

@@ -1,5 +1,6 @@
 from typing import NamedTuple
 
+from loguru import logger
 from pancaketrade.network import Network
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.generic import chat_message, check_chat_id
@@ -49,6 +50,7 @@ class SellAllConversation:
                     ]
                 ]
             ),
+            edit=False,
         )
         return self.next.CONFIRM
 
@@ -66,6 +68,7 @@ class SellAllConversation:
         token: TokenWatcher = self.parent.watchers[query.data]
         _, v2 = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
         balance_tokens = self.net.get_token_balance_wei(token_address=token.address)
+        chat_message(update, context, text=f'Selling all {token.symbol}...')
         res, bnb_out, txhash = self.net.sell_tokens(
             token.address,
             amount_tokens=balance_tokens,
@@ -73,7 +76,20 @@ class SellAllConversation:
             gas_price='+1',
             v2=v2,
         )
-        chat_message(update, context, text=f'✅ {token.name}.')
+        if not res:
+            logger.error(f'Transaction failed at {txhash}')
+            chat_message(
+                update,
+                context,
+                text=f'⛔️ Transaction failed at <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}...</a>.',
+            )
+            return ConversationHandler.END
+        logger.success(f'Sell transaction succeeded. Received {bnb_out:.3g} BNB')
+        chat_message(
+            update,
+            context,
+            text=f'✅ Got {bnb_out:.3g} BNB at ' + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}</a>',
+        )
         return ConversationHandler.END
 
     @check_chat_id
