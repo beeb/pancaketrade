@@ -9,6 +9,7 @@ from telegram.ext import CallbackContext, CommandHandler, Defaults, Updater
 
 from pancaketrade.conversations import (
     AddTokenConversation,
+    BuySellConversation,
     CreateOrderConversation,
     RemoveOrderConversation,
     RemoveTokenConversation,
@@ -45,6 +46,7 @@ class TradeBot:
             'createorder': CreateOrderConversation(parent=self, config=self.config),
             'removeorder': RemoveOrderConversation(parent=self, config=self.config),
             'sellall': SellAllConversation(parent=self, config=self.config),
+            'buysell': BuySellConversation(parent=self, config=self.config),
         }
         self.setup_telegram()
         self.watchers: Dict[str, TokenWatcher] = get_token_watchers(
@@ -164,14 +166,10 @@ class TradeBot:
                 InlineKeyboardButton('➕ Create order...', callback_data=f'create_order:{token.address}'),
             ],
             [
+                InlineKeyboardButton('💰 Buy/Sell...', callback_data=f'buy_sell:{token.address}'),
                 InlineKeyboardButton('❗️ Sell all now!', callback_data=f'sell_all:{token.address}'),
             ],
         ]
-        """
-            [
-                InlineKeyboardButton('💰 Buy/Sell...', callback_data=f'buy_sell:{token.address}'),
-            ],
-        """
         if len(token.orders):
             buttons[0].append(
                 InlineKeyboardButton('➖ Delete order...', callback_data=f'delete_order:{token.address}'),
