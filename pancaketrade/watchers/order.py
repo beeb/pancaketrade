@@ -174,7 +174,7 @@ class OrderWatcher:
         logger.success(f'Buy transaction succeeded. Received {tokens_out:.3g} {self.token_record.symbol}')
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id,
-            text=f'✅ Got {tokens_out:.3g} {self.token_record.symbol} at '
+            text=f'✅ Got {tokens_out:,.1f} {self.token_record.symbol} at '
             + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}...</a>',
         )
         self.dispatcher.bot.send_message(
@@ -195,7 +195,9 @@ class OrderWatcher:
             logger.error(f'Transaction failed at {txhash}')
             self.dispatcher.bot.send_message(
                 chat_id=self.chat_id,
-                text=f'⛔️ Transaction failed at <a href="https://bscscan.com/tx/{txhash}">{txhash}</a>',
+                text=f'⛔️ <u>Transaction failed at</u> <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}...</a> '
+                + '<u>for order below, order deleted.</u>\n'
+                + self.long_repr(),
             )
             self.order_record.delete_instance()
             self.finished = True  # will trigger deletion of the object
@@ -203,7 +205,10 @@ class OrderWatcher:
         logger.success(f'Sell transaction succeeded. Received {bnb_out:.3g} BNB')
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id,
-            text=f'✅ Got {bnb_out:.3g} BNB at ' + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash}</a>',
+            text=f'✅ Got {bnb_out:.3g} BNB at ' + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}</a>',
+        )
+        self.dispatcher.bot.send_message(
+            chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_repr()
         )
         self.order_record.delete_instance()
         self.finished = True  # will trigger deletion of the object
