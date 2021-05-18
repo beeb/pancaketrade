@@ -95,10 +95,6 @@ systemctl --user start pancaketrade.service
 systemctl --user enable pancaketrade.service # run at launch
 ```
 
-## Known issues
-
-Currently, the gas limit estimate is not yet implemented. There's a fixed limit of 400,000 gas units. This will be implemented very soon.
-
 ## Donations
 
 If you feel like this project has helped you and you wish to donate to the developer, you can do so on the Ethereum or
