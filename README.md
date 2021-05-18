@@ -37,3 +37,11 @@ Finally, run the bot
 ```bash
 poetry run trade
 ```
+
+## Donations
+
+If you feel like this project has helped you and you wish to donate to the developer, you can do so on the Ethereum or Binance Smart Chain networks at the address:
+
+`0x026E539B566DcFF02af980d938deCcb11255d519`
+
+Thanks for your contribution!
