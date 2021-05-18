@@ -72,7 +72,7 @@ class SellAllConversation:
         _, v2 = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
         balance_tokens = self.net.get_token_balance_wei(token_address=token.address)
         chat_message(update, context, text=f'Selling all {token.symbol}...')
-        res, bnb_out, txhash = self.net.sell_tokens(
+        res, bnb_out, txhash_or_error = self.net.sell_tokens(
             token.address,
             amount_tokens=balance_tokens,
             slippage_percent=token.default_slippage,
@@ -80,11 +80,15 @@ class SellAllConversation:
             v2=v2,
         )
         if not res:
-            logger.error(f'Transaction failed at {txhash}')
+            logger.error(f'Transaction failed: {txhash_or_error}')
+            if len(txhash_or_error) == 66:
+                reason_or_link = f'<a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>'
+            else:
+                reason_or_link = txhash_or_error
             chat_message(
                 update,
                 context,
-                text=f'⛔️ Transaction failed at <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}...</a>.',
+                text=f'⛔️ Transaction failed: {reason_or_link}',
                 edit=False,
             )
             return ConversationHandler.END
@@ -92,7 +96,8 @@ class SellAllConversation:
         chat_message(
             update,
             context,
-            text=f'✅ Got {bnb_out:.3g} BNB at ' + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}...</a>',
+            text=f'✅ Got {bnb_out:.3g} BNB at '
+            + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>',
         )
         if len(token.orders) > 0:
             chat_message(

@@ -273,7 +273,7 @@ class Network:
         balance_bnb = self.w3.eth.get_balance(self.wallet)
         if amount_bnb > balance_bnb - Wei(2000000000000000):  # leave 0.002 BNB for future gas fees
             logger.error('Not enough BNB balance')
-            return False, Decimal(0), ''
+            return False, Decimal(0), 'Not enough BNB balance'
         slippage_ratio = (Decimal(100) - Decimal(slippage_percent)) / Decimal(100)
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith('+'):
@@ -291,6 +291,9 @@ class Network:
             gas_price=final_gas_price,
             v2=v2,
         )
+        if receipt is None:
+            logger.error('Can\'t get price estimate')
+            return False, Decimal(0), 'Can\'t get price estimate'
         txhash = Web3.toHex(primitive=receipt["transactionHash"])
         if receipt['status'] == 0:  # fail
             logger.error(f'Buy transaction failed at tx {txhash}')
@@ -320,7 +323,7 @@ class Network:
         min_output_tokens: Wei,
         gas_price: Wei,
         v2: bool,
-    ) -> TxReceipt:
+    ) -> Optional[TxReceipt]:
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
         func = router_contract.functions.swapExactETHForTokens(
             min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
@@ -328,8 +331,12 @@ class Network:
         try:
             gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
         except Exception as e:
-            logger.error(f'Error estimating gas price: {e}')
-            gas_limit = Wei(400000)
+            logger.warning(f'Error estimating gas price, trying again: {e}')
+            try:
+                gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
+            except Exception:
+                logger.error('Can\'t get price estimate, cancelling transaction.')
+                return None
         if gas_limit > GAS_LIMIT_FAILSAFE:
             gas_limit = GAS_LIMIT_FAILSAFE
         params = self.get_tx_params(value=amount_bnb, gas=gas_limit, gas_price=gas_price)
@@ -365,6 +372,9 @@ class Network:
             gas_price=final_gas_price,
             v2=v2,
         )
+        if receipt is None:
+            logger.error('Can\'t get price estimate')
+            return False, Decimal(0), 'Can\'t get price estimate'
         txhash = Web3.toHex(primitive=receipt["transactionHash"])
         if receipt['status'] == 0:  # fail
             logger.error(f'Sell transaction failed at tx {txhash}')
@@ -396,7 +406,7 @@ class Network:
         min_output_bnb: Wei,
         gas_price: Wei,
         v2: bool,
-    ) -> TxReceipt:
+    ) -> Optional[TxReceipt]:
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
         func = router_contract.functions.swapExactTokensForETH(
             amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
@@ -404,8 +414,12 @@ class Network:
         try:
             gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
         except Exception as e:
-            logger.error(f'Error estimating gas price: {e}')
-            gas_limit = Wei(400000)
+            logger.warning(f'Error estimating gas price, trying again: {e}')
+            try:
+                gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
+            except Exception:
+                logger.error('Can\'t get price estimate, cancelling transaction.')
+                return None
         if gas_limit > GAS_LIMIT_FAILSAFE:
             gas_limit = GAS_LIMIT_FAILSAFE
         params = self.get_tx_params(value=Wei(0), gas=gas_limit, gas_price=gas_price)
