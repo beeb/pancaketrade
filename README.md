@@ -53,6 +53,12 @@ poetry run trade
 You will receive a notification in the Telegram chat. You can then start by adding your tokens with the `/addtoken`
 chat command.
 
+The other most useful command is the `/status` command that will display all your tokens and the existing orders.
+
+_Please note_ that at this moment, the messages resulting from the `/status` command do not update automatically.
+Doing this caused problems with my bots where I could not edit messages anymore, and the root cause has not yet been
+identified. As such, message updates have been disabled for now.
+
 ## Configuration file
 
 The script looks for a file named `config.yml` by default. You can pass another filename to the `trade` command as a
