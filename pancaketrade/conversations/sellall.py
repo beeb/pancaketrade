@@ -85,6 +85,7 @@ class SellAllConversation:
                 update,
                 context,
                 text=f'⛔️ Transaction failed at <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}...</a>.',
+                edit=False,
             )
             return ConversationHandler.END
         logger.success(f'Sell transaction succeeded. Received {bnb_out:.3g} BNB')
@@ -99,6 +100,7 @@ class SellAllConversation:
                 context,
                 text=f'⚠️ You still have pending orders for {token.name}. '
                 + 'Please delete them in case they are not relevant anymore.',
+                edit=False,
             )
         return ConversationHandler.END
 
