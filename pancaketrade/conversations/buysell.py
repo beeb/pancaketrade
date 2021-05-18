@@ -134,7 +134,7 @@ class BuySellConversation:
             if order['type'] == 'buy'
             else self.net.get_token_balance(token_address=token.address)
         )
-        balance_formatted = f'{balance:.6g}' if order['type'] == 'buy' else f'{balance:,.1f}'
+        balance_formatted = f'{balance:.4g}' if order['type'] == 'buy' else f'{balance:,.1f}'
         reply_markup = (
             InlineKeyboardMarkup(
                 inline_keyboard=[
@@ -191,7 +191,7 @@ class BuySellConversation:
             text=f'OK, the order will use trailing stop loss with {callback_rate}% callback.\n'
             + f'Next, <u>how much {unit}</u> do you want me to use for {order["type"]}ing?\n'
             + f'You can use scientific notation like <code>{balance:.1e}</code> if you want.\n'
-            + f'<b>Current balance</b>: <code>{balance:.6g}</code> {unit}',
+            + f'<b>Current balance</b>: <code>{balance:.4g}</code> {unit}',
             reply_markup=reply_markup,
         )
         return self.next.AMOUNT
@@ -229,7 +229,7 @@ class BuySellConversation:
             token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
         )
         amount_formatted = (
-            f'{amount:.6g}' if order['type'] == 'buy' else f'{amount:,.1f}'
+            f'{amount:.4g}' if order['type'] == 'buy' else f'{amount:,.1f}'
         )  # tokens are display in float
         usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * current_price * amount
         unit = f'BNB worth of {token.symbol}' if order['type'] == 'buy' else token.symbol
@@ -256,7 +256,7 @@ class BuySellConversation:
         )
         bnb_price = self.net.get_bnb_price()
         amount_formatted = (
-            f'{amount:.6g}' if order['type'] == 'buy' else f'{amount:,.1f}'
+            f'{amount:.4g}' if order['type'] == 'buy' else f'{amount:,.1f}'
         )  # tokens are display in float
         usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * current_price * amount
         message = (

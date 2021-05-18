@@ -244,7 +244,7 @@ class CreateOrderConversation:
             if order['type'] == 'buy'
             else self.net.get_token_balance(token_address=token.address)
         )
-        balance_formatted = f'{balance:.6g}' if order['type'] == 'buy' else f'{balance:,.1f}'
+        balance_formatted = f'{balance:.4g}' if order['type'] == 'buy' else f'{balance:,.1f}'
         # if selling tokens, add options 25/50/75/100% with buttons
         reply_markup = (
             InlineKeyboardMarkup(
@@ -266,7 +266,7 @@ class CreateOrderConversation:
         chat_message(
             update,
             context,
-            text=f'OK, I will {order["type"]} when the price of {token.symbol} reaches {price:.6g} BNB per token.\n'
+            text=f'OK, I will {order["type"]} when the price of {token.symbol} reaches {price:.4g} BNB per token.\n'
             + f'Next, <u>how much {unit}</u> do you want me to use for {order["type"]}ing?\n'
             + f'You can use scientific notation like <code>{balance:.1e}</code> if you want.\n'
             + f'<b>Current balance</b>: <code>{balance_formatted}</code> {unit}',
@@ -305,7 +305,7 @@ class CreateOrderConversation:
         bnb_price = self.net.get_bnb_price()
         limit_price = Decimal(order["limit_price"])
         amount_formatted = (
-            f'{amount:.6g}' if order['type'] == 'buy' else f'{amount:,.1f}'
+            f'{amount:.4g}' if order['type'] == 'buy' else f'{amount:,.1f}'
         )  # tokens are display in float
         usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * limit_price * amount
         unit = f'BNB worth of {token.symbol}' if order['type'] == 'buy' else token.symbol
@@ -438,7 +438,7 @@ class CreateOrderConversation:
         chat_message(
             update,
             context,
-            text=f'OK, the order will use {gas_price_gwei:.6g} Gwei for gas price.\n<u>Confirm</u> the order below!',
+            text=f'OK, the order will use {gas_price_gwei:.4g} Gwei for gas price.\n<u>Confirm</u> the order below!',
         )
         return self.print_summary(update, context)
 
@@ -450,7 +450,7 @@ class CreateOrderConversation:
         comparision = self.get_comparison_symbol(order)
         amount = self.get_human_amount(order, token)
         amount_formatted = (
-            f'{amount:.6g}' if order['type'] == 'buy' else f'{amount:,.1f}'
+            f'{amount:.4g}' if order['type'] == 'buy' else f'{amount:,.1f}'
         )  # tokens are displayed in float
         unit = self.get_amount_unit(order, token)
         trailing = (
@@ -557,7 +557,7 @@ class CreateOrderConversation:
             + f'➖ You can use standard notation like "<code>{current_price_fixed}</code>"\n'
             + f'➖ You can use scientific notation like "<code>{current_price:.1e}</code>"\n'
             + '➖ You can use a multiplier for the current price like "<code>1.5x</code>"\n'
-            + f'<b>Current price</b>: <code>{current_price:.6g}</code> BNB per {token_symbol}.'
+            + f'<b>Current price</b>: <code>{current_price:.4g}</code> BNB per {token_symbol}.'
         )
         return next_message
 
