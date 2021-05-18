@@ -327,9 +327,9 @@ class Network:
             min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
         )
         try:
-            print(func.estimateGas({'from': self.wallet}))
+            logger.info(func.estimateGas({'from': self.wallet}))
         except Exception as e:
-            print(e)
+            logger.error(e)
         params = self.get_tx_params(value=amount_bnb, gas=gas_limit, gas_price=gas_price)
         tx = self.build_and_send_tx(func=func, tx_params=params)
         return self.w3.eth.wait_for_transaction_receipt(tx, timeout=60)
@@ -403,9 +403,9 @@ class Network:
             amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
         )
         try:
-            print(func.estimateGas({'from': self.wallet}))
+            logger.info(func.estimateGas({'from': self.wallet}))
         except Exception as e:
-            print(e)
+            logger.error(e)
         params = self.get_tx_params(value=Wei(0), gas=gas_limit, gas_price=gas_price)
         tx = self.build_and_send_tx(func=func, tx_params=params)
         return self.w3.eth.wait_for_transaction_receipt(tx, timeout=60)
