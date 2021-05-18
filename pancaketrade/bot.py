@@ -198,3 +198,4 @@ class TradeBot:
     def error_handler(self, update: Update, context: CallbackContext) -> None:
         logger.error('Exception while handling an update')
         logger.error(context.error)
+        chat_message(update, context, text=f'⛔️ Exception while handling an update\n{context.error}', edit=False)

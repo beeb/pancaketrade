@@ -1,7 +1,8 @@
 import time
 from decimal import Decimal
-from typing import NamedTuple, Optional, Tuple, Set
+from typing import NamedTuple, Optional, Set, Tuple
 
+import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from cachetools import LRUCache, TTLCache, cached
@@ -11,7 +12,7 @@ from pancaketrade.utils.network import fetch_abi
 from web3 import Web3
 from web3.contract import Contract, ContractFunction
 from web3.exceptions import ABIFunctionNotFound, ContractLogicError
-from web3.types import ChecksumAddress, HexBytes, Nonce, TxParams, Wei, TxReceipt
+from web3.types import ChecksumAddress, HexBytes, Nonce, TxParams, TxReceipt, Wei
 
 
 class NetworkAddresses(NamedTuple):
@@ -41,7 +42,11 @@ class Network:
         self.wallet = wallet
         self.min_pool_size_bnb = min_pool_size_bnb
         self.secrets = secrets
-        w3_provider = Web3.HTTPProvider(endpoint_uri=rpc)
+        adapter = requests.adapters.HTTPAdapter(pool_connections=20, pool_maxsize=20, max_retries=1)
+        session = requests.Session()
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+        w3_provider = Web3.HTTPProvider(endpoint_uri=rpc, session=session)
         self.w3 = Web3(provider=w3_provider)
         self.addr = NetworkAddresses()
         self.contracts = NetworkContracts(addr=self.addr, w3=self.w3, api_key=secrets.bscscan_api_key)
