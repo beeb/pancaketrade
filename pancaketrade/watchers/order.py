@@ -65,10 +65,10 @@ class OrderWatcher:
             else f'network default {self.gas_price} Gwei'
         )
         order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
-        icon = '🟢' if self.type == 'buy' else '🔴'
+        type_icon = '🟢' if self.type == 'buy' else '🔴'
         limit_price = f'{self.limit_price:.3g} BNB' if self.limit_price is not None else 'market price'
         return (
-            f'{icon}{self.token_record.symbol} - ({order_id}) {type_name} {icon}\n'
+            f'{icon}{self.token_record.symbol} - ({order_id}) {type_name} {type_icon}\n'
             + trailing
             + f'Amount: {amount_formatted} {unit}\n'
             + f'Price {comparision} {limit_price}\n'
