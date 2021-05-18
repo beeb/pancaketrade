@@ -554,9 +554,9 @@ class CreateOrderConversation:
             f'Next, please indicate the <u>price in <b>BNB per {token_symbol}</b></u> '
             + 'at which the order will activate.\n'
             + 'You have 3 options for this:\n'
-            + f' ・ You can use standard notation like "<code>{current_price_fixed}</code>"\n'
-            + f' ・ You can use scientific notation like "<code>{current_price:.1e}</code>"\n'
-            + ' ・ You can use a multiplier for the current price like "<code>1.5x</code>"\n'
+            + f' ・ Standard notation like "<code>{current_price_fixed}</code>"\n'
+            + f' ・ Scientific notation like "<code>{current_price:.1e}</code>"\n'
+            + ' ・ Multiplier for the current price like "<code>1.5x</code>" (include the "x" at the end)\n'
             + f'<b>Current price</b>: <code>{current_price:.4g}</code> BNB per {token_symbol}.'
         )
         return next_message
