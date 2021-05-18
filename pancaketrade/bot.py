@@ -164,7 +164,7 @@ class TradeBot:
         ]
         """
             [
-                InlineKeyboardButton('❗️ Sell all now!', callback_data=f'quick_sell:{token.address}'),
+                InlineKeyboardButton('❗️ Sell all now!', callback_data=f'sell_all:{token.address}'),
             ],
             [
                 InlineKeyboardButton('💰 Sell...', callback_data=f'sell:{token.address}'),
