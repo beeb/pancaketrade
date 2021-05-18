@@ -5,9 +5,10 @@ from typing import Optional
 from loguru import logger
 from pancaketrade.network import Network
 from pancaketrade.persistence import Order, Token
+from pancaketrade.utils.db import remove_order
 from pancaketrade.utils.generic import start_in_thread
-from web3.types import Wei
 from telegram.ext import Dispatcher
+from web3.types import Wei
 
 
 class OrderWatcher:
@@ -180,7 +181,7 @@ class OrderWatcher:
                     chat_id=self.chat_id,
                     text='⛔️ <u>Not enough BNB balance for order below, order deleted</u>.\n' + self.long_repr(),
                 )
-                self.order_record.delete_instance()
+                remove_order(self.order_record)
                 self.finished = True  # will trigger deletion of the object
                 return
             logger.error(f'Transaction failed at {txhash}')
@@ -190,7 +191,7 @@ class OrderWatcher:
                 + '<u>for order below, order deleted.</u>\n'
                 + self.long_repr(),
             )
-            self.order_record.delete_instance()
+            remove_order(self.order_record)
             self.finished = True  # will trigger deletion of the object
             return
         logger.success(f'Buy transaction succeeded. Received {tokens_out:.3g} {self.token_record.symbol}')
@@ -202,7 +203,7 @@ class OrderWatcher:
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_repr()
         )
-        self.order_record.delete_instance()
+        remove_order(self.order_record)
         self.finished = True  # will trigger deletion of the object
 
     def sell(self, v2: bool):
@@ -221,7 +222,7 @@ class OrderWatcher:
                 + '<u>for order below, order deleted.</u>\n'
                 + self.long_repr(),
             )
-            self.order_record.delete_instance()
+            remove_order(self.order_record)
             self.finished = True  # will trigger deletion of the object
             return
         logger.success(f'Sell transaction succeeded. Received {bnb_out:.3g} BNB')
@@ -232,7 +233,7 @@ class OrderWatcher:
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_repr()
         )
-        self.order_record.delete_instance()
+        remove_order(self.order_record)
         self.finished = True  # will trigger deletion of the object
 
     def get_type_name(self) -> str:

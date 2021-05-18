@@ -42,4 +42,6 @@ def fetch_abi(contract: ChecksumAddress, api_key: str) -> str:
         except Exception as e:
             logger.error(f'Failed to create database record: {e}')
             return ''
+        finally:
+            db.close()
     return out
