@@ -1,12 +1,13 @@
 """Database helpers."""
 from typing import Dict
 
+from loguru import logger
 from pancaketrade.persistence import Abi, Order, Token, db
+from pancaketrade.utils.config import Config
 from pancaketrade.watchers import TokenWatcher
 from peewee import fn
-from web3.types import ChecksumAddress
 from telegram.ext import Dispatcher
-from pancaketrade.utils.config import Config
+from web3.types import ChecksumAddress
 
 
 def init_db() -> None:
@@ -35,8 +36,20 @@ def get_token_watchers(net, dispatcher: Dispatcher, config: Config) -> Dict[str,
 
 
 def remove_token(token_record: Token):
-    token_record.delete_instance(recursive=True)
+    db.connect()
+    try:
+        token_record.delete_instance(recursive=True)
+    except Exception as e:
+        logger.error(f'Database error: {e}')
+    finally:
+        db.close()
 
 
 def remove_order(order_record: Order):
-    order_record.delete_instance()
+    db.connect()
+    try:
+        order_record.delete_instance()
+    except Exception as e:
+        logger.error(f'Database error: {e}')
+    finally:
+        db.close()
