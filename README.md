@@ -46,6 +46,30 @@ Run the bot:
 poetry run trade
 ```
 
+## Configuration file
+
+The script looks for a file named `config.yml` by default. You can pass another filename to the `trade` command as a
+positional argument.
+
+The only parameter that is not self-explanatory is `min_pool_size_bnb`. Since PancakeSwap migrated to version 2, some
+tokens have Liquidity Pairs (LP) on both v1 and v2. As a result, the price might be better for buying or selling on
+one version versus the other.
+However, sometimes the LP on a given version has very little liquidity, which means that the price is very volatile.
+In order to avoid swapping on the version that has little liquidity, the bot checks that at least `min_pool_size_bnb`
+is staked in the LP. If that's not the case, the bot will use the other version even if the price is worse.
+
+```yaml
+---
+bsc_rpc: 'https://bsc-dataseed.binance.org:443' # you can use any BSC RPC url you want
+wallet: '0x0000000000000000000000000000000000000000' # insert your wallet adddress here
+min_pool_size_bnb: 25 # PancakeSwap LPs that have less than 25 BNB will not be considered
+monitor_interval: 5 # the script will check the token prices with this interval in seconds
+secrets:
+  bscscan_api_key: 'enter_your_api_key' # enter your BscScan API key
+  telegram_token: 'enter_your_bot_token' # enter your Telegram Bot token
+  admin_chat_id: 123456 # enter your chat ID/user ID to prevent other users to use the bot
+```
+
 ## Run as a service
 
 On systems that support `systemd`, you can use the included `pancaketrade.service` file to run this script as a service.
