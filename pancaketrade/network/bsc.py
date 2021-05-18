@@ -325,7 +325,7 @@ class Network:
         v2: bool,
     ) -> Optional[TxReceipt]:
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
-        func = router_contract.functions.swapExactETHForTokens(
+        func = router_contract.functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
             min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
         )
         try:
@@ -408,7 +408,7 @@ class Network:
         v2: bool,
     ) -> Optional[TxReceipt]:
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
-        func = router_contract.functions.swapExactTokensForETH(
+        func = router_contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
             amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
         )
         try:
