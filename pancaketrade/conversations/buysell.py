@@ -130,9 +130,9 @@ class BuySellConversation:
         token = self.parent.watchers[order['token_address']]
         unit = 'BNB' if order['type'] == 'buy' else token.symbol
         balance = (
-            self.net.get_bnb_balance()
+            f'{self.net.get_bnb_balance()}:.6g'
             if order['type'] == 'buy'
-            else self.net.get_token_balance(token_address=token.address)
+            else f'{self.net.get_token_balance(token_address=token.address)}:,.1f'
         )
         reply_markup = (
             InlineKeyboardMarkup(
@@ -167,7 +167,7 @@ class BuySellConversation:
                     text='OK, the order will use no trailing stop loss.\n'
                     + f'Next, <u>how much {unit}</u> do you want me to use for {order["type"]}ing?\n'
                     + f'You can use scientific notation like <code>{balance:.1E}</code> if you want.\n'
-                    + f'Current balance: <b>{balance:.6g} {unit}</b>',
+                    + f'Current balance: <b>{balance} {unit}</b>',
                     reply_markup=reply_markup,
                 )
                 return self.next.AMOUNT

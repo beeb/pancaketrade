@@ -238,9 +238,9 @@ class CreateOrderConversation:
         order['limit_price'] = str(price)
         unit = 'BNB' if order['type'] == 'buy' else token.symbol
         balance = (
-            self.net.get_bnb_balance()
+            f'{self.net.get_bnb_balance()}:.6g'
             if order['type'] == 'buy'
-            else self.net.get_token_balance(token_address=token.address)
+            else f'{self.net.get_token_balance(token_address=token.address)}:,.1f'
         )
         # if selling tokens, add options 25/50/75/100% with buttons
         reply_markup = (
@@ -266,7 +266,7 @@ class CreateOrderConversation:
             text=f'OK, I will {order["type"]} when the price of {token.symbol} reaches {price:.6g} BNB per token.\n'
             + f'Next, <u>how much {unit}</u> do you want me to use for {order["type"]}ing?\n'
             + f'You can use scientific notation like <code>{balance:.1E}</code> if you want.\n'
-            + f'Current balance: <b>{balance:.6g} {unit}</b>',
+            + f'Current balance: <b>{balance} {unit}</b>',
             reply_markup=reply_markup,
         )
         return self.next.AMOUNT
