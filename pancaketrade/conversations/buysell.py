@@ -265,7 +265,7 @@ class BuySellConversation:
         return self.next.SUMMARY
 
     @check_chat_id
-    def command_createorder_summary(self, update: Update, context: CallbackContext):
+    def command_buysell_summary(self, update: Update, context: CallbackContext):
         assert update.effective_chat and update.callback_query and context.user_data is not None
         query = update.callback_query
         # query.answer()
@@ -273,7 +273,11 @@ class BuySellConversation:
             self.cancel_command(update, context)
             return ConversationHandler.END
         add = context.user_data['buysell']
+        add['limit_price'] = ''  # we provide empty string meaning we use market price (trigger now)
+        add['above'] = True if add['type'] == 'sell' else False
         token: TokenWatcher = self.parent.watchers[add['token_address']]
+        add['slippage'] = token.default_slippage
+        add['gas_price'] = '+1'
         del add['token_address']  # not needed in order record creation
         try:
             db.connect()
