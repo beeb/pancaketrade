@@ -224,8 +224,10 @@ class BuySellConversation:
                 return self.next.AMOUNT
         decimals = 18 if order['type'] == 'buy' else token.decimals
         bnb_price = self.net.get_bnb_price()
-        limit_price = Decimal(order["limit_price"])
-        usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * limit_price * amount
+        current_price, _ = self.net.get_token_price(
+            token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
+        )
+        usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * current_price * amount
         unit = f'BNB worth of {token.symbol}' if order['type'] == 'buy' else token.symbol
         order['amount'] = str(int(amount * Decimal(10 ** decimals)))
         chat_message(
