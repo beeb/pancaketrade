@@ -496,6 +496,11 @@ class CreateOrderConversation:
         chat_message(update, context, text='✅ Order was added successfully!')
         return ConversationHandler.END
 
+    @check_chat_id
+    def command_cancelorder(self, update: Update, context: CallbackContext):
+        self.cancel_command(update, context)
+        return ConversationHandler.END
+
     def get_type_name(self, order: Mapping) -> str:
         return (
             'limit buy'
@@ -516,11 +521,6 @@ class CreateOrderConversation:
 
     def get_amount_unit(self, order: Mapping, token) -> str:
         return token.symbol if order['type'] == 'sell' else 'BNB'
-
-    @check_chat_id
-    def command_cancelorder(self, update: Update, context: CallbackContext):
-        self.cancel_command(update, context)
-        return ConversationHandler.END
 
     def cancel_command(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
