@@ -84,7 +84,7 @@ class TradeBot:
         # self.status_scheduler.start()
 
     def start(self):
-        self.dispatcher.bot.send_message(chat_id=self.config.secrets.admin_chat_id, text='Bot started')
+        self.dispatcher.bot.send_message(chat_id=self.config.secrets.admin_chat_id, text='🤖 Bot started')
         logger.info('Bot started')
         self.updater.start_polling()
         self.updater.idle()
