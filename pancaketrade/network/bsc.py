@@ -329,14 +329,16 @@ class Network:
             min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
         )
         try:
-            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
+            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': amount_bnb})) * Decimal(1.5)))
         except Exception as e:
             logger.warning(f'Error estimating gas price, trying again with older method: {e}')
             func = router_contract.functions.swapExactETHForTokens(
                 min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
             )
             try:
-                gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
+                gas_limit = Wei(
+                    int(Decimal(func.estimateGas({'from': self.wallet, 'value': amount_bnb})) * Decimal(1.5))
+                )
             except Exception:
                 logger.error('Can\'t get price estimate, cancelling transaction.')
                 return None
@@ -415,14 +417,14 @@ class Network:
             amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
         )
         try:
-            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
+            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.5)))
         except Exception as e:
             logger.warning(f'Error estimating gas price, trying again with older method: {e}')
             func = router_contract.functions.swapExactTokensForETH(
                 amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
             )
             try:
-                gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
+                gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.5)))
             except Exception:
                 logger.error('Can\'t get price estimate, cancelling transaction.')
                 return None
