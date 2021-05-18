@@ -45,7 +45,7 @@ class OrderWatcher:
         icon = '🟢' if self.type == 'buy' else '🔴'
         limit_price = f'{self.limit_price:.3g} BNB' if self.limit_price is not None else 'market price'
         return (
-            f'{icon} {order_id} {self.token_record.symbol} {comparison} {limit_price} - '
+            f'{icon} {order_id}: {self.token_record.symbol} <code>{comparison} {limit_price}</code> - '
             + f'<b>{type_name}</b> {amount_formatted} {unit}{trailing}'
         )
 
@@ -68,13 +68,13 @@ class OrderWatcher:
         type_icon = '🟢' if self.type == 'buy' else '🔴'
         limit_price = f'{self.limit_price:.3g} BNB' if self.limit_price is not None else 'market price'
         return (
-            f'{icon}{self.token_record.symbol} - ({order_id}) {type_name} {type_icon}\n'
+            f'{icon}{self.token_record.symbol} - ({order_id}) <b>{type_name}</b> {type_icon}\n'
+            + f'<b>Amount</b>: {amount_formatted} {unit}\n'
+            + f'<b>Price</b>: <code>{comparision} {limit_price}</code>\n'
             + trailing
-            + f'Amount: {amount_formatted} {unit}\n'
-            + f'Price {comparision} {limit_price}\n'
-            + f'Slippage: {self.slippage}%\n'
-            + f'Gas: {gas_price}\n'
-            + f'Created: {self.created}'
+            + f'<b>Slippage</b>: {self.slippage}%\n'
+            + f'<b>Gas</b>: {gas_price}\n'
+            + f'<b>Created</b>: {self.created.strftime("%Y-%m-%d %H:%m")}'
         )
 
     def price_update(self, sell_price: Decimal, buy_price: Decimal, sell_v2: bool, buy_v2: bool):
