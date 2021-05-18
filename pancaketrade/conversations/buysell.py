@@ -227,13 +227,16 @@ class BuySellConversation:
         current_price, _ = self.net.get_token_price(
             token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
         )
+        amount_formatted = (
+            f'{amount:.6g}' if order['type'] == 'buy' else f'{amount:,.1f}'
+        )  # tokens are display in float
         usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * current_price * amount
         unit = f'BNB worth of {token.symbol}' if order['type'] == 'buy' else token.symbol
         order['amount'] = str(int(amount * Decimal(10 ** decimals)))
         chat_message(
             update,
             context,
-            text=f'OK, I will {order["type"]} {amount:.6g} {unit} (~${usd_amount:.2f}).\n'
+            text=f'OK, I will {order["type"]} {amount_formatted} {unit} (~${usd_amount:.2f}).\n'
             + '<u>Confirm</u> the order below!',
         )
         return self.print_summary(update, context)
@@ -251,9 +254,15 @@ class BuySellConversation:
             token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
         )
         bnb_price = self.net.get_bnb_price()
+        amount_formatted = (
+            f'{amount:.6g}' if order['type'] == 'buy' else f'{amount:,.1f}'
+        )  # tokens are display in float
         usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * current_price * amount
         message = (
-            '<u>Preview:</u>\n' + f'{token.name}\n' + trailing + f'Amount: {amount:.6g} {unit} (${usd_amount:.2f})'
+            '<u>Preview:</u>\n'
+            + f'{token.name}\n'
+            + trailing
+            + f'Amount: {amount_formatted} {unit} (${usd_amount:.2f})'
         )
         chat_message(
             update,
