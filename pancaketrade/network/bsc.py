@@ -327,7 +327,8 @@ class Network:
         )
         try:
             gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
-        except Exception:
+        except Exception as e:
+            logger.error(f'Error estimating gas price: {e}')
             gas_limit = Wei(400000)
         if gas_limit > GAS_LIMIT_FAILSAFE:
             gas_limit = GAS_LIMIT_FAILSAFE
@@ -402,7 +403,8 @@ class Network:
         )
         try:
             gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
-        except Exception:
+        except Exception as e:
+            logger.error(f'Error estimating gas price: {e}')
             gas_limit = Wei(400000)
         if gas_limit > GAS_LIMIT_FAILSAFE:
             gas_limit = GAS_LIMIT_FAILSAFE

@@ -229,7 +229,7 @@ class OrderWatcher:
         logger.success(f'Sell transaction succeeded. Received {bnb_out:.3g} BNB')
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id,
-            text=f'✅ Got {bnb_out:.3g} BNB at ' + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}</a>',
+            text=f'✅ Got {bnb_out:.3g} BNB at ' + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}...</a>',
         )
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_repr()

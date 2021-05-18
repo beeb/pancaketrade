@@ -92,7 +92,7 @@ class SellAllConversation:
         chat_message(
             update,
             context,
-            text=f'✅ Got {bnb_out:.3g} BNB at ' + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}</a>',
+            text=f'✅ Got {bnb_out:.3g} BNB at ' + f'tx <a href="https://bscscan.com/tx/{txhash}">{txhash[:8]}...</a>',
         )
         if len(token.orders) > 0:
             chat_message(
