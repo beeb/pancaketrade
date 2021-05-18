@@ -70,7 +70,7 @@ class CreateOrderConversation:
 
     @check_chat_id
     def command_createorder(self, update: Update, context: CallbackContext):
-        assert update.callback_query and update.effective_chat and context.user_data is not None
+        assert update.callback_query and context.user_data is not None
         query = update.callback_query
         # query.answer()
         assert query.data
@@ -92,7 +92,7 @@ class CreateOrderConversation:
         chat_message(
             update,
             context,
-            text=f'Creating order for token {token.name}.\nWhich type of order would you like to create?',
+            text=f'Creating order for token {token.name}.\nWhich <u>type of order</u> would you like to create?',
             reply_markup=reply_markup,
             edit=False,
         )
@@ -120,7 +120,7 @@ class CreateOrderConversation:
                 update,
                 context,
                 text='OK, the order will sell as soon as the price is below target price.\n'
-                + f'Next, please indicate the price in <b>BNB per {token.symbol}</b> '
+                + f'Next, please indicate the <u>price in <b>BNB per {token.symbol}</b></u> '
                 + 'at which the order will activate.\n'
                 + f'You can use scientific notation like <code>{current_price:.1E}</code> if you want.\n'
                 + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.',
@@ -155,7 +155,7 @@ class CreateOrderConversation:
             context,
             text=f'OK, the order will {order["type"]} when price is '
             + f'{"above" if order["above"] else "below"} target price.\n'
-            + 'Do you want to enable trailing stop loss? If yes, what is the callback rate?\n'
+            + 'Do you want to enable <u>trailing stop loss</u>? If yes, what is the callback rate?\n'
             + 'You can also message me a custom value in percent.',
             reply_markup=reply_markup,
         )
@@ -183,7 +183,7 @@ class CreateOrderConversation:
                     update,
                     context,
                     text='OK, the order will use no trailing stop loss.\n'
-                    + f'Next, please indicate the price in <b>BNB per {token.symbol}</b> '
+                    + f'Next, please indicate the <u>price in <b>BNB per {token.symbol}</b></u> '
                     + 'at which the order will activate.\n'
                     + f'You can use scientific notation like <code>{current_price:.1E}</code> if you want.\n'
                     + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.',
@@ -207,7 +207,8 @@ class CreateOrderConversation:
             update,
             context,
             text=f'OK, the order will use trailing stop loss with {callback_rate}% callback.\n'
-            + f'Next, please indicate the price in <b>BNB per {token.symbol}</b> at which the order will activate.\n'
+            + f'Next, please indicate the <u>price in <b>BNB per {token.symbol}</b></u> '
+            + 'at which the order will activate.\n'
             + f'You can use scientific notation like <code>{current_price:.1E}</code> if you want.\n'
             + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.',
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]]),
@@ -260,7 +261,7 @@ class CreateOrderConversation:
             update,
             context,
             text=f'OK, I will {order["type"]} when the price of {token.symbol} reaches {price:.6g} BNB per token.\n'
-            + f'Next, how much {unit} do you want me to use for {order["type"]}ing?\n'
+            + f'Next, <u>how much {unit}</u> do you want me to use for {order["type"]}ing?\n'
             + f'You can use scientific notation like <code>{balance:.1E}</code> if you want.\n'
             + f'Current balance: <b>{balance:.6g} {unit}</b>',
             reply_markup=reply_markup,
@@ -326,7 +327,7 @@ class CreateOrderConversation:
             update,
             context,
             text=f'OK, I will {order["type"]} {amount:.6g} {unit} (~${usd_amount:.2f}) when the condition is reached.\n'
-            + 'Next, please indicate the slippage in percent you want to use for this order.\n'
+            + 'Next, please indicate the <u>slippage in percent</u> you want to use for this order.\n'
             + 'You can also message me a custom value in percent.',
             reply_markup=reply_markup,
         )
@@ -362,7 +363,7 @@ class CreateOrderConversation:
             update,
             context,
             text=f'OK, the order will use slippage of {slippage_percent}%.\n'
-            + 'Finally, please indicate the gas price in Gwei for this order.\n'
+            + 'Finally, please indicate the <u>gas price in Gwei</u> for this order.\n'
             + 'Choose "Default" to use the default network price at the moment '
             + f'of the transaction (currently {network_gas_price:.1g} Gwei) '
             + 'or message me the value.',
@@ -419,7 +420,7 @@ class CreateOrderConversation:
         chat_message(
             update,
             context,
-            text=f'OK, the order will use {gas_price_gwei:.6g} Gwei for gas price.\nConfirm the order below!',
+            text=f'OK, the order will use {gas_price_gwei:.6g} Gwei for gas price.\n<u>Confirm</u> the order below!',
         )
         return self.print_summary(update, context)
 
