@@ -403,7 +403,7 @@ class CreateOrderConversation:
                 chat_message(
                     update, context, text='OK, the order will use default network gas price.\nConfirm the order below!'
                 )
-            elif query.data.startswith('+') and query.data[1:].isdecimal():
+            elif query.data.startswith('+') and query.data[1:].isnumeric():
                 order['gas_price'] = query.data
                 chat_message(
                     update,
