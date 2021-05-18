@@ -14,6 +14,8 @@ from web3.contract import Contract, ContractFunction
 from web3.exceptions import ABIFunctionNotFound, ContractLogicError
 from web3.types import ChecksumAddress, HexBytes, Nonce, TxParams, TxReceipt, Wei
 
+GAS_LIMIT_FAILSAFE = Wei(1000000)  # if the estimated price is above this one, don't use the estimated price
+
 
 class NetworkAddresses(NamedTuple):
     wbnb: ChecksumAddress = Web3.toChecksumAddress('0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
@@ -267,7 +269,6 @@ class Network:
         slippage_percent: int,
         gas_price: Optional[str],
         v2: bool = True,
-        gas_limit: Wei = Wei(400000),
     ) -> Tuple[bool, Decimal, str]:
         balance_bnb = self.w3.eth.get_balance(self.wallet)
         if amount_bnb > balance_bnb - Wei(2000000000000000):  # leave 0.002 BNB for future gas fees
@@ -287,7 +288,6 @@ class Network:
             token_address=token_address,
             amount_bnb=amount_bnb,
             min_output_tokens=min_output_tokens,
-            gas_limit=gas_limit,
             gas_price=final_gas_price,
             v2=v2,
         )
@@ -318,7 +318,6 @@ class Network:
         token_address: ChecksumAddress,
         amount_bnb: Wei,
         min_output_tokens: Wei,
-        gas_limit: Wei,
         gas_price: Wei,
         v2: bool,
     ) -> TxReceipt:
@@ -327,9 +326,11 @@ class Network:
             min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
         )
         try:
-            logger.info(func.estimateGas({'from': self.wallet}))
-        except Exception as e:
-            logger.error(e)
+            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
+        except Exception:
+            gas_limit = Wei(400000)
+        if gas_limit > GAS_LIMIT_FAILSAFE:
+            gas_limit = GAS_LIMIT_FAILSAFE
         params = self.get_tx_params(value=amount_bnb, gas=gas_limit, gas_price=gas_price)
         tx = self.build_and_send_tx(func=func, tx_params=params)
         return self.w3.eth.wait_for_transaction_receipt(tx, timeout=60)
@@ -341,7 +342,6 @@ class Network:
         slippage_percent: int,
         gas_price: Optional[str],
         v2: bool = True,
-        gas_limit: Wei = Wei(400000),
     ) -> Tuple[bool, Decimal, str]:
         balance_tokens = self.get_token_balance_wei(token_address=token_address)
         amount_tokens = min(amount_tokens, balance_tokens)  # partially fill order if possible
@@ -361,7 +361,6 @@ class Network:
             token_address=token_address,
             amount_tokens=amount_tokens,
             min_output_bnb=min_output_bnb,
-            gas_limit=gas_limit,
             gas_price=final_gas_price,
             v2=v2,
         )
@@ -394,7 +393,6 @@ class Network:
         token_address: ChecksumAddress,
         amount_tokens: Wei,
         min_output_bnb: Wei,
-        gas_limit: Wei,
         gas_price: Wei,
         v2: bool,
     ) -> TxReceipt:
@@ -403,9 +401,11 @@ class Network:
             amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
         )
         try:
-            logger.info(func.estimateGas({'from': self.wallet}))
-        except Exception as e:
-            logger.error(e)
+            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet})) * Decimal(1.5)))
+        except Exception:
+            gas_limit = Wei(400000)
+        if gas_limit > GAS_LIMIT_FAILSAFE:
+            gas_limit = GAS_LIMIT_FAILSAFE
         params = self.get_tx_params(value=Wei(0), gas=gas_limit, gas_price=gas_price)
         tx = self.build_and_send_tx(func=func, tx_params=params)
         return self.w3.eth.wait_for_transaction_receipt(tx, timeout=60)
