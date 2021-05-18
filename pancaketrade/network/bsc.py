@@ -327,7 +327,7 @@ class Network:
             min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
         )
         try:
-            print(func.estimateGas())
+            print(func.estimateGas({'from': self.wallet}))
         except Exception as e:
             print(e)
         params = self.get_tx_params(value=amount_bnb, gas=gas_limit, gas_price=gas_price)
@@ -403,7 +403,7 @@ class Network:
             amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
         )
         try:
-            print(func.estimateGas())
+            print(func.estimateGas({'from': self.wallet}))
         except Exception as e:
             print(e)
         params = self.get_tx_params(value=Wei(0), gas=gas_limit, gas_price=gas_price)
