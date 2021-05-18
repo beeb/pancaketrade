@@ -104,8 +104,7 @@ class CreateOrderConversation:
         query = update.callback_query
         # query.answer()
         if query.data == 'cancel':
-            del context.user_data['createorder']
-            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+            self.cancel_command(update, context)
             return ConversationHandler.END
         order = context.user_data['createorder']
         if query.data == 'stop_loss':
@@ -135,8 +134,7 @@ class CreateOrderConversation:
             order['type'] = 'buy'
             order['above'] = False  # below
         else:
-            del context.user_data['createorder']
-            chat_message(update, context, text='⛔ That type of order is not supported.')
+            self.command_error(update, context, text='That type of order is not supported.')
             return ConversationHandler.END
         reply_markup = InlineKeyboardMarkup(
             inline_keyboard=[
@@ -177,8 +175,7 @@ class CreateOrderConversation:
             # query.answer()
             assert query.data
             if query.data == 'cancel':
-                del context.user_data['createorder']
-                chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+                self.cancel_command(update, context)
                 return ConversationHandler.END
             if query.data == 'None':
                 order['trailing_stop'] = None
@@ -196,17 +193,15 @@ class CreateOrderConversation:
             try:
                 callback_rate = int(query.data)
             except ValueError:
-                del context.user_data['createorder']
-                chat_message(update, context, text='⛔ The callback rate is not recognized.')
+                self.command_error(update, context, text='The callback rate is not recognized.')
                 return ConversationHandler.END
         else:
             assert update.message and update.message.text
             try:
                 callback_rate = int(update.message.text.strip())
             except ValueError:
-                del context.user_data['createorder']
-                chat_message(update, context, text='⛔ The callback rate is not recognized.')
-                return ConversationHandler.END
+                chat_message(update, context, text='⚠️ The callback rate is not recognized, try again:')
+                return self.next.TRAILING
         order['trailing_stop'] = callback_rate
         chat_message(
             update,
@@ -227,8 +222,7 @@ class CreateOrderConversation:
             # assert update.callback_query
             # query = update.callback_query
             # query.answer()
-            del context.user_data['createorder']
-            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+            self.cancel_command(update, context)
             return ConversationHandler.END
         assert update.message and update.message.text
         try:
@@ -283,15 +277,13 @@ class CreateOrderConversation:
             query = update.callback_query
             # query.answer()
             if query.data == 'cancel':
-                del context.user_data['createorder']
-                chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+                self.cancel_command(update, context)
                 return ConversationHandler.END
             assert query.data is not None
             try:
                 balance_fraction = Decimal(query.data)
             except Exception:
-                del context.user_data['createorder']
-                chat_message(update, context, text='⛔ The callback rate is not recognized.')
+                self.command_error(update, context, text='The callback rate is not recognized.')
                 return ConversationHandler.END
             balance = self.net.get_token_balance(token_address=token.address)
             amount = balance_fraction * balance
@@ -350,23 +342,20 @@ class CreateOrderConversation:
             # query.answer()
             assert query.data
             if query.data == 'cancel':
-                del context.user_data['createorder']
-                chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+                self.cancel_command(update, context)
                 return ConversationHandler.END
             try:
                 slippage_percent = int(query.data)
             except ValueError:
-                del context.user_data['createorder']
-                chat_message(update, context, text='⛔ The slippage is not recognized.')
+                self.command_error(update, context, text='The slippage is not recognized.')
                 return ConversationHandler.END
         else:
             assert update.message and update.message.text
             try:
                 slippage_percent = int(update.message.text.strip())
             except ValueError:
-                del context.user_data['createorder']
-                chat_message(update, context, text='⛔ The slippage is not recognized.')
-                return ConversationHandler.END
+                chat_message(update, context, text='⚠️ The slippage is not recognized, try again:', edit=False)
+                return self.next.SLIPPAGE
         order['slippage'] = slippage_percent
         network_gas_price = Decimal(self.net.w3.eth.gas_price) / Decimal(10 ** 9)
         chat_message(
@@ -403,8 +392,7 @@ class CreateOrderConversation:
             # query.answer()
             assert query.data
             if query.data == 'cancel':
-                del context.user_data['createorder']
-                chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+                self.cancel_command(update, context)
                 return ConversationHandler.END
             elif query.data == 'None':
                 order['gas_price'] = None
@@ -425,8 +413,7 @@ class CreateOrderConversation:
             try:
                 gas_price_gwei = Decimal(update.message.text.strip())
             except ValueError:
-                del context.user_data['createorder']
-                chat_message(update, context, text='⛔ The gas price is not recognized.')
+                chat_message(update, context, text='⚠️ The gas price is not recognized, try again:', edit=False)
                 return self.next.GAS
         order['gas_price'] = str(Web3.toWei(gas_price_gwei, unit='gwei'))
         chat_message(
@@ -487,19 +474,17 @@ class CreateOrderConversation:
         query = update.callback_query
         # query.answer()
         if query.data != 'ok':
-            del context.user_data['createorder']
-            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+            self.cancel_command(update, context)
             return ConversationHandler.END
         add = context.user_data['createorder']
         token: TokenWatcher = self.parent.watchers[add['token_address']]
-        del add['token_address']
+        del add['token_address']  # not needed in order record creation
         try:
             db.connect()
             with db.atomic():
                 order_record = Order.create(token=token.token_record, created=datetime.now(), **add)
         except Exception:
-            chat_message(update, context, text='⛔ Failed to create database record.')
-            del context.user_data['createorder']
+            self.command_error(update, context, text='Failed to create database record.')
             return ConversationHandler.END
         finally:
             del context.user_data['createorder']
@@ -534,7 +519,15 @@ class CreateOrderConversation:
 
     @check_chat_id
     def command_cancelorder(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
-        del context.user_data['createorder']
-        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+        self.cancel_command(update, context)
         return ConversationHandler.END
+
+    def cancel_command(self, update: Update, context: CallbackContext):
+        assert context.user_data is not None
+        del context.user_data['createorder']
+        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=False)
+
+    def command_error(self, update: Update, context: CallbackContext, text: str):
+        assert context.user_data is not None
+        del context.user_data['createorder']
+        chat_message(update, context, text=f'⛔️ {text}', edit=False)
