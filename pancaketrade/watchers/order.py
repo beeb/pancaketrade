@@ -97,12 +97,12 @@ class OrderWatcher:
             self.limit_price if self.limit_price is not None else buy_price
         )  # fulfill condition immediately if we have no limit price
         if self.trailing_stop is None and not self.above and buy_price <= limit_price:
-            logger.success(f'Limit buy triggered at price {buy_price:.3E} BNB')  # buy
+            logger.success(f'Limit buy triggered at price {buy_price:.3e} BNB')  # buy
             self.close(v2=v2)
             return
         elif self.trailing_stop and not self.above and (buy_price <= limit_price or self.min_price is not None):
             if self.min_price is None:
-                logger.info(f'Limit condition reached at price {buy_price:.3E} BNB')
+                logger.info(f'Limit condition reached at price {buy_price:.3e} BNB')
                 self.dispatcher.bot.send_message(
                     chat_id=self.chat_id, text=f'🔹 Order #{self.order_record.id} activated trailing stop loss.'
                 )
@@ -112,7 +112,7 @@ class OrderWatcher:
                 self.min_price = buy_price
                 return
             elif rise > self.trailing_stop:
-                logger.success(f'Trailing stop loss triggered at price {buy_price:.3E} BNB')  # buy
+                logger.success(f'Trailing stop loss triggered at price {buy_price:.3e} BNB')  # buy
                 self.close(v2=v2)
                 return
 
@@ -127,16 +127,16 @@ class OrderWatcher:
             self.limit_price if self.limit_price is not None else sell_price
         )  # fulfill condition immediately if we have no limit price
         if self.trailing_stop is None and not self.above and sell_price <= limit_price:
-            logger.warning(f'Stop loss triggered at price {sell_price:.3E} BNB')
+            logger.warning(f'Stop loss triggered at price {sell_price:.3e} BNB')
             self.close(v2=v2)
             return
         elif self.trailing_stop is None and self.above and sell_price >= limit_price:
-            logger.success(f'Take profit triggered at price {sell_price:.3E} BNB')
+            logger.success(f'Take profit triggered at price {sell_price:.3e} BNB')
             self.close(v2=v2)
             return
         elif self.trailing_stop and self.above and (sell_price >= limit_price or self.max_price is not None):
             if self.max_price is None:
-                logger.info(f'Limit condition reached at price {sell_price:.3E} BNB')
+                logger.info(f'Limit condition reached at price {sell_price:.3e} BNB')
                 self.dispatcher.bot.send_message(
                     chat_id=self.chat_id, text=f'🔹 Order #{self.order_record.id} activated trailing stop loss.'
                 )
@@ -146,7 +146,7 @@ class OrderWatcher:
                 self.max_price = sell_price
                 return
             elif drop > self.trailing_stop:
-                logger.success(f'Trailing stop loss triggered at price {sell_price:.3E} BNB')
+                logger.success(f'Trailing stop loss triggered at price {sell_price:.3e} BNB')
                 self.close(v2=v2)
                 return
 

@@ -167,8 +167,8 @@ class BuySellConversation:
                     context,
                     text='OK, the order will use no trailing stop loss.\n'
                     + f'Next, <u>how much {unit}</u> do you want me to use for {order["type"]}ing?\n'
-                    + f'You can use scientific notation like <code>{balance:.1E}</code> if you want.\n'
-                    + f'Current balance: <b>{balance_formatted} {unit}</b>',
+                    + f'You can use scientific notation like <code>{balance:.1e}</code> if you want.\n'
+                    + f'<b>Current balance</b>: <code>{balance_formatted}</code> {unit}',
                     reply_markup=reply_markup,
                 )
                 return self.next.AMOUNT
@@ -190,8 +190,8 @@ class BuySellConversation:
             context,
             text=f'OK, the order will use trailing stop loss with {callback_rate}% callback.\n'
             + f'Next, <u>how much {unit}</u> do you want me to use for {order["type"]}ing?\n'
-            + f'You can use scientific notation like <code>{balance:.1E}</code> if you want.\n'
-            + f'Current balance: <b>{balance:.6g} {unit}</b>',
+            + f'You can use scientific notation like <code>{balance:.1e}</code> if you want.\n'
+            + f'<b>Current balance</b>: <code>{balance:.6g}</code> {unit}',
             reply_markup=reply_markup,
         )
         return self.next.AMOUNT

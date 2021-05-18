@@ -268,8 +268,8 @@ class CreateOrderConversation:
             context,
             text=f'OK, I will {order["type"]} when the price of {token.symbol} reaches {price:.6g} BNB per token.\n'
             + f'Next, <u>how much {unit}</u> do you want me to use for {order["type"]}ing?\n'
-            + f'You can use scientific notation like <code>{balance:.1E}</code> if you want.\n'
-            + f'Current balance: <b>{balance_formatted} {unit}</b>',
+            + f'You can use scientific notation like <code>{balance:.1e}</code> if you want.\n'
+            + f'<b>Current balance</b>: <code>{balance_formatted}</code> {unit}',
             reply_markup=reply_markup,
         )
         return self.next.AMOUNT
@@ -554,10 +554,10 @@ class CreateOrderConversation:
             f'Next, please indicate the <u>price in <b>BNB per {token_symbol}</b></u> '
             + 'at which the order will activate.\n'
             + 'You have 3 options for this:\n'
-            + f'➖ You can use standard notation like <code>{current_price_fixed}</code>\n'
-            + f'➖ You can use scientific notation like <code>{current_price:.1e}</code>\n'
-            + '➖ You can use a multiplier for the current price like <code>1.5x</code>\n'
-            + f'Current price: <b>{current_price:.6g}</b> BNB per {token_symbol}.'
+            + f'➖ You can use standard notation like "<code>{current_price_fixed}</code>"\n'
+            + f'➖ You can use scientific notation like "<code>{current_price:.1e}</code>"\n'
+            + '➖ You can use a multiplier for the current price like "<code>1.5x</code>"\n'
+            + f'<b>Current price</b>: <code>{current_price:.6g}</code> BNB per {token_symbol}.'
         )
         return next_message
 
