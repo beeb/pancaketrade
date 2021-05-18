@@ -21,6 +21,9 @@ In order to use this bot, you will need the following:
 
 ## Quick Start
 
+Before you start, make sure you have your BscScan API key and Telegram Bot token + user ID available.
+Initiate the chat with your bot on Telegram (click the "Start" button) to initialize the chat ID before you start the bot the first time.
+
 Run the following commands
 
 ```bash
