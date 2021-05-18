@@ -123,10 +123,7 @@ class CreateOrderConversation:
                 update,
                 context,
                 text='OK, the order will sell as soon as the price is below target price.\n'
-                + f'Next, please indicate the <u>price in <b>BNB per {token.symbol}</b></u> '
-                + 'at which the order will activate.\n'
-                + f'You can use scientific notation like <code>{current_price:.1E}</code> if you want.\n'
-                + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.',
+                + self.get_price_message(current_price=current_price, token_symbol=token.symbol),
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]]),
             )
             return self.next.PRICE
@@ -172,6 +169,7 @@ class CreateOrderConversation:
         current_price, _ = self.net.get_token_price(
             token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
         )
+        next_message = self.get_price_message(current_price=current_price, token_symbol=token.symbol)
         if update.message is None:
             assert update.callback_query
             query = update.callback_query
@@ -185,11 +183,7 @@ class CreateOrderConversation:
                 chat_message(
                     update,
                     context,
-                    text='OK, the order will use no trailing stop loss.\n'
-                    + f'Next, please indicate the <u>price in <b>BNB per {token.symbol}</b></u> '
-                    + 'at which the order will activate.\n'
-                    + f'You can use scientific notation like <code>{current_price:.1E}</code> if you want.\n'
-                    + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.',
+                    text='OK, the order will use no trailing stop loss.\n' + next_message,
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]]),
                 )
                 return self.next.PRICE
@@ -209,11 +203,7 @@ class CreateOrderConversation:
         chat_message(
             update,
             context,
-            text=f'OK, the order will use trailing stop loss with {callback_rate}% callback.\n'
-            + f'Next, please indicate the <u>price in <b>BNB per {token.symbol}</b></u> '
-            + 'at which the order will activate.\n'
-            + f'You can use scientific notation like <code>{current_price:.1E}</code> if you want.\n'
-            + f'Current price: <b>{current_price:.6g}</b> BNB per {token.symbol}.',
+            text=f'OK, the order will use trailing stop loss with {callback_rate}% callback.\n' + next_message,
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]]),
         )
         return self.next.PRICE
@@ -222,6 +212,7 @@ class CreateOrderConversation:
     def command_createorder_price(self, update: Update, context: CallbackContext):
         assert update.effective_chat and context.user_data is not None
         order = context.user_data['createorder']
+        token = self.parent.watchers[order['token_address']]
         if update.message is None:  # we got a cancel callback
             # assert update.callback_query
             # query = update.callback_query
@@ -229,12 +220,23 @@ class CreateOrderConversation:
             self.cancel_command(update, context)
             return ConversationHandler.END
         assert update.message and update.message.text
-        try:
-            price = Decimal(update.message.text.strip())
-        except Exception:
-            chat_message(update, context, text='⚠️ The price you inserted is not valid. Try again:')
-            return self.next.PRICE
-        token = self.parent.watchers[order['token_address']]
+        answer = update.message.text.strip()
+        if answer.endswith('x'):
+            try:
+                factor = Decimal(answer[:-1])
+            except Exception:
+                chat_message(update, context, text='⚠️ The factor you inserted is not valid. Try again:')
+                return self.next.PRICE
+            current_price, _ = self.net.get_token_price(
+                token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
+            )
+            price = factor * current_price
+        else:
+            try:
+                price = Decimal(answer)
+            except Exception:
+                chat_message(update, context, text='⚠️ The price you inserted is not valid. Try again:')
+                return self.next.PRICE
         order['limit_price'] = str(price)
         unit = 'BNB' if order['type'] == 'buy' else token.symbol
         balance = (
@@ -543,6 +545,21 @@ class CreateOrderConversation:
 
     def get_amount_unit(self, order: Mapping, token) -> str:
         return token.symbol if order['type'] == 'sell' else 'BNB'
+
+    def get_price_message(self, current_price: Decimal, token_symbol: str) -> str:
+        current_price_fixed = (
+            f'{current_price:.{-current_price.adjusted()+2}f}' if current_price < 100 else f'{current_price:.1f}'
+        )
+        next_message = (
+            f'Next, please indicate the <u>price in <b>BNB per {token_symbol}</b></u> '
+            + 'at which the order will activate.\n'
+            + 'You have 3 options for this:\n'
+            + f'➖ You can use standard notation like <code>{current_price_fixed}</code>\n'
+            + f'➖ You can use scientific notation like <code>{current_price:.1e}</code>\n'
+            + '➖ You can use a multiplier for the current price like <code>1.5x</code>\n'
+            + f'Current price: <b>{current_price:.6g}</b> BNB per {token_symbol}.'
+        )
+        return next_message
 
     def cancel_command(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
