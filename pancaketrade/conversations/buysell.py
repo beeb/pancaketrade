@@ -294,6 +294,8 @@ class BuySellConversation:
         )
         token.orders.append(order)
         chat_message(update, context, text='✅ Order was added successfully!')
+        for job in token.scheduler.get_jobs():  # check prices now
+            job.modify(next_run_time=datetime.now())
         return ConversationHandler.END
 
     @check_chat_id
