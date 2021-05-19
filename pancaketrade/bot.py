@@ -89,7 +89,7 @@ class TradeBot:
     def start_status_update(self):
         trigger = IntervalTrigger(seconds=30)
         self.status_scheduler.add_job(self.update_status, trigger=trigger)
-        # self.status_scheduler.start()
+        self.status_scheduler.start()
 
     def start(self):
         self.dispatcher.bot.send_message(chat_id=self.config.secrets.admin_chat_id, text='🤖 Bot started')
