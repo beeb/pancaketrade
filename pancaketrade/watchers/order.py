@@ -207,6 +207,7 @@ class OrderWatcher:
         self.finished = True  # will trigger deletion of the object
 
     def sell(self, v2: bool):
+        balance_before = self.net.get_token_balance_wei(token_address=self.token_record.address)
         res, bnb_out, txhash_or_error = self.net.sell_tokens(
             self.token_record.address,
             amount_tokens=self.amount,
@@ -228,7 +229,7 @@ class OrderWatcher:
             self.finished = True  # will trigger deletion of the object
             return
         effective_price = bnb_out / self.get_human_amount()
-        sold_proportion = self.amount / self.net.get_token_balance_wei(token_address=self.token_record.address)
+        sold_proportion = self.amount / balance_before
         logger.success(
             f'Sell transaction succeeded. Received {bnb_out:.3g} BNB. '
             + f'Effective price (after tax) {effective_price:.4g} BNB/token'

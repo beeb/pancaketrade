@@ -100,6 +100,7 @@ class Network:
             return Decimal(0)
         return balance
 
+    @cached(cache=TTLCache(maxsize=256, ttl=0.5))
     def get_token_balance_wei(self, token_address: ChecksumAddress) -> Wei:
         token_contract = self.get_token_contract(token_address)
         try:
