@@ -198,7 +198,7 @@ class TradeBot:
         chat_message(
             update,
             context,
-            text='Buy or sell which token?',
+            text='Buy or sell now which token?',
             reply_markup=reply_markup,
             edit=False,
         )
