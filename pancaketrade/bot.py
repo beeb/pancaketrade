@@ -180,7 +180,8 @@ class TradeBot:
         if not Web3.isChecksumAddress(token_address):
             chat_message(update, context, text='⛔️ Invalid token address.')
             return
-        chat_message(update, context, text=f'<code>{token_address}</code>')
+        token = self.watchers[token_address]
+        chat_message(update, context, text=f'{token.name}\n<code>{token_address}</code>')
 
     def update_status(self):
         balance_bnb = self.net.get_bnb_balance()
