@@ -87,9 +87,9 @@ class TradeBot:
         self.dispatcher.add_error_handler(self.error_handler)
 
     def start_status_update(self):
-        trigger = IntervalTrigger(seconds=30)
+        trigger = IntervalTrigger(seconds=15)
         self.status_scheduler.add_job(self.update_status, trigger=trigger)
-        # self.status_scheduler.start()
+        self.status_scheduler.start()
 
     def start(self):
         self.dispatcher.bot.send_message(chat_id=self.config.secrets.admin_chat_id, text='🤖 Bot started')
@@ -184,6 +184,8 @@ class TradeBot:
         chat_message(update, context, text=f'{token.name}\n<code>{token_address}</code>')
 
     def update_status(self):
+        if self.last_status_message_id is None:
+            return  # we probably did not call status since start
         balance_bnb = self.net.get_bnb_balance()
         price_bnb = self.net.get_bnb_price()
         self.dispatcher.bot.edit_message_text(
