@@ -67,7 +67,7 @@ def chat_message(
     update: Update,
     context: CallbackContext,
     text: str,
-    edit: bool = True,
+    edit: bool = False,
     reply_markup: Optional[InlineKeyboardMarkup] = None,
 ):
     assert update.effective_chat
