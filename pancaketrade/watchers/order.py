@@ -189,11 +189,16 @@ class OrderWatcher:
             self.remove_order()
             self.finished = True  # will trigger deletion of the object
             return
-        logger.success(f'Buy transaction succeeded. Received {tokens_out:.3g} {self.token_record.symbol}')
+        effective_price = self.get_human_amount() / tokens_out
+        logger.success(
+            f'Buy transaction succeeded. Received {tokens_out:.3g} {self.token_record.symbol}. '
+            + f'Effective price (after tax) {effective_price:.4g} BNB/token'
+        )
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id,
             text=f'✅ Got {tokens_out:,.1f} {self.token_record.symbol} at '
-            + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>',
+            + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>\n'
+            + f'Effective price (after tax) {effective_price:.4g} BNB/token',
         )
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_repr()
@@ -222,11 +227,18 @@ class OrderWatcher:
             self.remove_order()
             self.finished = True  # will trigger deletion of the object
             return
-        logger.success(f'Sell transaction succeeded. Received {bnb_out:.3g} BNB')
+        effective_price = bnb_out / self.get_human_amount()
+        sold_proportion = self.amount / self.net.get_token_balance_wei(token_address=self.token_record.address)
+        logger.success(
+            f'Sell transaction succeeded. Received {bnb_out:.3g} BNB. '
+            + f'Effective price (after tax) {effective_price:.4g} BNB/token'
+        )
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id,
             text=f'✅ Got {bnb_out:.3g} BNB at '
-            + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>',
+            + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>\n'
+            + f'Effective price (after tax) {effective_price:.4g} BNB/token.\n'
+            + f'This order sold {sold_proportion:.1%}% of the token\'s balance.',
         )
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_repr()
