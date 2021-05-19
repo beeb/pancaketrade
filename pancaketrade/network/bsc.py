@@ -131,14 +131,14 @@ class Network:
         elif lp_v2 is None and lp_v1:  # only v1
             return (
                 self.get_token_price_by_lp(
-                    token_contract=token_contract, token_lp=lp_v1, token_decimals=token_decimals
+                    token_contract=token_contract, token_lp=lp_v1, token_decimals=token_decimals, ignore_poolsize=True
                 ),
                 False,
             )
         elif lp_v1 is None and lp_v2:  # only v2
             return (
                 self.get_token_price_by_lp(
-                    token_contract=token_contract, token_lp=lp_v2, token_decimals=token_decimals
+                    token_contract=token_contract, token_lp=lp_v2, token_decimals=token_decimals, ignore_poolsize=True
                 ),
                 True,
             )
@@ -224,7 +224,7 @@ class Network:
 
     def find_lp_address(self, token_address: ChecksumAddress, v2: bool = False) -> Optional[ChecksumAddress]:
         cached = self.lp_cache.get((str(token_address), v2))
-        if cached:
+        if cached is not None:
             return cached
         contract = self.contracts.factory_v2 if v2 else self.contracts.factory_v1
         pair = contract.functions.getPair(token_address, self.addr.wbnb).call()
