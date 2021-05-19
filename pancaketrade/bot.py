@@ -9,6 +9,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Upda
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, Defaults, Updater
 from web3 import Web3
 
+from pancaketrade import __version__
 from pancaketrade.conversations import (
     AddTokenConversation,
     BuySellConversation,
@@ -97,7 +98,9 @@ class TradeBot:
 
     def start(self):
         try:
-            self.dispatcher.bot.send_message(chat_id=self.config.secrets.admin_chat_id, text='🤖 Bot started')
+            self.dispatcher.bot.send_message(
+                chat_id=self.config.secrets.admin_chat_id, text=f'🤖 Bot v{__version__} started'
+            )
         except Exception:  # chat doesn't exist yet, do nothing
             logger.info('Chat with user doesn\'t exist yet.')
         logger.info('Bot started')
