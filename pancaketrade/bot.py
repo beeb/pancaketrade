@@ -66,14 +66,15 @@ class TradeBot:
         self.dispatcher.add_handler(CommandHandler('start', self.command_start))
         self.dispatcher.add_handler(CommandHandler('status', self.command_status))
         self.dispatcher.add_handler(CommandHandler('order', self.command_order))
+        self.dispatcher.add_handler(CommandHandler('addorder', self.command_addorder))
         for convo in self.convos.values():
             self.dispatcher.add_handler(convo.handler)
         commands = [
             ('status', 'display all tokens and their price, orders'),
+            ('addorder', 'add order to one of the tokens.'),
+            ('order', 'display order information. Pass the order ID as argument.'),
             ('addtoken', 'add a token that you want to trade'),
-            ('removetoken', 'remove a token that you added previously'),
-            ('cancelorder', 'cancel the current order creation/removal process (if bot is stuck for instance)'),
-            ('order', 'display detailled order information. Pass the order ID as argument.'),
+            ('removetoken', 'remove a token that you added'),
         ]
         self.dispatcher.bot.set_my_commands(commands=commands)
         self.dispatcher.add_error_handler(self.error_handler)
@@ -102,19 +103,34 @@ class TradeBot:
     @check_chat_id
     def command_status(self, update: Update, context: CallbackContext):
         assert update.message and update.effective_chat
-        balance_bnb = self.net.get_bnb_balance()
-        price_bnb = self.net.get_bnb_price()
-        stat_msg = context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text='<u>STATUS</u>\n' + f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})',
-        )
-        self.last_status_message_id = stat_msg.message_id
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
         for token in sorted_tokens:
             status, buttons = self.get_token_status(token)
             reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
             msg = context.bot.send_message(chat_id=update.effective_chat.id, text=status, reply_markup=reply_markup)
             self.watchers[token.address].last_status_message_id = msg.message_id
+        balance_bnb = self.net.get_bnb_balance()
+        price_bnb = self.net.get_bnb_price()
+        stat_msg = context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})',
+        )
+        self.last_status_message_id = stat_msg.message_id
+
+    @check_chat_id
+    def command_addorder(self, update: Update, context: CallbackContext):
+        buttons: List[InlineKeyboardButton] = []
+        for token in sorted(self.watchers.values(), key=lambda token: token.symbol.lower()):
+            buttons.append(InlineKeyboardButton(token.name, callback_data=f'create_order:{token.address}'))
+        buttons_layout = [buttons[i : i + 3] for i in range(0, len(buttons), 3)]  # noqa: E203
+        reply_markup = InlineKeyboardMarkup(buttons_layout)
+        chat_message(
+            update,
+            context,
+            text='Add order to which token?',
+            reply_markup=reply_markup,
+            edit=False,
+        )
 
     @check_chat_id
     def command_order(self, update: Update, context: CallbackContext):
