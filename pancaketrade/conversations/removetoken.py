@@ -50,7 +50,6 @@ class RemoveTokenConversation:
     def command_removetoken_confirm(self, update: Update, context: CallbackContext):
         assert update.callback_query and update.effective_chat
         query = update.callback_query
-        # query.answer()
         if query.data == 'cancel':
             chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=self.config.update_messages)
             return ConversationHandler.END
@@ -79,7 +78,6 @@ class RemoveTokenConversation:
     def command_removetoken_tokenchoice(self, update: Update, context: CallbackContext):
         assert update.callback_query
         query = update.callback_query
-        # query.answer()
         if query.data == 'cancel':
             chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=self.config.update_messages)
             return ConversationHandler.END

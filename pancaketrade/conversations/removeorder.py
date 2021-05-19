@@ -36,7 +36,6 @@ class RemoveOrderConversation:
     def command_removeorder(self, update: Update, context: CallbackContext):
         assert update.callback_query and update.effective_chat and context.user_data is not None
         query = update.callback_query
-        # query.answer()
         assert query.data
         token_address = query.data.split(':')[1]
         if not Web3.isChecksumAddress(token_address):
@@ -68,7 +67,6 @@ class RemoveOrderConversation:
     def command_removeorder_confirm(self, update: Update, context: CallbackContext):
         assert update.callback_query and update.effective_chat and context.user_data is not None
         query = update.callback_query
-        # query.answer()
         if query.data == 'cancel':
             self.cancel_command(update, context)
             return ConversationHandler.END
@@ -97,7 +95,6 @@ class RemoveOrderConversation:
     def command_removeorder_order(self, update: Update, context: CallbackContext):
         assert update.callback_query and context.user_data is not None
         query = update.callback_query
-        # query.answer()
         if query.data == 'cancel':
             self.cancel_command(update, context)
             return ConversationHandler.END

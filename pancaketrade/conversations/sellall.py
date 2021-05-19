@@ -34,7 +34,6 @@ class SellAllConversation:
     def command_sellall(self, update: Update, context: CallbackContext):
         assert update.callback_query
         query = update.callback_query
-        # query.answer()
         assert query.data
         token_address = query.data.split(':')[1]
         if not Web3.isChecksumAddress(token_address):
@@ -61,7 +60,6 @@ class SellAllConversation:
     def command_sellall_confirm(self, update: Update, context: CallbackContext):
         assert update.callback_query
         query = update.callback_query
-        # query.answer()
         if query.data == 'cancel':
             chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=self.config.update_messages)
             return ConversationHandler.END

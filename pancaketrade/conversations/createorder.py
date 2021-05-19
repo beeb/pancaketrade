@@ -72,7 +72,6 @@ class CreateOrderConversation:
     def command_createorder(self, update: Update, context: CallbackContext):
         assert update.callback_query and context.user_data is not None
         query = update.callback_query
-        # query.answer()
         assert query.data
         token_address = query.data.split(':')[1]
         if not Web3.isChecksumAddress(token_address):
@@ -105,7 +104,6 @@ class CreateOrderConversation:
     def command_createorder_type(self, update: Update, context: CallbackContext):
         assert update.callback_query and context.user_data is not None
         query = update.callback_query
-        # query.answer()
         if query.data == 'cancel':
             self.cancel_command(update, context)
             return ConversationHandler.END
@@ -175,7 +173,6 @@ class CreateOrderConversation:
         if update.message is None:
             assert update.callback_query
             query = update.callback_query
-            # query.answer()
             assert query.data
             if query.data == 'cancel':
                 self.cancel_command(update, context)
@@ -218,9 +215,6 @@ class CreateOrderConversation:
         order = context.user_data['createorder']
         token = self.parent.watchers[order['token_address']]
         if update.message is None:  # we got a cancel callback
-            # assert update.callback_query
-            # query = update.callback_query
-            # query.answer()
             self.cancel_command(update, context)
             return ConversationHandler.END
         assert update.message and update.message.text
@@ -287,7 +281,6 @@ class CreateOrderConversation:
         if update.message is None:  # we got a button callback, either cancel or fraction of balance
             assert update.callback_query
             query = update.callback_query
-            # query.answer()
             if query.data == 'cancel':
                 self.cancel_command(update, context)
                 return ConversationHandler.END
@@ -356,7 +349,6 @@ class CreateOrderConversation:
         if update.message is None:
             assert update.callback_query
             query = update.callback_query
-            # query.answer()
             assert query.data
             if query.data == 'cancel':
                 self.cancel_command(update, context)
@@ -407,7 +399,6 @@ class CreateOrderConversation:
         if update.message is None:
             assert update.callback_query
             query = update.callback_query
-            # query.answer()
             assert query.data
             if query.data == 'cancel':
                 self.cancel_command(update, context)
@@ -507,7 +498,6 @@ class CreateOrderConversation:
     def command_createorder_summary(self, update: Update, context: CallbackContext):
         assert update.effective_chat and update.callback_query and context.user_data is not None
         query = update.callback_query
-        # query.answer()
         if query.data != 'ok':
             self.cancel_command(update, context)
             return ConversationHandler.END

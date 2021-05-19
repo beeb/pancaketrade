@@ -57,7 +57,6 @@ class BuySellConversation:
     def command_buysell(self, update: Update, context: CallbackContext):
         assert update.callback_query and context.user_data is not None
         query = update.callback_query
-        # query.answer()
         assert query.data
         token_address = query.data.split(':')[1]
         if not Web3.isChecksumAddress(token_address):
@@ -89,7 +88,6 @@ class BuySellConversation:
     def command_buysell_type(self, update: Update, context: CallbackContext):
         assert update.callback_query and context.user_data is not None
         query = update.callback_query
-        # query.answer()
         if query.data == 'cancel':
             self.cancel_command(update, context)
             return ConversationHandler.END
@@ -156,7 +154,6 @@ class BuySellConversation:
         if update.message is None:
             assert update.callback_query
             query = update.callback_query
-            # query.answer()
             assert query.data
             if query.data == 'cancel':
                 self.cancel_command(update, context)
@@ -207,7 +204,6 @@ class BuySellConversation:
         if update.message is None:  # we got a button callback, either cancel or fraction of balance
             assert update.callback_query
             query = update.callback_query
-            # query.answer()
             if query.data == 'cancel':
                 self.cancel_command(update, context)
                 return ConversationHandler.END
@@ -289,7 +285,6 @@ class BuySellConversation:
     def command_buysell_summary(self, update: Update, context: CallbackContext):
         assert update.effective_chat and update.callback_query and context.user_data is not None
         query = update.callback_query
-        # query.answer()
         if query.data != 'ok':
             self.cancel_command(update, context)
             return ConversationHandler.END
