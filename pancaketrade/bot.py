@@ -187,7 +187,7 @@ class TradeBot:
         balance_bnb = self.net.get_bnb_balance()
         price_bnb = self.net.get_bnb_price()
         self.dispatcher.bot.edit_message_text(
-            '<u>STATUS</u>\n' + f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})',
+            f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})',
             chat_id=self.config.secrets.admin_chat_id,
             message_id=self.last_status_message_id,
         )
