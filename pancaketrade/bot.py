@@ -1,4 +1,5 @@
 """Bot class."""
+import time
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple
 
@@ -116,6 +117,9 @@ class TradeBot:
 
     @check_chat_id
     def command_status(self, update: Update, context: CallbackContext):
+        for job in self.status_scheduler.get_jobs():
+            # prevent running an update while we are changing the last message id
+            job.pause()
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
         for token in sorted_tokens:
             status, buttons = self.get_token_status(token)
@@ -130,6 +134,10 @@ class TradeBot:
         )
         if stat_msg is not None:
             self.last_status_message_id = stat_msg.message_id
+        time.sleep(1)  # make sure the message go received by the telegram API
+        for job in self.status_scheduler.get_jobs():
+            # resume update job
+            job.resume()
 
     @check_chat_id
     def command_addorder(self, update: Update, context: CallbackContext):
