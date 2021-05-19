@@ -1,4 +1,5 @@
 """Bot class."""
+from decimal import Decimal
 from typing import Dict, List, Optional, Tuple
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -198,7 +199,10 @@ class TradeBot:
         token_price_usd = self.net.get_token_price_usd(
             token_address=token.address, token_decimals=token.decimals, sell=True
         )
-        orders = [str(order) for order in token.orders]
+        orders_sorted = sorted(
+            token.orders, key=lambda o: o.limit_price if o.limit_price else Decimal(1e12), reverse=True
+        )  # if no limit price (market price) display first (big artificial value)
+        orders = [str(order) for order in orders_sorted]
         message = (
             f'<b>{token.name}</b>: {token_balance:,.1f}        '
             + f'<a href="https://poocoin.app/tokens/{token.address}">Chart</a>\n'
