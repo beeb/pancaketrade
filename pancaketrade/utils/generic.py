@@ -5,7 +5,6 @@ import threading
 from typing import Any, Callable, Iterable, List, Mapping, Optional
 
 from loguru import logger
-from pancaketrade.watchers import TokenWatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext
 
@@ -89,7 +88,7 @@ def chat_message(
 
 
 def get_tokens_keyboard_layout(
-    watchers: Mapping[str, TokenWatcher], callback_prefix: Optional[str] = None, per_row: int = 3
+    watchers: Mapping, callback_prefix: Optional[str] = None, per_row: int = 3
 ) -> List[List[InlineKeyboardButton]]:
     buttons: List[InlineKeyboardButton] = []
     for token in sorted(watchers.values(), key=lambda token: token.symbol.lower()):
