@@ -266,7 +266,8 @@ class CreateOrderConversation:
             context,
             text=f'OK, I will {order["type"]} when the price of {token.symbol} reaches {price:.4g} BNB per token.\n'
             + f'Next, <u>how much {unit}</u> do you want me to use for {order["type"]}ing?\n'
-            + f'You can use scientific notation like <code>{balance:.1e}</code> if you want.\n'
+            + f'You can also use scientific notation like <code>{balance:.1e}</code> or a percentage like '
+            + '<code>63%</code>.\n'
             + f'<b>Current balance</b>: <code>{balance_formatted}</code> {unit}',
             reply_markup=reply_markup,
             edit=False,
@@ -288,17 +289,29 @@ class CreateOrderConversation:
             try:
                 balance_fraction = Decimal(query.data)
             except Exception:
-                self.command_error(update, context, text='The callback rate is not recognized.')
+                self.command_error(update, context, text='The balance percentage is not recognized.')
                 return ConversationHandler.END
-            balance = self.net.get_token_balance(token_address=token.address)
-            amount = balance_fraction * balance
+            amount = balance_fraction * self.net.get_token_balance(token_address=token.address)
         else:
             assert update.message and update.message.text
-            try:
-                amount = Decimal(update.message.text.strip())
-            except Exception:
-                chat_message(update, context, text='⚠️ The amount you inserted is not valid. Try again:', edit=False)
-                return self.next.AMOUNT
+            user_input = update.message.text.strip()
+            if user_input.endswith('%'):
+                try:
+                    balance_fraction = Decimal(user_input[:-1]) / Decimal(100)
+                    amount = balance_fraction * self.net.get_token_balance(token_address=token.address)
+                except Exception:
+                    chat_message(
+                        update, context, text='⚠️ The balance percentage is not recognized, try again:', edit=False
+                    )
+                    return self.next.AMOUNT
+            else:
+                try:
+                    amount = Decimal(update.message.text.strip())
+                except Exception:
+                    chat_message(
+                        update, context, text='⚠️ The amount you inserted is not valid. Try again:', edit=False
+                    )
+                    return self.next.AMOUNT
         decimals = 18 if order['type'] == 'buy' else token.decimals
         bnb_price = self.net.get_bnb_price()
         limit_price = Decimal(order["limit_price"])
