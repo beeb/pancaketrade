@@ -33,6 +33,7 @@ class Config:
     bsc_rpc: str = 'https://bsc-dataseed.binance.org:443'
     min_pool_size_bnb: float = 25
     monitor_interval: float = 5
+    update_messages: bool = True
     config_file: str = 'config.yml'
     _pk: str = field(repr=False, default='')
 

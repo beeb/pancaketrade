@@ -38,7 +38,7 @@ class SellAllConversation:
         assert query.data
         token_address = query.data.split(':')[1]
         if not Web3.isChecksumAddress(token_address):
-            chat_message(update, context, text='⛔️ Invalid token address.')
+            chat_message(update, context, text='⛔️ Invalid token address.', edit=False)
             return ConversationHandler.END
         token: TokenWatcher = self.parent.watchers[token_address]
         chat_message(
@@ -63,15 +63,15 @@ class SellAllConversation:
         query = update.callback_query
         # query.answer()
         if query.data == 'cancel':
-            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=self.config.update_messages)
             return ConversationHandler.END
         if not Web3.isChecksumAddress(query.data):
-            chat_message(update, context, text='⛔️ Invalid token address.')
+            chat_message(update, context, text='⛔️ Invalid token address.', edit=self.config.update_messages)
             return ConversationHandler.END
         token: TokenWatcher = self.parent.watchers[query.data]
         _, v2 = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
         balance_tokens = self.net.get_token_balance_wei(token_address=token.address)
-        chat_message(update, context, text=f'Selling all {token.symbol}...')
+        chat_message(update, context, text=f'Selling all {token.symbol}...', edit=self.config.update_messages)
         res, bnb_out, txhash_or_error = self.net.sell_tokens(
             token.address,
             amount_tokens=balance_tokens,
@@ -86,10 +86,7 @@ class SellAllConversation:
             else:
                 reason_or_link = txhash_or_error
             chat_message(
-                update,
-                context,
-                text=f'⛔️ Transaction failed: {reason_or_link}',
-                edit=False,
+                update, context, text=f'⛔️ Transaction failed: {reason_or_link}', edit=self.config.update_messages
             )
             return ConversationHandler.END
         logger.success(f'Sell transaction succeeded. Received {bnb_out:.3g} BNB')
@@ -98,6 +95,7 @@ class SellAllConversation:
             context,
             text=f'✅ Got {bnb_out:.3g} BNB at '
             + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>',
+            edit=self.config.update_messages,
         )
         if len(token.orders) > 0:
             chat_message(
@@ -111,6 +109,5 @@ class SellAllConversation:
 
     @check_chat_id
     def command_cancelsell(self, update: Update, context: CallbackContext):
-        assert update.effective_chat
-        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=self.config.update_messages)
         return ConversationHandler.END

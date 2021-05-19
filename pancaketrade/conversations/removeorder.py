@@ -89,6 +89,7 @@ class RemoveOrderConversation:
                     ]
                 ]
             ),
+            edit=self.config.update_messages,
         )
         return self.next.ORDER
 
@@ -112,7 +113,12 @@ class RemoveOrderConversation:
             return ConversationHandler.END
         remove_order(order_record=order.order_record)
         token.orders.remove(order)
-        chat_message(update, context, text=f'✅ Alright, the order <b>#{query.data}</b> was removed from {token.name}.')
+        chat_message(
+            update,
+            context,
+            text=f'✅ Alright, the order <b>#{query.data}</b> was removed from {token.name}.',
+            edit=self.config.update_messages,
+        )
         return ConversationHandler.END
 
     @check_chat_id
@@ -138,9 +144,9 @@ class RemoveOrderConversation:
     def cancel_command(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
         del context.user_data['removeorder']
-        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=False)
+        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=self.config.update_messages)
 
     def command_error(self, update: Update, context: CallbackContext, text: str):
         assert context.user_data is not None
         del context.user_data['removeorder']
-        chat_message(update, context, text=f'⛔️ {text}', edit=False)
+        chat_message(update, context, text=f'⛔️ {text}', edit=self.config.update_messages)

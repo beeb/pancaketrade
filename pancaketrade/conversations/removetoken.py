@@ -52,11 +52,11 @@ class RemoveTokenConversation:
         query = update.callback_query
         # query.answer()
         if query.data == 'cancel':
-            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=self.config.update_messages)
             return ConversationHandler.END
         assert query.data
         if not Web3.isChecksumAddress(query.data):
-            chat_message(update, context, text='⛔️ Invalid token address.')
+            chat_message(update, context, text='⛔️ Invalid token address.', edit=self.config.update_messages)
             return ConversationHandler.END
         token = self.parent.watchers[query.data]
         chat_message(
@@ -71,6 +71,7 @@ class RemoveTokenConversation:
                     ]
                 ]
             ),
+            edit=self.config.update_messages,
         )
         return self.next.TOKENCHOICE
 
@@ -80,20 +81,25 @@ class RemoveTokenConversation:
         query = update.callback_query
         # query.answer()
         if query.data == 'cancel':
-            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=self.config.update_messages)
             return ConversationHandler.END
         assert query.data
         if not Web3.isChecksumAddress(query.data):
-            chat_message(update, context, text='⛔️ Invalid token address.')
+            chat_message(update, context, text='⛔️ Invalid token address.', edit=self.config.update_messages)
             return ConversationHandler.END
         remove_token(self.parent.watchers[query.data].token_record)
         token_name = self.parent.watchers[query.data].name
         del self.parent.watchers[query.data]
-        chat_message(update, context, text=f'✅ Alright, the token <b>"{token_name}"</b> was removed.')
+        chat_message(
+            update,
+            context,
+            text=f'✅ Alright, the token <b>"{token_name}"</b> was removed.',
+            edit=self.config.update_messages,
+        )
         return ConversationHandler.END
 
     @check_chat_id
     def command_cancelremovetoken(self, update: Update, context: CallbackContext):
         assert update.effective_chat
-        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=self.config.update_messages)
         return ConversationHandler.END

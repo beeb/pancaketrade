@@ -120,6 +120,7 @@ class BuySellConversation:
             + 'Do you want to enable <u>trailing stop loss</u>? If yes, what is the callback rate?\n'
             + 'You can also message me a custom value in percent.',
             reply_markup=reply_markup,
+            edit=self.config.update_messages,
         )
         return self.next.TRAILING
 
@@ -170,6 +171,7 @@ class BuySellConversation:
                     + f'You can use scientific notation like <code>{balance:.1e}</code> if you want.\n'
                     + f'<b>Current balance</b>: <code>{balance_formatted}</code> {unit}',
                     reply_markup=reply_markup,
+                    edit=self.config.update_messages,
                 )
                 return self.next.AMOUNT
             try:
@@ -182,7 +184,7 @@ class BuySellConversation:
             try:
                 callback_rate = int(update.message.text.strip())
             except ValueError:
-                chat_message(update, context, text='⚠️ The callback rate is not recognized, try again:')
+                chat_message(update, context, text='⚠️ The callback rate is not recognized, try again:', edit=False)
                 return self.next.TRAILING
         order['trailing_stop'] = callback_rate
         chat_message(
@@ -193,6 +195,7 @@ class BuySellConversation:
             + f'You can use scientific notation like <code>{balance:.1e}</code> if you want.\n'
             + f'<b>Current balance</b>: <code>{balance:.4g}</code> {unit}',
             reply_markup=reply_markup,
+            edit=self.config.update_messages,
         )
         return self.next.AMOUNT
 
@@ -221,7 +224,7 @@ class BuySellConversation:
             try:
                 amount = Decimal(update.message.text.strip())
             except Exception:
-                chat_message(update, context, text='⚠️ The amount you inserted is not valid. Try again:')
+                chat_message(update, context, text='⚠️ The amount you inserted is not valid. Try again:', edit=False)
                 return self.next.AMOUNT
         decimals = 18 if order['type'] == 'buy' else token.decimals
         bnb_price = self.net.get_bnb_price()
@@ -239,6 +242,7 @@ class BuySellConversation:
             context,
             text=f'OK, I will {order["type"]} {amount_formatted} {unit} (~${usd_amount:.2f}).\n'
             + '<u>Confirm</u> the order below!',
+            edit=self.config.update_messages,
         )
         return self.print_summary(update, context)
 
@@ -277,6 +281,7 @@ class BuySellConversation:
                     ]
                 ]
             ),
+            edit=False,
         )
         return self.next.SUMMARY
 
@@ -309,7 +314,12 @@ class BuySellConversation:
             order_record=order_record, net=self.net, dispatcher=context.dispatcher, chat_id=update.effective_chat.id
         )
         token.orders.append(order)
-        chat_message(update, context, text=f'✅ Order #{order_record.id} was added successfully!')
+        chat_message(
+            update,
+            context,
+            text=f'✅ Order #{order_record.id} was added successfully!',
+            edit=self.config.update_messages,
+        )
         for job in token.scheduler.get_jobs():  # check prices now
             job.modify(next_run_time=datetime.now())
         return ConversationHandler.END

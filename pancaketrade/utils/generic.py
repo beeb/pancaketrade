@@ -67,8 +67,8 @@ def chat_message(
     update: Update,
     context: CallbackContext,
     text: str,
-    edit: bool = True,
     reply_markup: Optional[InlineKeyboardMarkup] = None,
+    edit: bool = False,
 ):
     assert update.effective_chat
     if update.callback_query is not None:

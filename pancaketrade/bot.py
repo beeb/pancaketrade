@@ -87,6 +87,8 @@ class TradeBot:
         self.dispatcher.add_error_handler(self.error_handler)
 
     def start_status_update(self):
+        if not self.config.update_messages:
+            return
         trigger = IntervalTrigger(seconds=15)
         self.status_scheduler.add_job(self.update_status, trigger=trigger)
         self.status_scheduler.start()
@@ -105,6 +107,7 @@ class TradeBot:
             context,
             text='Hi! You can start adding tokens that you want to trade with the '
             + '<a href="/addtoken">/addtoken</a> command.',
+            edit=False,
         )
 
     @check_chat_id
@@ -141,12 +144,12 @@ class TradeBot:
         assert update.message
         error_msg = 'You need to provide the order ID number as argument to this command.'
         if context.args is None:
-            chat_message(update, context, text=error_msg)
+            chat_message(update, context, text=error_msg, edit=False)
             return
         try:
             order_id = int(context.args[0])
         except Exception:
-            chat_message(update, context, text=error_msg)
+            chat_message(update, context, text=error_msg, edit=False)
             return
         order: Optional[OrderWatcher] = None
         for token in self.watchers.values():
@@ -155,9 +158,9 @@ class TradeBot:
                     continue
                 order = o
         if not order:
-            chat_message(update, context, text='⛔️ Could not find order with this ID.')
+            chat_message(update, context, text='⛔️ Could not find order with this ID.', edit=False)
             return
-        chat_message(update, context, text=order.long_repr())
+        chat_message(update, context, text=order.long_repr(), edit=False)
 
     @check_chat_id
     def command_address(self, update: Update, context: CallbackContext):
@@ -178,10 +181,12 @@ class TradeBot:
         assert query.data
         token_address = query.data.split(':')[1]
         if not Web3.isChecksumAddress(token_address):
-            chat_message(update, context, text='⛔️ Invalid token address.')
+            chat_message(update, context, text='⛔️ Invalid token address.', edit=self.config.update_messages)
             return
         token = self.watchers[token_address]
-        chat_message(update, context, text=f'{token.name}\n<code>{token_address}</code>')
+        chat_message(
+            update, context, text=f'{token.name}\n<code>{token_address}</code>', edit=self.config.update_messages
+        )
 
     def update_status(self):
         if self.last_status_message_id is None:
