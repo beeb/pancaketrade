@@ -34,9 +34,8 @@ class RemoveOrderConversation:
 
     @check_chat_id
     def command_removeorder(self, update: Update, context: CallbackContext):
-        assert update.callback_query and update.effective_chat and context.user_data is not None
+        assert update.callback_query and context.user_data is not None
         query = update.callback_query
-        # query.answer()
         assert query.data
         token_address = query.data.split(':')[1]
         if not Web3.isChecksumAddress(token_address):
@@ -66,9 +65,8 @@ class RemoveOrderConversation:
 
     @check_chat_id
     def command_removeorder_confirm(self, update: Update, context: CallbackContext):
-        assert update.callback_query and update.effective_chat and context.user_data is not None
+        assert update.callback_query and context.user_data is not None
         query = update.callback_query
-        # query.answer()
         if query.data == 'cancel':
             self.cancel_command(update, context)
             return ConversationHandler.END
@@ -89,6 +87,7 @@ class RemoveOrderConversation:
                     ]
                 ]
             ),
+            edit=self.config.update_messages,
         )
         return self.next.ORDER
 
@@ -96,7 +95,6 @@ class RemoveOrderConversation:
     def command_removeorder_order(self, update: Update, context: CallbackContext):
         assert update.callback_query and context.user_data is not None
         query = update.callback_query
-        # query.answer()
         if query.data == 'cancel':
             self.cancel_command(update, context)
             return ConversationHandler.END
@@ -112,12 +110,16 @@ class RemoveOrderConversation:
             return ConversationHandler.END
         remove_order(order_record=order.order_record)
         token.orders.remove(order)
-        chat_message(update, context, text=f'✅ Alright, the order <b>#{query.data}</b> was removed from {token.name}.')
+        chat_message(
+            update,
+            context,
+            text=f'✅ Alright, the order <b>#{query.data}</b> was removed from {token.name}.',
+            edit=self.config.update_messages,
+        )
         return ConversationHandler.END
 
     @check_chat_id
     def command_cancelorder(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
         self.cancel_command(update, context)
         return ConversationHandler.END
 
@@ -138,9 +140,9 @@ class RemoveOrderConversation:
     def cancel_command(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
         del context.user_data['removeorder']
-        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=False)
+        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=self.config.update_messages)
 
     def command_error(self, update: Update, context: CallbackContext, text: str):
         assert context.user_data is not None
         del context.user_data['removeorder']
-        chat_message(update, context, text=f'⛔️ {text}', edit=False)
+        chat_message(update, context, text=f'⛔️ {text}', edit=self.config.update_messages)

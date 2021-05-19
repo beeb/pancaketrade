@@ -72,7 +72,6 @@ class CreateOrderConversation:
     def command_createorder(self, update: Update, context: CallbackContext):
         assert update.callback_query and context.user_data is not None
         query = update.callback_query
-        # query.answer()
         assert query.data
         token_address = query.data.split(':')[1]
         if not Web3.isChecksumAddress(token_address):
@@ -105,7 +104,6 @@ class CreateOrderConversation:
     def command_createorder_type(self, update: Update, context: CallbackContext):
         assert update.callback_query and context.user_data is not None
         query = update.callback_query
-        # query.answer()
         if query.data == 'cancel':
             self.cancel_command(update, context)
             return ConversationHandler.END
@@ -125,6 +123,7 @@ class CreateOrderConversation:
                 text='OK, the order will sell as soon as the price is below target price.\n'
                 + self.get_price_message(current_price=current_price, token_symbol=token.symbol),
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]]),
+                edit=self.config.update_messages,
             )
             return self.next.PRICE
         elif query.data == 'limit_sell':
@@ -158,12 +157,13 @@ class CreateOrderConversation:
             + 'Do you want to enable <u>trailing stop loss</u>? If yes, what is the callback rate?\n'
             + 'You can also message me a custom value in percent.',
             reply_markup=reply_markup,
+            edit=self.config.update_messages,
         )
         return self.next.TRAILING
 
     @check_chat_id
     def command_createorder_trailing(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
+        assert context.user_data is not None
         order = context.user_data['createorder']
         token = self.parent.watchers[order['token_address']]
         current_price, _ = self.net.get_token_price(
@@ -173,7 +173,6 @@ class CreateOrderConversation:
         if update.message is None:
             assert update.callback_query
             query = update.callback_query
-            # query.answer()
             assert query.data
             if query.data == 'cancel':
                 self.cancel_command(update, context)
@@ -185,6 +184,7 @@ class CreateOrderConversation:
                     context,
                     text='OK, the order will use no trailing stop loss.\n' + next_message,
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]]),
+                    edit=self.config.update_messages,
                 )
                 return self.next.PRICE
             try:
@@ -197,7 +197,7 @@ class CreateOrderConversation:
             try:
                 callback_rate = int(update.message.text.strip())
             except ValueError:
-                chat_message(update, context, text='⚠️ The callback rate is not recognized, try again:')
+                chat_message(update, context, text='⚠️ The callback rate is not recognized, try again:', edit=False)
                 return self.next.TRAILING
         order['trailing_stop'] = callback_rate
         chat_message(
@@ -205,18 +205,16 @@ class CreateOrderConversation:
             context,
             text=f'OK, the order will use trailing stop loss with {callback_rate}% callback.\n' + next_message,
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]]),
+            edit=self.config.update_messages,
         )
         return self.next.PRICE
 
     @check_chat_id
     def command_createorder_price(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
+        assert context.user_data is not None
         order = context.user_data['createorder']
         token = self.parent.watchers[order['token_address']]
         if update.message is None:  # we got a cancel callback
-            # assert update.callback_query
-            # query = update.callback_query
-            # query.answer()
             self.cancel_command(update, context)
             return ConversationHandler.END
         assert update.message and update.message.text
@@ -225,7 +223,7 @@ class CreateOrderConversation:
             try:
                 factor = Decimal(answer[:-1])
             except Exception:
-                chat_message(update, context, text='⚠️ The factor you inserted is not valid. Try again:')
+                chat_message(update, context, text='⚠️ The factor you inserted is not valid. Try again:', edit=False)
                 return self.next.PRICE
             current_price, _ = self.net.get_token_price(
                 token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
@@ -235,7 +233,7 @@ class CreateOrderConversation:
             try:
                 price = Decimal(answer)
             except Exception:
-                chat_message(update, context, text='⚠️ The price you inserted is not valid. Try again:')
+                chat_message(update, context, text='⚠️ The price you inserted is not valid. Try again:', edit=False)
                 return self.next.PRICE
         order['limit_price'] = str(price)
         unit = 'BNB' if order['type'] == 'buy' else token.symbol
@@ -268,21 +266,22 @@ class CreateOrderConversation:
             context,
             text=f'OK, I will {order["type"]} when the price of {token.symbol} reaches {price:.4g} BNB per token.\n'
             + f'Next, <u>how much {unit}</u> do you want me to use for {order["type"]}ing?\n'
-            + f'You can use scientific notation like <code>{balance:.1e}</code> if you want.\n'
+            + f'You can also use scientific notation like <code>{balance:.1e}</code> or a percentage like '
+            + '<code>63%</code>.\n'
             + f'<b>Current balance</b>: <code>{balance_formatted}</code> {unit}',
             reply_markup=reply_markup,
+            edit=False,
         )
         return self.next.AMOUNT
 
     @check_chat_id
     def command_createorder_amount(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
+        assert context.user_data is not None
         order = context.user_data['createorder']
         token = self.parent.watchers[order['token_address']]
-        if update.message is None:  # we got a button callback, either cancel or fraction of balance
+        if update.message is None:  # we got a button callback, either cancel or fraction of token balance
             assert update.callback_query
             query = update.callback_query
-            # query.answer()
             if query.data == 'cancel':
                 self.cancel_command(update, context)
                 return ConversationHandler.END
@@ -290,17 +289,34 @@ class CreateOrderConversation:
             try:
                 balance_fraction = Decimal(query.data)
             except Exception:
-                self.command_error(update, context, text='The callback rate is not recognized.')
+                self.command_error(update, context, text='The balance percentage is not recognized.')
                 return ConversationHandler.END
-            balance = self.net.get_token_balance(token_address=token.address)
-            amount = balance_fraction * balance
+            amount = balance_fraction * self.net.get_token_balance(token_address=token.address)
         else:
             assert update.message and update.message.text
-            try:
-                amount = Decimal(update.message.text.strip())
-            except Exception:
-                chat_message(update, context, text='⚠️ The amount you inserted is not valid. Try again:')
-                return self.next.AMOUNT
+            user_input = update.message.text.strip()
+            if user_input.endswith('%'):
+                try:
+                    balance_fraction = Decimal(user_input[:-1]) / Decimal(100)
+                    balance = (
+                        self.net.get_token_balance(token_address=token.address)
+                        if order['type'] == 'sell'
+                        else self.net.get_bnb_balance()
+                    )
+                    amount = balance_fraction * balance
+                except Exception:
+                    chat_message(
+                        update, context, text='⚠️ The balance percentage is not recognized, try again:', edit=False
+                    )
+                    return self.next.AMOUNT
+            else:
+                try:
+                    amount = Decimal(update.message.text.strip())
+                except Exception:
+                    chat_message(
+                        update, context, text='⚠️ The amount you inserted is not valid. Try again:', edit=False
+                    )
+                    return self.next.AMOUNT
         decimals = 18 if order['type'] == 'buy' else token.decimals
         bnb_price = self.net.get_bnb_price()
         limit_price = Decimal(order["limit_price"])
@@ -340,17 +356,17 @@ class CreateOrderConversation:
             + 'Next, please indicate the <u>slippage in percent</u> you want to use for this order.\n'
             + 'You can also message me a custom value in percent.',
             reply_markup=reply_markup,
+            edit=self.config.update_messages,
         )
         return self.next.SLIPPAGE
 
     @check_chat_id
     def command_createorder_slippage(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
+        assert context.user_data is not None
         order = context.user_data['createorder']
         if update.message is None:
             assert update.callback_query
             query = update.callback_query
-            # query.answer()
             assert query.data
             if query.data == 'cancel':
                 self.cancel_command(update, context)
@@ -390,17 +406,17 @@ class CreateOrderConversation:
                     [InlineKeyboardButton('❌ Cancel', callback_data='cancel')],
                 ]
             ),
+            edit=self.config.update_messages,
         )
         return self.next.GAS
 
     @check_chat_id
     def command_createorder_gas(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
+        assert context.user_data is not None
         order = context.user_data['createorder']
         if update.message is None:
             assert update.callback_query
             query = update.callback_query
-            # query.answer()
             assert query.data
             if query.data == 'cancel':
                 self.cancel_command(update, context)
@@ -408,7 +424,10 @@ class CreateOrderConversation:
             elif query.data == 'None':
                 order['gas_price'] = None
                 chat_message(
-                    update, context, text='OK, the order will use default network gas price.\nConfirm the order below!'
+                    update,
+                    context,
+                    text='OK, the order will use default network gas price.\nConfirm the order below!',
+                    edit=self.config.update_messages,
                 )
             elif query.data.startswith('+'):
                 try:
@@ -422,6 +441,7 @@ class CreateOrderConversation:
                     context,
                     text=f'OK, the order will use default network gas price {query.data} Gwei.\n'
                     + 'Confirm the order below!',
+                    edit=self.config.update_messages,
                 )
             else:
                 self.command_error(update, context, text='Invalid gas price.')
@@ -439,11 +459,12 @@ class CreateOrderConversation:
             update,
             context,
             text=f'OK, the order will use {gas_price_gwei:.4g} Gwei for gas price.\n<u>Confirm</u> the order below!',
+            edit=self.config.update_messages,
         )
         return self.print_summary(update, context)
 
     def print_summary(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
+        assert context.user_data is not None
         order = context.user_data['createorder']
         token = self.parent.watchers[order['token_address']]
         type_name = self.get_type_name(order)
@@ -487,6 +508,7 @@ class CreateOrderConversation:
                     ]
                 ]
             ),
+            edit=False,
         )
         return self.next.SUMMARY
 
@@ -494,7 +516,6 @@ class CreateOrderConversation:
     def command_createorder_summary(self, update: Update, context: CallbackContext):
         assert update.effective_chat and update.callback_query and context.user_data is not None
         query = update.callback_query
-        # query.answer()
         if query.data != 'ok':
             self.cancel_command(update, context)
             return ConversationHandler.END
@@ -515,7 +536,7 @@ class CreateOrderConversation:
             order_record=order_record, net=self.net, dispatcher=context.dispatcher, chat_id=update.effective_chat.id
         )
         token.orders.append(order)
-        chat_message(update, context, text='✅ Order was added successfully!')
+        chat_message(update, context, text='✅ Order was added successfully!', edit=self.config.update_messages)
         for job in token.scheduler.get_jobs():  # check prices now
             job.modify(next_run_time=datetime.now())
         return ConversationHandler.END

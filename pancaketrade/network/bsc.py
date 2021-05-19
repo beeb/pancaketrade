@@ -1,6 +1,6 @@
 import time
 from decimal import Decimal
-from typing import NamedTuple, Optional, Set, Tuple
+from typing import Dict, NamedTuple, Optional, Set, Tuple
 
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -14,7 +14,7 @@ from web3.contract import Contract, ContractFunction
 from web3.exceptions import ABIFunctionNotFound, ContractLogicError
 from web3.types import ChecksumAddress, HexBytes, Nonce, TxParams, TxReceipt, Wei
 
-GAS_LIMIT_FAILSAFE = Wei(1000000)  # if the estimated price is above this one, don't use the estimated price
+GAS_LIMIT_FAILSAFE = Wei(1000000)  # if the estimated limit is above this one, don't use the estimated price
 
 
 class NetworkAddresses(NamedTuple):
@@ -58,6 +58,7 @@ class Network:
         self.max_approval_check_int = int(self.max_approval_check_hex, 16)
         self.last_nonce = self.w3.eth.get_transaction_count(self.wallet)
         self.approved: Set[Tuple[str, bool]] = set()  # address and v2 boolean tuples
+        self.lp_cache: Dict[Tuple[str, bool], ChecksumAddress] = {}  # address and v2 boolean tuples as the key
         self.nonce_scheduler = BackgroundScheduler(
             job_defaults={
                 'coalesce': True,
@@ -100,6 +101,7 @@ class Network:
             return Decimal(0)
         return balance
 
+    @cached(cache=TTLCache(maxsize=256, ttl=0.5))
     def get_token_balance_wei(self, token_address: ChecksumAddress) -> Wei:
         token_contract = self.get_token_contract(token_address)
         try:
@@ -129,14 +131,14 @@ class Network:
         elif lp_v2 is None and lp_v1:  # only v1
             return (
                 self.get_token_price_by_lp(
-                    token_contract=token_contract, token_lp=lp_v1, token_decimals=token_decimals
+                    token_contract=token_contract, token_lp=lp_v1, token_decimals=token_decimals, ignore_poolsize=True
                 ),
                 False,
             )
         elif lp_v1 is None and lp_v2:  # only v2
             return (
                 self.get_token_price_by_lp(
-                    token_contract=token_contract, token_lp=lp_v2, token_decimals=token_decimals
+                    token_contract=token_contract, token_lp=lp_v2, token_decimals=token_decimals, ignore_poolsize=True
                 ),
                 True,
             )
@@ -220,13 +222,17 @@ class Network:
             address=token_address, abi=fetch_abi(contract=token_address, api_key=self.secrets.bscscan_api_key)
         )
 
-    @cached(cache=TTLCache(maxsize=256, ttl=3600))  # cache 60 minutes
     def find_lp_address(self, token_address: ChecksumAddress, v2: bool = False) -> Optional[ChecksumAddress]:
+        cached = self.lp_cache.get((str(token_address), v2))
+        if cached is not None:
+            return cached
         contract = self.contracts.factory_v2 if v2 else self.contracts.factory_v1
         pair = contract.functions.getPair(token_address, self.addr.wbnb).call()
-        if pair == '0x' + 40 * '0':  # not found
+        if pair == '0x' + 40 * '0':  # not found, don't cache
             return None
-        return Web3.toChecksumAddress(pair)
+        checksum_pair = Web3.toChecksumAddress(pair)
+        self.lp_cache[(str(token_address), v2)] = checksum_pair
+        return checksum_pair
 
     def has_both_versions(self, token_address: ChecksumAddress) -> bool:
         lp_v1 = self.find_lp_address(token_address=token_address, v2=False)

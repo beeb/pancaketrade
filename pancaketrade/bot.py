@@ -9,6 +9,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Upda
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, Defaults, Updater
 from web3 import Web3
 
+from pancaketrade import __version__
 from pancaketrade.conversations import (
     AddTokenConversation,
     BuySellConversation,
@@ -70,6 +71,7 @@ class TradeBot:
         self.dispatcher.add_handler(CommandHandler('order', self.command_order))
         self.dispatcher.add_handler(CommandHandler('addorder', self.command_addorder))
         self.dispatcher.add_handler(CommandHandler('address', self.command_address))
+        self.dispatcher.add_handler(CommandHandler('buysell', self.command_buysell))
         self.dispatcher.add_handler(
             CallbackQueryHandler(self.command_address_selected, pattern='^address:0x[a-fA-F0-9]{40}$')
         )
@@ -78,6 +80,7 @@ class TradeBot:
         commands = [
             ('status', 'display all tokens and their price, orders'),
             ('addorder', 'add order to one of the tokens'),
+            ('buysell', 'buy or sell a token now'),
             ('order', 'display order information, pass the order ID as argument'),
             ('addtoken', 'add a token that you want to trade'),
             ('removetoken', 'remove a token that you added'),
@@ -87,42 +90,49 @@ class TradeBot:
         self.dispatcher.add_error_handler(self.error_handler)
 
     def start_status_update(self):
-        trigger = IntervalTrigger(seconds=30)
+        if not self.config.update_messages:
+            return
+        trigger = IntervalTrigger(seconds=15)
         self.status_scheduler.add_job(self.update_status, trigger=trigger)
-        # self.status_scheduler.start()
+        self.status_scheduler.start()
 
     def start(self):
-        self.dispatcher.bot.send_message(chat_id=self.config.secrets.admin_chat_id, text='🤖 Bot started')
+        try:
+            self.dispatcher.bot.send_message(
+                chat_id=self.config.secrets.admin_chat_id, text=f'🤖 Bot v{__version__} started'
+            )
+        except Exception:  # chat doesn't exist yet, do nothing
+            logger.info('Chat with user doesn\'t exist yet.')
         logger.info('Bot started')
         self.updater.start_polling()
         self.updater.idle()
 
     @check_chat_id
     def command_start(self, update: Update, context: CallbackContext):
-        assert update.message and update.effective_chat
         chat_message(
             update,
             context,
             text='Hi! You can start adding tokens that you want to trade with the '
             + '<a href="/addtoken">/addtoken</a> command.',
+            edit=False,
         )
 
     @check_chat_id
     def command_status(self, update: Update, context: CallbackContext):
-        assert update.message and update.effective_chat
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
         for token in sorted_tokens:
             status, buttons = self.get_token_status(token)
             reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
-            msg = context.bot.send_message(chat_id=update.effective_chat.id, text=status, reply_markup=reply_markup)
-            self.watchers[token.address].last_status_message_id = msg.message_id
+            msg = chat_message(update, context, text=status, reply_markup=reply_markup, edit=False)
+            if msg is not None:
+                self.watchers[token.address].last_status_message_id = msg.message_id
         balance_bnb = self.net.get_bnb_balance()
         price_bnb = self.net.get_bnb_price()
-        stat_msg = context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})',
+        stat_msg = chat_message(
+            update, context, text=f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})', edit=False
         )
-        self.last_status_message_id = stat_msg.message_id
+        if stat_msg is not None:
+            self.last_status_message_id = stat_msg.message_id
 
     @check_chat_id
     def command_addorder(self, update: Update, context: CallbackContext):
@@ -138,15 +148,14 @@ class TradeBot:
 
     @check_chat_id
     def command_order(self, update: Update, context: CallbackContext):
-        assert update.message
         error_msg = 'You need to provide the order ID number as argument to this command.'
         if context.args is None:
-            chat_message(update, context, text=error_msg)
+            chat_message(update, context, text=error_msg, edit=False)
             return
         try:
             order_id = int(context.args[0])
         except Exception:
-            chat_message(update, context, text=error_msg)
+            chat_message(update, context, text=error_msg, edit=False)
             return
         order: Optional[OrderWatcher] = None
         for token in self.watchers.values():
@@ -155,9 +164,9 @@ class TradeBot:
                     continue
                 order = o
         if not order:
-            chat_message(update, context, text='⛔️ Could not find order with this ID.')
+            chat_message(update, context, text='⛔️ Could not find order with this ID.', edit=False)
             return
-        chat_message(update, context, text=order.long_repr())
+        chat_message(update, context, text=order.long_repr(), edit=False)
 
     @check_chat_id
     def command_address(self, update: Update, context: CallbackContext):
@@ -178,16 +187,32 @@ class TradeBot:
         assert query.data
         token_address = query.data.split(':')[1]
         if not Web3.isChecksumAddress(token_address):
-            chat_message(update, context, text='⛔️ Invalid token address.')
+            chat_message(update, context, text='⛔️ Invalid token address.', edit=self.config.update_messages)
             return
         token = self.watchers[token_address]
-        chat_message(update, context, text=f'{token.name}\n<code>{token_address}</code>')
+        chat_message(
+            update, context, text=f'{token.name}\n<code>{token_address}</code>', edit=self.config.update_messages
+        )
+
+    @check_chat_id
+    def command_buysell(self, update: Update, context: CallbackContext):
+        buttons_layout = get_tokens_keyboard_layout(self.watchers, callback_prefix='buy_sell')
+        reply_markup = InlineKeyboardMarkup(buttons_layout)
+        chat_message(
+            update,
+            context,
+            text='Buy or sell now which token?',
+            reply_markup=reply_markup,
+            edit=False,
+        )
 
     def update_status(self):
+        if self.last_status_message_id is None:
+            return  # we probably did not call status since start
         balance_bnb = self.net.get_bnb_balance()
         price_bnb = self.net.get_bnb_price()
         self.dispatcher.bot.edit_message_text(
-            '<u>STATUS</u>\n' + f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})',
+            f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})',
             chat_id=self.config.secrets.admin_chat_id,
             message_id=self.last_status_message_id,
         )

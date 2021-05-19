@@ -48,7 +48,7 @@ class AddTokenConversation:
 
     @check_chat_id
     def command_addtoken(self, update: Update, context: CallbackContext):
-        assert update.message and context.user_data is not None
+        assert context.user_data is not None
         context.user_data['addtoken'] = {}
         chat_message(update, context, text='Please send me the token contract address.', edit=False)
         return self.next.ADDRESS
@@ -60,7 +60,9 @@ class AddTokenConversation:
         if Web3.isAddress(response):
             token_address = Web3.toChecksumAddress(response)
         else:
-            chat_message(update, context, text='⚠️ The address you provided is not a valid ETH address. Try again:')
+            chat_message(
+                update, context, text='⚠️ The address you provided is not a valid ETH address. Try again:', edit=False
+            )
             return self.next.ADDRESS
         add = context.user_data['addtoken']
         add['address'] = str(token_address)
@@ -74,12 +76,13 @@ class AddTokenConversation:
                 text='⛔ Wrong ABi for this address.\n'
                 + 'Check that address is a contract at '
                 + f'<a href="https://bscscan.com/address/{token_address}">BscScan</a> and try again.',
+                edit=False,
             )
             del context.user_data['addtoken']
             return ConversationHandler.END
 
         if token_exists(address=token_address):
-            chat_message(update, context, text=f'⚠️ Token <b>{add["symbol"]}</b> already exists.')
+            chat_message(update, context, text=f'⚠️ Token <b>{add["symbol"]}</b> already exists.', edit=False)
             del context.user_data['addtoken']
             return ConversationHandler.END
         reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton('🙅‍♂️ No emoji', callback_data='None')]])
@@ -91,12 +94,13 @@ class AddTokenConversation:
             + 'Now please send me and EMOJI you would like to associate to this token for easy spotting, '
             + 'or click the button below.',
             reply_markup=reply_markup,
+            edit=False,
         )
         return self.next.EMOJI
 
     @check_chat_id
     def command_addtoken_emoji(self, update: Update, context: CallbackContext):
-        assert update.message and update.message.text and update.effective_chat and context.user_data is not None
+        assert update.message and update.message.text and context.user_data is not None
         add = context.user_data['addtoken']
         add['icon'] = update.message.text.strip()
         chat_message(
@@ -105,14 +109,13 @@ class AddTokenConversation:
             text='Alright, the token will show as '
             + f'<b>"{add["icon"]} {add["symbol"]}"</b>. '
             + 'What is the default slippage in % to use for swapping on PancakeSwap?',
+            edit=False,
         )
         return self.next.SLIPPAGE
 
     @check_chat_id
     def command_addtoken_noemoji(self, update: Update, context: CallbackContext):
-        assert context.user_data is not None and update.callback_query
-        # query = update.callback_query
-        # query.answer()
+        assert context.user_data is not None
         add = context.user_data['addtoken']
         add['icon'] = None
         chat_message(
@@ -120,12 +123,13 @@ class AddTokenConversation:
             context,
             text=f'Alright, the token will show as <b>"{add["symbol"]}"</b>. '
             + 'What is the default slippage in % to use for swapping on PancakeSwap?',
+            edit=self.config.update_messages,
         )
         return self.next.SLIPPAGE
 
     @check_chat_id
     def command_addtoken_slippage(self, update: Update, context: CallbackContext):
-        assert update.message and update.message.text and update.effective_chat and context.user_data is not None
+        assert update.message and update.message.text and context.user_data is not None
         try:
             slippage = int(update.message.text.strip())
         except ValueError:
@@ -133,6 +137,7 @@ class AddTokenConversation:
                 update,
                 context,
                 text='⚠️ This is not a valid slippage value. Please enter an integer number for percentage. Try again:',
+                edit=False,
             )
             return self.next.SLIPPAGE
         if slippage < 1:
@@ -141,6 +146,7 @@ class AddTokenConversation:
                 context,
                 text='⚠️ This is not a valid slippage value. Please enter a positive integer number for percentage. '
                 + 'Try again:',
+                edit=False,
             )
             return self.next.SLIPPAGE
         add = context.user_data['addtoken']
@@ -152,13 +158,14 @@ class AddTokenConversation:
             context,
             text=f'Alright, the token <b>{emoji}{add["symbol"]}</b> '
             + f'will use <b>{add["default_slippage"]}%</b> slippage by default.',
+            edit=False,
         )
         try:
             db.connect()
             with db.atomic():
                 token_record = Token.create(**add)
         except Exception as e:
-            chat_message(update, context, text=f'⛔ Failed to create database record: {e}')
+            chat_message(update, context, text=f'⛔ Failed to create database record: {e}', edit=False)
             del context.user_data['addtoken']
             return ConversationHandler.END
         finally:
@@ -172,12 +179,13 @@ class AddTokenConversation:
             update,
             context,
             text=f'✅ Token was added successfully. Balance is {balance:,.1f} {token.symbol} (${balance_usd:.2f}).',
+            edit=False,
         )
         return ConversationHandler.END
 
     @check_chat_id
     def command_canceltoken(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
+        assert context.user_data is not None
         del context.user_data['addtoken']
-        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.')
+        chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=False)
         return ConversationHandler.END
