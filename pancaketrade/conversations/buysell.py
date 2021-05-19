@@ -222,7 +222,12 @@ class BuySellConversation:
             if user_input.endswith('%'):
                 try:
                     balance_fraction = Decimal(user_input[:-1]) / Decimal(100)
-                    amount = balance_fraction * self.net.get_token_balance(token_address=token.address)
+                    balance = (
+                        self.net.get_token_balance(token_address=token.address)
+                        if order['type'] == 'sell'
+                        else self.net.get_bnb_balance()
+                    )
+                    amount = balance_fraction * balance
                 except Exception:
                     chat_message(
                         update, context, text='⚠️ The balance percentage is not recognized, try again:', edit=False

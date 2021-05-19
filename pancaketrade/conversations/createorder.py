@@ -279,7 +279,7 @@ class CreateOrderConversation:
         assert context.user_data is not None
         order = context.user_data['createorder']
         token = self.parent.watchers[order['token_address']]
-        if update.message is None:  # we got a button callback, either cancel or fraction of balance
+        if update.message is None:  # we got a button callback, either cancel or fraction of token balance
             assert update.callback_query
             query = update.callback_query
             if query.data == 'cancel':
@@ -298,7 +298,12 @@ class CreateOrderConversation:
             if user_input.endswith('%'):
                 try:
                     balance_fraction = Decimal(user_input[:-1]) / Decimal(100)
-                    amount = balance_fraction * self.net.get_token_balance(token_address=token.address)
+                    balance = (
+                        self.net.get_token_balance(token_address=token.address)
+                        if order['type'] == 'sell'
+                        else self.net.get_bnb_balance()
+                    )
+                    amount = balance_fraction * balance
                 except Exception:
                     chat_message(
                         update, context, text='⚠️ The balance percentage is not recognized, try again:', edit=False
