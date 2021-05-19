@@ -5,7 +5,7 @@ import threading
 from typing import Any, Callable, Iterable, List, Mapping, Optional
 
 from loguru import logger
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Message
 from telegram.ext import CallbackContext
 
 
@@ -69,22 +69,16 @@ def chat_message(
     text: str,
     reply_markup: Optional[InlineKeyboardMarkup] = None,
     edit: bool = False,
-):
+) -> Optional[Message]:
     assert update.effective_chat
-    if update.callback_query is not None:
-        if edit:
-            query = update.callback_query
-            query.edit_message_text(
-                text=text,
-                reply_markup=reply_markup,
-            )
-            return
-        else:
-            context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
-            return
-    # always reply to normal messages
-    assert update.message is not None
-    context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
+    if update.callback_query is not None and edit:
+        query = update.callback_query
+        query.edit_message_text(
+            text=text,
+            reply_markup=reply_markup,
+        )
+        return None
+    return context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
 
 
 def get_tokens_keyboard_layout(

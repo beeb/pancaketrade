@@ -124,7 +124,7 @@ class BuySellConversation:
 
     @check_chat_id
     def command_buysell_trailing(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
+        assert context.user_data is not None
         order = context.user_data['buysell']
         token = self.parent.watchers[order['token_address']]
         unit = 'BNB' if order['type'] == 'buy' else token.symbol

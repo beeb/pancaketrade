@@ -33,7 +33,6 @@ class RemoveTokenConversation:
 
     @check_chat_id
     def command_removetoken(self, update: Update, context: CallbackContext):
-        assert update.message
         buttons_layout = get_tokens_keyboard_layout(self.parent.watchers)
         buttons_layout.append([InlineKeyboardButton('❌ Cancel', callback_data='cancel')])
         reply_markup = InlineKeyboardMarkup(buttons_layout)
@@ -48,7 +47,7 @@ class RemoveTokenConversation:
 
     @check_chat_id
     def command_removetoken_confirm(self, update: Update, context: CallbackContext):
-        assert update.callback_query and update.effective_chat
+        assert update.callback_query
         query = update.callback_query
         if query.data == 'cancel':
             chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=self.config.update_messages)
@@ -98,6 +97,5 @@ class RemoveTokenConversation:
 
     @check_chat_id
     def command_cancelremovetoken(self, update: Update, context: CallbackContext):
-        assert update.effective_chat
         chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=self.config.update_messages)
         return ConversationHandler.END

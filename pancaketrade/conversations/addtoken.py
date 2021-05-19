@@ -48,7 +48,7 @@ class AddTokenConversation:
 
     @check_chat_id
     def command_addtoken(self, update: Update, context: CallbackContext):
-        assert update.message and context.user_data is not None
+        assert context.user_data is not None
         context.user_data['addtoken'] = {}
         chat_message(update, context, text='Please send me the token contract address.', edit=False)
         return self.next.ADDRESS
@@ -100,7 +100,7 @@ class AddTokenConversation:
 
     @check_chat_id
     def command_addtoken_emoji(self, update: Update, context: CallbackContext):
-        assert update.message and update.message.text and update.effective_chat and context.user_data is not None
+        assert update.message and update.message.text and context.user_data is not None
         add = context.user_data['addtoken']
         add['icon'] = update.message.text.strip()
         chat_message(
@@ -129,7 +129,7 @@ class AddTokenConversation:
 
     @check_chat_id
     def command_addtoken_slippage(self, update: Update, context: CallbackContext):
-        assert update.message and update.message.text and update.effective_chat and context.user_data is not None
+        assert update.message and update.message.text and context.user_data is not None
         try:
             slippage = int(update.message.text.strip())
         except ValueError:
@@ -185,7 +185,7 @@ class AddTokenConversation:
 
     @check_chat_id
     def command_canceltoken(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
+        assert context.user_data is not None
         del context.user_data['addtoken']
         chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=False)
         return ConversationHandler.END

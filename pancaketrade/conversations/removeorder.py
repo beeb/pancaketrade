@@ -34,7 +34,7 @@ class RemoveOrderConversation:
 
     @check_chat_id
     def command_removeorder(self, update: Update, context: CallbackContext):
-        assert update.callback_query and update.effective_chat and context.user_data is not None
+        assert update.callback_query and context.user_data is not None
         query = update.callback_query
         assert query.data
         token_address = query.data.split(':')[1]
@@ -65,7 +65,7 @@ class RemoveOrderConversation:
 
     @check_chat_id
     def command_removeorder_confirm(self, update: Update, context: CallbackContext):
-        assert update.callback_query and update.effective_chat and context.user_data is not None
+        assert update.callback_query and context.user_data is not None
         query = update.callback_query
         if query.data == 'cancel':
             self.cancel_command(update, context)
@@ -120,7 +120,6 @@ class RemoveOrderConversation:
 
     @check_chat_id
     def command_cancelorder(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
         self.cancel_command(update, context)
         return ConversationHandler.END
 

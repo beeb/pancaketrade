@@ -163,7 +163,7 @@ class CreateOrderConversation:
 
     @check_chat_id
     def command_createorder_trailing(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
+        assert context.user_data is not None
         order = context.user_data['createorder']
         token = self.parent.watchers[order['token_address']]
         current_price, _ = self.net.get_token_price(
@@ -211,7 +211,7 @@ class CreateOrderConversation:
 
     @check_chat_id
     def command_createorder_price(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
+        assert context.user_data is not None
         order = context.user_data['createorder']
         token = self.parent.watchers[order['token_address']]
         if update.message is None:  # we got a cancel callback
@@ -275,7 +275,7 @@ class CreateOrderConversation:
 
     @check_chat_id
     def command_createorder_amount(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
+        assert context.user_data is not None
         order = context.user_data['createorder']
         token = self.parent.watchers[order['token_address']]
         if update.message is None:  # we got a button callback, either cancel or fraction of balance
@@ -344,7 +344,7 @@ class CreateOrderConversation:
 
     @check_chat_id
     def command_createorder_slippage(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
+        assert context.user_data is not None
         order = context.user_data['createorder']
         if update.message is None:
             assert update.callback_query
@@ -394,7 +394,7 @@ class CreateOrderConversation:
 
     @check_chat_id
     def command_createorder_gas(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
+        assert context.user_data is not None
         order = context.user_data['createorder']
         if update.message is None:
             assert update.callback_query
@@ -446,7 +446,7 @@ class CreateOrderConversation:
         return self.print_summary(update, context)
 
     def print_summary(self, update: Update, context: CallbackContext):
-        assert update.effective_chat and context.user_data is not None
+        assert context.user_data is not None
         order = context.user_data['createorder']
         token = self.parent.watchers[order['token_address']]
         type_name = self.get_type_name(order)

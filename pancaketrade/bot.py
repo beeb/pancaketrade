@@ -94,14 +94,16 @@ class TradeBot:
         self.status_scheduler.start()
 
     def start(self):
-        self.dispatcher.bot.send_message(chat_id=self.config.secrets.admin_chat_id, text='🤖 Bot started')
+        try:
+            self.dispatcher.bot.send_message(chat_id=self.config.secrets.admin_chat_id, text='🤖 Bot started')
+        except Exception:  # chat doesn't exist yet, do nothing
+            logger.info('Chat with user doesn\'t exist yet.')
         logger.info('Bot started')
         self.updater.start_polling()
         self.updater.idle()
 
     @check_chat_id
     def command_start(self, update: Update, context: CallbackContext):
-        assert update.message and update.effective_chat
         chat_message(
             update,
             context,
@@ -112,20 +114,20 @@ class TradeBot:
 
     @check_chat_id
     def command_status(self, update: Update, context: CallbackContext):
-        assert update.message and update.effective_chat
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
         for token in sorted_tokens:
             status, buttons = self.get_token_status(token)
             reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
-            msg = context.bot.send_message(chat_id=update.effective_chat.id, text=status, reply_markup=reply_markup)
-            self.watchers[token.address].last_status_message_id = msg.message_id
+            msg = chat_message(update, context, text=status, reply_markup=reply_markup, edit=False)
+            if msg is not None:
+                self.watchers[token.address].last_status_message_id = msg.message_id
         balance_bnb = self.net.get_bnb_balance()
         price_bnb = self.net.get_bnb_price()
-        stat_msg = context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})',
+        stat_msg = chat_message(
+            update, context, text=f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})', edit=False
         )
-        self.last_status_message_id = stat_msg.message_id
+        if stat_msg is not None:
+            self.last_status_message_id = stat_msg.message_id
 
     @check_chat_id
     def command_addorder(self, update: Update, context: CallbackContext):
@@ -141,7 +143,6 @@ class TradeBot:
 
     @check_chat_id
     def command_order(self, update: Update, context: CallbackContext):
-        assert update.message
         error_msg = 'You need to provide the order ID number as argument to this command.'
         if context.args is None:
             chat_message(update, context, text=error_msg, edit=False)
