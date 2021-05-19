@@ -164,7 +164,7 @@ class OrderWatcher:
             logger.info(f'Selling tokens on {version}')
             amount = Decimal(self.amount) / Decimal(10 ** self.token_record.decimals)
             self.dispatcher.bot.send_message(
-                chat_id=self.chat_id, text=f'🔸 Trying to sell {amount:.3g} {self.token_record.symbol}...'
+                chat_id=self.chat_id, text=f'🔸 Trying to sell {amount:.1f} {self.token_record.symbol}...'
             )
             start_in_thread(self.sell, args=(v2,))
 
