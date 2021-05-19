@@ -6,7 +6,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from loguru import logger
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Update
-from telegram.ext import CallbackContext, CommandHandler, Defaults, Updater
+from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, Defaults, Updater
+from web3 import Web3
 
 from pancaketrade.conversations import (
     AddTokenConversation,
@@ -20,7 +21,7 @@ from pancaketrade.network import Network
 from pancaketrade.persistence import db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.db import get_token_watchers, init_db
-from pancaketrade.utils.generic import chat_message, check_chat_id
+from pancaketrade.utils.generic import chat_message, check_chat_id, get_tokens_keyboard_layout
 from pancaketrade.watchers import OrderWatcher, TokenWatcher
 
 
@@ -68,14 +69,19 @@ class TradeBot:
         self.dispatcher.add_handler(CommandHandler('status', self.command_status))
         self.dispatcher.add_handler(CommandHandler('order', self.command_order))
         self.dispatcher.add_handler(CommandHandler('addorder', self.command_addorder))
+        self.dispatcher.add_handler(CommandHandler('address', self.command_address))
+        self.dispatcher.add_handler(
+            CallbackQueryHandler(self.command_address_selected, pattern='^address:0x[a-fA-F0-9]{40}$')
+        )
         for convo in self.convos.values():
             self.dispatcher.add_handler(convo.handler)
         commands = [
             ('status', 'display all tokens and their price, orders'),
-            ('addorder', 'add order to one of the tokens.'),
-            ('order', 'display order information. Pass the order ID as argument.'),
+            ('addorder', 'add order to one of the tokens'),
+            ('order', 'display order information, pass the order ID as argument'),
             ('addtoken', 'add a token that you want to trade'),
             ('removetoken', 'remove a token that you added'),
+            ('address', 'get the contract address for a token'),
         ]
         self.dispatcher.bot.set_my_commands(commands=commands)
         self.dispatcher.add_error_handler(self.error_handler)
@@ -120,10 +126,7 @@ class TradeBot:
 
     @check_chat_id
     def command_addorder(self, update: Update, context: CallbackContext):
-        buttons: List[InlineKeyboardButton] = []
-        for token in sorted(self.watchers.values(), key=lambda token: token.symbol.lower()):
-            buttons.append(InlineKeyboardButton(token.name, callback_data=f'create_order:{token.address}'))
-        buttons_layout = [buttons[i : i + 3] for i in range(0, len(buttons), 3)]  # noqa: E203
+        buttons_layout = get_tokens_keyboard_layout(self.watchers, callback_prefix='create_order')
         reply_markup = InlineKeyboardMarkup(buttons_layout)
         chat_message(
             update,
@@ -155,6 +158,29 @@ class TradeBot:
             chat_message(update, context, text='⛔️ Could not find order with this ID.')
             return
         chat_message(update, context, text=order.long_repr())
+
+    @check_chat_id
+    def command_address(self, update: Update, context: CallbackContext):
+        buttons_layout = get_tokens_keyboard_layout(self.watchers, callback_prefix='address')
+        reply_markup = InlineKeyboardMarkup(buttons_layout)
+        chat_message(
+            update,
+            context,
+            text='Get address for which token?',
+            reply_markup=reply_markup,
+            edit=False,
+        )
+
+    @check_chat_id
+    def command_address_selected(self, update: Update, context: CallbackContext):
+        assert update.callback_query
+        query = update.callback_query
+        assert query.data
+        token_address = query.data.split(':')[1]
+        if not Web3.isChecksumAddress(token_address):
+            chat_message(update, context, text='⛔️ Invalid token address.')
+            return
+        chat_message(update, context, text=f'<code>{token_address}</code>')
 
     def update_status(self):
         balance_bnb = self.net.get_bnb_balance()

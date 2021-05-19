@@ -1,9 +1,9 @@
-from typing import List, NamedTuple
+from typing import NamedTuple
 
 from pancaketrade.network import Network
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.db import remove_token
-from pancaketrade.utils.generic import chat_message, check_chat_id
+from pancaketrade.utils.generic import chat_message, check_chat_id, get_tokens_keyboard_layout
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, ConversationHandler
 from web3 import Web3
@@ -34,10 +34,7 @@ class RemoveTokenConversation:
     @check_chat_id
     def command_removetoken(self, update: Update, context: CallbackContext):
         assert update.message
-        buttons: List[InlineKeyboardButton] = []
-        for token in sorted(self.parent.watchers.values(), key=lambda token: token.symbol.lower()):
-            buttons.append(InlineKeyboardButton(token.name, callback_data=token.address))
-        buttons_layout = [buttons[i : i + 3] for i in range(0, len(buttons), 3)]  # noqa: E203
+        buttons_layout = get_tokens_keyboard_layout(self.parent.watchers)
         buttons_layout.append([InlineKeyboardButton('❌ Cancel', callback_data='cancel')])
         reply_markup = InlineKeyboardMarkup(buttons_layout)
         chat_message(
