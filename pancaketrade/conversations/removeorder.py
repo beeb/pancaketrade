@@ -46,7 +46,10 @@ class RemoveOrderConversation:
         context.user_data['removeorder'] = {'token_address': token_address}
         orders = token.orders
         buttons: List[InlineKeyboardButton] = [
-            InlineKeyboardButton(f'#{o.order_record.id} - {self.get_type_name(o)}', callback_data=o.order_record.id)
+            InlineKeyboardButton(
+                f'{self.get_type_icon(o)} #{o.order_record.id} - {self.get_type_name(o)}',
+                callback_data=o.order_record.id,
+            )
             for o in orders
         ]
         buttons_layout = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]  # noqa: E203
@@ -128,6 +131,9 @@ class RemoveOrderConversation:
             if order.type == 'sell' and order.above
             else 'unknown'
         )
+
+    def get_type_icon(self, order: OrderWatcher) -> str:
+        return '🔴' if order.type == 'sell' else '🟢'
 
     def cancel_command(self, update: Update, context: CallbackContext):
         assert context.user_data is not None

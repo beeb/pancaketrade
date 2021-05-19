@@ -2,10 +2,10 @@
 import functools
 import logging
 import threading
-from typing import Any, Callable, Iterable, Optional
+from typing import Any, Callable, Iterable, List, Mapping, Optional
 
 from loguru import logger
-from telegram import InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext
 
 
@@ -24,6 +24,12 @@ class InterceptHandler(logging.Handler):
             depth += 1
 
         logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
+
+def start_in_thread(func: Callable, args: Iterable[Any] = []) -> None:
+    t = threading.Thread(target=func, args=args)
+    t.daemon = True
+    t.start()
 
 
 def check_chat_id(func: Callable) -> Callable:
@@ -81,7 +87,12 @@ def chat_message(
     context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
 
 
-def start_in_thread(func: Callable, args: Iterable[Any] = []) -> None:
-    t = threading.Thread(target=func, args=args)
-    t.daemon = True
-    t.start()
+def get_tokens_keyboard_layout(
+    watchers: Mapping, callback_prefix: Optional[str] = None, per_row: int = 3
+) -> List[List[InlineKeyboardButton]]:
+    buttons: List[InlineKeyboardButton] = []
+    for token in sorted(watchers.values(), key=lambda token: token.symbol.lower()):
+        callback = f'{callback_prefix}:{token.address}' if callback_prefix else token.address
+        buttons.append(InlineKeyboardButton(token.name, callback_data=callback))
+    buttons_layout = [buttons[i : i + per_row] for i in range(0, len(buttons), per_row)]  # noqa: E203
+    return buttons_layout

@@ -1,11 +1,13 @@
 """Bot class."""
+from decimal import Decimal
 from typing import Dict, List, Optional, Tuple
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from loguru import logger
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Update
-from telegram.ext import CallbackContext, CommandHandler, Defaults, Updater
+from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, Defaults, Updater
+from web3 import Web3
 
 from pancaketrade.conversations import (
     AddTokenConversation,
@@ -19,7 +21,7 @@ from pancaketrade.network import Network
 from pancaketrade.persistence import db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.db import get_token_watchers, init_db
-from pancaketrade.utils.generic import chat_message, check_chat_id
+from pancaketrade.utils.generic import chat_message, check_chat_id, get_tokens_keyboard_layout
 from pancaketrade.watchers import OrderWatcher, TokenWatcher
 
 
@@ -66,14 +68,20 @@ class TradeBot:
         self.dispatcher.add_handler(CommandHandler('start', self.command_start))
         self.dispatcher.add_handler(CommandHandler('status', self.command_status))
         self.dispatcher.add_handler(CommandHandler('order', self.command_order))
+        self.dispatcher.add_handler(CommandHandler('addorder', self.command_addorder))
+        self.dispatcher.add_handler(CommandHandler('address', self.command_address))
+        self.dispatcher.add_handler(
+            CallbackQueryHandler(self.command_address_selected, pattern='^address:0x[a-fA-F0-9]{40}$')
+        )
         for convo in self.convos.values():
             self.dispatcher.add_handler(convo.handler)
         commands = [
             ('status', 'display all tokens and their price, orders'),
+            ('addorder', 'add order to one of the tokens'),
+            ('order', 'display order information, pass the order ID as argument'),
             ('addtoken', 'add a token that you want to trade'),
-            ('removetoken', 'remove a token that you added previously'),
-            ('cancelorder', 'cancel the current order creation/removal process (if bot is stuck for instance)'),
-            ('order', 'display detailled order information. Pass the order ID as argument.'),
+            ('removetoken', 'remove a token that you added'),
+            ('address', 'get the contract address for a token'),
         ]
         self.dispatcher.bot.set_my_commands(commands=commands)
         self.dispatcher.add_error_handler(self.error_handler)
@@ -102,19 +110,31 @@ class TradeBot:
     @check_chat_id
     def command_status(self, update: Update, context: CallbackContext):
         assert update.message and update.effective_chat
-        balance_bnb = self.net.get_bnb_balance()
-        price_bnb = self.net.get_bnb_price()
-        stat_msg = context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text='<u>STATUS</u>\n' + f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})',
-        )
-        self.last_status_message_id = stat_msg.message_id
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
         for token in sorted_tokens:
             status, buttons = self.get_token_status(token)
             reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
             msg = context.bot.send_message(chat_id=update.effective_chat.id, text=status, reply_markup=reply_markup)
             self.watchers[token.address].last_status_message_id = msg.message_id
+        balance_bnb = self.net.get_bnb_balance()
+        price_bnb = self.net.get_bnb_price()
+        stat_msg = context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})',
+        )
+        self.last_status_message_id = stat_msg.message_id
+
+    @check_chat_id
+    def command_addorder(self, update: Update, context: CallbackContext):
+        buttons_layout = get_tokens_keyboard_layout(self.watchers, callback_prefix='create_order')
+        reply_markup = InlineKeyboardMarkup(buttons_layout)
+        chat_message(
+            update,
+            context,
+            text='Add order to which token?',
+            reply_markup=reply_markup,
+            edit=False,
+        )
 
     @check_chat_id
     def command_order(self, update: Update, context: CallbackContext):
@@ -138,6 +158,30 @@ class TradeBot:
             chat_message(update, context, text='⛔️ Could not find order with this ID.')
             return
         chat_message(update, context, text=order.long_repr())
+
+    @check_chat_id
+    def command_address(self, update: Update, context: CallbackContext):
+        buttons_layout = get_tokens_keyboard_layout(self.watchers, callback_prefix='address')
+        reply_markup = InlineKeyboardMarkup(buttons_layout)
+        chat_message(
+            update,
+            context,
+            text='Get address for which token?',
+            reply_markup=reply_markup,
+            edit=False,
+        )
+
+    @check_chat_id
+    def command_address_selected(self, update: Update, context: CallbackContext):
+        assert update.callback_query
+        query = update.callback_query
+        assert query.data
+        token_address = query.data.split(':')[1]
+        if not Web3.isChecksumAddress(token_address):
+            chat_message(update, context, text='⛔️ Invalid token address.')
+            return
+        token = self.watchers[token_address]
+        chat_message(update, context, text=f'{token.name}\n<code>{token_address}</code>')
 
     def update_status(self):
         balance_bnb = self.net.get_bnb_balance()
@@ -182,7 +226,10 @@ class TradeBot:
         token_price_usd = self.net.get_token_price_usd(
             token_address=token.address, token_decimals=token.decimals, sell=True
         )
-        orders = [str(order) for order in token.orders]
+        orders_sorted = sorted(
+            token.orders, key=lambda o: o.limit_price if o.limit_price else Decimal(1e12), reverse=True
+        )  # if no limit price (market price) display first (big artificial value)
+        orders = [str(order) for order in orders_sorted]
         message = (
             f'<b>{token.name}</b>: {token_balance:,.1f}        '
             + f'<a href="https://poocoin.app/tokens/{token.address}">Chart</a>\n'
