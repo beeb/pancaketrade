@@ -70,6 +70,7 @@ class TradeBot:
         self.dispatcher.add_handler(CommandHandler('order', self.command_order))
         self.dispatcher.add_handler(CommandHandler('addorder', self.command_addorder))
         self.dispatcher.add_handler(CommandHandler('address', self.command_address))
+        self.dispatcher.add_handler(CommandHandler('buysell', self.command_buysell))
         self.dispatcher.add_handler(
             CallbackQueryHandler(self.command_address_selected, pattern='^address:0x[a-fA-F0-9]{40}$')
         )
@@ -78,6 +79,7 @@ class TradeBot:
         commands = [
             ('status', 'display all tokens and their price, orders'),
             ('addorder', 'add order to one of the tokens'),
+            ('buysell', 'buy or sell a token now'),
             ('order', 'display order information, pass the order ID as argument'),
             ('addtoken', 'add a token that you want to trade'),
             ('removetoken', 'remove a token that you added'),
@@ -187,6 +189,18 @@ class TradeBot:
         token = self.watchers[token_address]
         chat_message(
             update, context, text=f'{token.name}\n<code>{token_address}</code>', edit=self.config.update_messages
+        )
+
+    @check_chat_id
+    def command_buysell(self, update: Update, context: CallbackContext):
+        buttons_layout = get_tokens_keyboard_layout(self.watchers, callback_prefix='buy_sell')
+        reply_markup = InlineKeyboardMarkup(buttons_layout)
+        chat_message(
+            update,
+            context,
+            text='Buy or sell which token?',
+            reply_markup=reply_markup,
+            edit=False,
         )
 
     def update_status(self):
