@@ -52,6 +52,9 @@ class TokenWatcher:
         self.scheduler.add_job(self.monitor_price, trigger=trigger)
         self.scheduler.start()
 
+    def stop_monitoring(self):
+        self.scheduler.shutdown(wait=False)
+
     def monitor_price(self):
         if not self.orders:
             return
