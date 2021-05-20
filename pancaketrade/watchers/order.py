@@ -239,7 +239,7 @@ class OrderWatcher:
             text=f'✅ Got {bnb_out:.3g} BNB at '
             + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>\n'
             + f'Effective price (after tax) {effective_price:.4g} BNB/token.\n'
-            + f'This order sold {sold_proportion:.1%}% of the token\'s balance.',
+            + f'This order sold {sold_proportion:.1%} of the token\'s balance.',
         )
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_repr()
