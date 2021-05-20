@@ -50,7 +50,6 @@ class BuySellConversation:
             },
             fallbacks=[CommandHandler('cancelbuysell', self.command_cancelbuysell)],
             name='buysell_conversation',
-            conversation_timeout=300,
         )
 
     @check_chat_id

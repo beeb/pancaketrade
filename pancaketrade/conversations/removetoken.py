@@ -28,7 +28,6 @@ class RemoveTokenConversation:
             },
             fallbacks=[CommandHandler('cancelremovetoken', self.command_cancelremovetoken)],
             name='removetoken_conversation',
-            conversation_timeout=60,
         )
 
     @check_chat_id

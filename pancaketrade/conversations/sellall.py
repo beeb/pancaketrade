@@ -27,7 +27,6 @@ class SellAllConversation:
             },
             fallbacks=[CommandHandler('cancelsell', self.command_cancelsell)],
             name='sellall_conversation',
-            conversation_timeout=30,
         )
 
     @check_chat_id
