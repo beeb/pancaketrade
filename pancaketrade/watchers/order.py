@@ -42,10 +42,9 @@ class OrderWatcher:
         unit = self.get_amount_unit()
         trailing = f' tsl {self.trailing_stop}%' if self.trailing_stop is not None else ''
         order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
-        icon = '🟢' if self.type == 'buy' else '🔴'
         limit_price = f'{self.limit_price:.3g} BNB' if self.limit_price is not None else 'market price'
         return (
-            f'{icon} {order_id}: {self.token_record.symbol} <code>{comparison} {limit_price}</code> - '
+            f'{order_id}: {self.token_record.symbol} <code>{comparison} {limit_price}</code> - '
             + f'<b>{type_name}</b> {amount_formatted} {unit}{trailing}'
         )
 
