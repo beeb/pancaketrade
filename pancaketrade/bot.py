@@ -219,7 +219,7 @@ class TradeBot:
         )
 
     @check_chat_id
-    def cancel_command(self, update: Update, context: CallbackContext):
+    def cancel_command(self, update: Update, _: CallbackContext):
         assert update.callback_query and update.effective_chat
         query = update.callback_query
         query.delete_message()
