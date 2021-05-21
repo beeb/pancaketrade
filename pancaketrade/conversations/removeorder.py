@@ -22,12 +22,12 @@ class RemoveOrderConversation:
         self.config = config
         self.next = RemoveOrderResponses()
         self.handler = ConversationHandler(
-            entry_points=[CallbackQueryHandler(self.command_removeorder, pattern='^delete_order:0x[a-fA-F0-9]{40}$')],
+            entry_points=[CallbackQueryHandler(self.command_removeorder, pattern='^removeorder:0x[a-fA-F0-9]{40}$')],
             states={
                 self.next.CONFIRM: [CallbackQueryHandler(self.command_removeorder_confirm, pattern='^[^:]*$')],
                 self.next.ORDER: [CallbackQueryHandler(self.command_removeorder_order, pattern='^[^:]*$')],
             },
-            fallbacks=[CommandHandler('cancelorder', self.command_cancelorder)],
+            fallbacks=[CommandHandler('cancel', self.command_cancelorder)],
             name='removeorder_conversation',
         )
 

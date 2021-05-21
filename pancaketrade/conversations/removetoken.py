@@ -26,7 +26,7 @@ class RemoveTokenConversation:
                 self.next.CONFIRM: [CallbackQueryHandler(self.command_removetoken_confirm)],
                 self.next.TOKENCHOICE: [CallbackQueryHandler(self.command_removetoken_tokenchoice)],
             },
-            fallbacks=[CommandHandler('cancelremovetoken', self.command_cancelremovetoken)],
+            fallbacks=[CommandHandler('cancel', self.command_cancelremovetoken)],
             name='removetoken_conversation',
         )
 

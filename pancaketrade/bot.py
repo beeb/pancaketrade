@@ -13,7 +13,7 @@ from web3 import Web3
 from pancaketrade.conversations import (
     AddTokenConversation,
     BuySellConversation,
-    CreateOrderConversation,
+    AddOrderConversation,
     RemoveOrderConversation,
     RemoveTokenConversation,
     SellAllConversation,
@@ -46,7 +46,7 @@ class TradeBot:
         self.convos = {
             'addtoken': AddTokenConversation(parent=self, config=self.config),
             'removetoken': RemoveTokenConversation(parent=self, config=self.config),
-            'createorder': CreateOrderConversation(parent=self, config=self.config),
+            'addorder': AddOrderConversation(parent=self, config=self.config),
             'removeorder': RemoveOrderConversation(parent=self, config=self.config),
             'sellall': SellAllConversation(parent=self, config=self.config),
             'buysell': BuySellConversation(parent=self, config=self.config),
@@ -64,23 +64,36 @@ class TradeBot:
         )
         self.start_status_update()
         self.last_status_message_id: Optional[int] = None
+        self.prompts_select_token = {
+            'sellall': 'Sell full blance now for which token?',
+            'addorder': 'Add order to which token?',
+            'removeorder': 'Delete order for which token?',
+            'buysell': 'Buy or sell now which token?',
+            'address': 'Get address for which token?',
+        }
 
     def setup_telegram(self):
         self.dispatcher.add_handler(CommandHandler('start', self.command_start))
         self.dispatcher.add_handler(CommandHandler('status', self.command_status))
+        self.dispatcher.add_handler(CommandHandler('sellall', self.command_show_all_tokens))
+        self.dispatcher.add_handler(CommandHandler('addorder', self.command_show_all_tokens))
+        self.dispatcher.add_handler(CommandHandler('removeorder', self.command_show_all_tokens))
+        self.dispatcher.add_handler(CommandHandler('buysell', self.command_show_all_tokens))
+        self.dispatcher.add_handler(CommandHandler('address', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('order', self.command_order))
-        self.dispatcher.add_handler(CommandHandler('addorder', self.command_addorder))
-        self.dispatcher.add_handler(CommandHandler('address', self.command_address))
-        self.dispatcher.add_handler(CommandHandler('buysell', self.command_buysell))
+        self.dispatcher.add_handler(CallbackQueryHandler(self.command_address, pattern='^address:0x[a-fA-F0-9]{40}$'))
         self.dispatcher.add_handler(
-            CallbackQueryHandler(self.command_address_selected, pattern='^address:0x[a-fA-F0-9]{40}$')
+            CallbackQueryHandler(
+                self.command_show_all_tokens, pattern='^addorder$|^removeorder$|^buysell$|^sellall$|^address$'
+            )
         )
         for convo in self.convos.values():
             self.dispatcher.add_handler(convo.handler)
         commands = [
             ('status', 'display all tokens and their price, orders'),
-            ('addorder', 'add order to one of the tokens'),
             ('buysell', 'buy or sell a token now'),
+            ('addorder', 'add order to one of the tokens'),
+            ('removeorder', 'delete order for one of the tokens'),
             ('order', 'display order information, pass the order ID as argument'),
             ('addtoken', 'add a token that you want to trade'),
             ('removetoken', 'remove a token that you added'),
@@ -117,39 +130,29 @@ class TradeBot:
 
     @check_chat_id
     def command_status(self, update: Update, context: CallbackContext):
-        for job in self.status_scheduler.get_jobs():
-            # prevent running an update while we are changing the last message id
-            job.pause()
+        self.pause_status_update(True)  # prevent running an update while we are changing the last message id
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
         for token in sorted_tokens:
-            status, buttons = self.get_token_status(token)
-            reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
-            msg = chat_message(update, context, text=status, reply_markup=reply_markup, edit=False)
+            status, _ = self.get_token_status(token)
+            # reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
+            msg = chat_message(update, context, text=status, reply_markup=None, edit=False)
             if msg is not None:
                 self.watchers[token.address].last_status_message_id = msg.message_id
         balance_bnb = self.net.get_bnb_balance()
         price_bnb = self.net.get_bnb_price()
+        reply_markup = InlineKeyboardMarkup(self.get_global_keyboard())
         stat_msg = chat_message(
-            update, context, text=f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})', edit=False
+            update,
+            context,
+            text=f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})\n'
+            + 'Which action do you want to perform next?',
+            reply_markup=reply_markup,
+            edit=False,
         )
         if stat_msg is not None:
             self.last_status_message_id = stat_msg.message_id
         time.sleep(1)  # make sure the message go received by the telegram API
-        for job in self.status_scheduler.get_jobs():
-            # resume update job
-            job.resume()
-
-    @check_chat_id
-    def command_addorder(self, update: Update, context: CallbackContext):
-        buttons_layout = get_tokens_keyboard_layout(self.watchers, callback_prefix='create_order')
-        reply_markup = InlineKeyboardMarkup(buttons_layout)
-        chat_message(
-            update,
-            context,
-            text='Add order to which token?',
-            reply_markup=reply_markup,
-            edit=False,
-        )
+        self.pause_status_update(False)  # resume update job
 
     @check_chat_id
     def command_order(self, update: Update, context: CallbackContext):
@@ -175,18 +178,6 @@ class TradeBot:
 
     @check_chat_id
     def command_address(self, update: Update, context: CallbackContext):
-        buttons_layout = get_tokens_keyboard_layout(self.watchers, callback_prefix='address')
-        reply_markup = InlineKeyboardMarkup(buttons_layout)
-        chat_message(
-            update,
-            context,
-            text='Get address for which token?',
-            reply_markup=reply_markup,
-            edit=False,
-        )
-
-    @check_chat_id
-    def command_address_selected(self, update: Update, context: CallbackContext):
         assert update.callback_query
         query = update.callback_query
         assert query.data
@@ -200,13 +191,31 @@ class TradeBot:
         )
 
     @check_chat_id
-    def command_buysell(self, update: Update, context: CallbackContext):
-        buttons_layout = get_tokens_keyboard_layout(self.watchers, callback_prefix='buy_sell')
+    def command_show_all_tokens(self, update: Update, context: CallbackContext):
+        if update.message:
+            assert update.message.text
+            command = update.message.text.strip()[1:]
+            try:
+                msg = self.prompts_select_token[command]
+            except KeyError:
+                chat_message(update, context, text='⛔️ Invalid command.', edit=False)
+                return
+            buttons_layout = get_tokens_keyboard_layout(self.watchers, callback_prefix=command)
+        else:  # callback query from button
+            assert update.callback_query
+            query = update.callback_query
+            assert query.data
+            try:
+                msg = self.prompts_select_token[query.data]
+            except KeyError:
+                chat_message(update, context, text='⛔️ Invalid command.', edit=False)
+                return
+            buttons_layout = get_tokens_keyboard_layout(self.watchers, callback_prefix=query.data)
         reply_markup = InlineKeyboardMarkup(buttons_layout)
         chat_message(
             update,
             context,
-            text='Buy or sell now which token?',
+            text=msg,
             reply_markup=reply_markup,
             edit=False,
         )
@@ -216,25 +225,28 @@ class TradeBot:
             return  # we probably did not call status since start
         balance_bnb = self.net.get_bnb_balance()
         price_bnb = self.net.get_bnb_price()
+        reply_markup = InlineKeyboardMarkup(self.get_global_keyboard())
         self.dispatcher.bot.edit_message_text(
             f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})',
             chat_id=self.config.secrets.admin_chat_id,
             message_id=self.last_status_message_id,
+            reply_markup=reply_markup,
         )
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
         for token in sorted_tokens:
             if token.last_status_message_id is None:
                 continue
-            status, buttons = self.get_token_status(token)
-            reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
+            status, _ = self.get_token_status(token)
+            # reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
             self.dispatcher.bot.edit_message_text(
                 status,
                 chat_id=self.config.secrets.admin_chat_id,
                 message_id=token.last_status_message_id,
-                reply_markup=reply_markup,
+                reply_markup=None,
             )
 
     def get_token_status(self, token: TokenWatcher) -> Tuple[str, List[List[InlineKeyboardButton]]]:
+        """
         buttons = [
             [
                 InlineKeyboardButton('➕ Create order...', callback_data=f'create_order:{token.address}'),
@@ -249,6 +261,7 @@ class TradeBot:
                 0,
                 InlineKeyboardButton('➖ Delete order...', callback_data=f'delete_order:{token.address}'),
             )
+        """
         token_balance = self.net.get_token_balance(token_address=token.address)
         token_balance_bnb = self.net.get_token_balance_bnb(token_address=token.address, balance=token_balance)
         token_balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance=token_balance)
@@ -268,9 +281,33 @@ class TradeBot:
             + '<b>Orders</b>: (underlined = tracking trailing stop loss)\n'
             + '\n'.join(orders)
         )
-        return message, buttons
+        return message, [[]]
+
+    def get_global_keyboard(self) -> List[List[InlineKeyboardButton]]:
+        buttons = [
+            [
+                InlineKeyboardButton('➖ Delete order', callback_data='removeorder'),
+                InlineKeyboardButton('➕ Create order', callback_data='addorder'),
+            ],
+            [
+                InlineKeyboardButton('❗️ Sell all!', callback_data='sellall'),
+                InlineKeyboardButton('💰 Buy/Sell now', callback_data='buysell'),
+            ],
+            [
+                InlineKeyboardButton('📇 Get address', callback_data='address'),
+            ],
+        ]
+        return buttons
 
     def error_handler(self, update: Update, context: CallbackContext) -> None:
         logger.error('Exception while handling an update')
         logger.error(context.error)
         chat_message(update, context, text=f'⛔️ Exception while handling an update\n{context.error}', edit=False)
+
+    def pause_status_update(self, pause: bool = True):
+        for job in self.status_scheduler.get_jobs():
+            # prevent running an update while we are changing the last message id
+            if pause:
+                job.pause()
+            else:
+                job.resume()

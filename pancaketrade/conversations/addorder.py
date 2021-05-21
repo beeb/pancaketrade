@@ -19,7 +19,7 @@ from telegram.ext import (
 from web3 import Web3
 
 
-class CreateOrderResponses(NamedTuple):
+class AddOrderResponses(NamedTuple):
     TYPE: int = 0
     TRAILING: int = 1
     PRICE: int = 2
@@ -29,46 +29,46 @@ class CreateOrderResponses(NamedTuple):
     SUMMARY: int = 6
 
 
-class CreateOrderConversation:
+class AddOrderConversation:
     def __init__(self, parent, config: Config):
         self.parent = parent
         self.net: Network = parent.net
         self.config = config
-        self.next = CreateOrderResponses()
+        self.next = AddOrderResponses()
         self.handler = ConversationHandler(
-            entry_points=[CallbackQueryHandler(self.command_createorder, pattern='^create_order:0x[a-fA-F0-9]{40}$')],
+            entry_points=[CallbackQueryHandler(self.command_addorder, pattern='^addorder:0x[a-fA-F0-9]{40}$')],
             states={
-                self.next.TYPE: [CallbackQueryHandler(self.command_createorder_type, pattern='^[^:]*$')],
+                self.next.TYPE: [CallbackQueryHandler(self.command_addorder_type, pattern='^[^:]*$')],
                 self.next.TRAILING: [
-                    CallbackQueryHandler(self.command_createorder_trailing, pattern='^[^:]*$'),
-                    MessageHandler(Filters.text & ~Filters.command, self.command_createorder_trailing),
+                    CallbackQueryHandler(self.command_addorder_trailing, pattern='^[^:]*$'),
+                    MessageHandler(Filters.text & ~Filters.command, self.command_addorder_trailing),
                 ],
                 self.next.PRICE: [
-                    CallbackQueryHandler(self.command_createorder_price, pattern='^[^:]*$'),
-                    MessageHandler(Filters.text & ~Filters.command, self.command_createorder_price),
+                    CallbackQueryHandler(self.command_addorder_price, pattern='^[^:]*$'),
+                    MessageHandler(Filters.text & ~Filters.command, self.command_addorder_price),
                 ],
                 self.next.AMOUNT: [
-                    CallbackQueryHandler(self.command_createorder_amount, pattern='^[^:]*$'),
-                    MessageHandler(Filters.text & ~Filters.command, self.command_createorder_amount),
+                    CallbackQueryHandler(self.command_addorder_amount, pattern='^[^:]*$'),
+                    MessageHandler(Filters.text & ~Filters.command, self.command_addorder_amount),
                 ],
                 self.next.SLIPPAGE: [
-                    CallbackQueryHandler(self.command_createorder_slippage, pattern='^[^:]*$'),
-                    MessageHandler(Filters.text & ~Filters.command, self.command_createorder_slippage),
+                    CallbackQueryHandler(self.command_addorder_slippage, pattern='^[^:]*$'),
+                    MessageHandler(Filters.text & ~Filters.command, self.command_addorder_slippage),
                 ],
                 self.next.GAS: [
-                    CallbackQueryHandler(self.command_createorder_gas, pattern='^[^:]*$'),
-                    MessageHandler(Filters.text & ~Filters.command, self.command_createorder_gas),
+                    CallbackQueryHandler(self.command_addorder_gas, pattern='^[^:]*$'),
+                    MessageHandler(Filters.text & ~Filters.command, self.command_addorder_gas),
                 ],
                 self.next.SUMMARY: [
-                    CallbackQueryHandler(self.command_createorder_summary, pattern='^[^:]*$'),
+                    CallbackQueryHandler(self.command_addorder_summary, pattern='^[^:]*$'),
                 ],
             },
-            fallbacks=[CommandHandler('cancelorder', self.command_cancelorder)],
-            name='createorder_conversation',
+            fallbacks=[CommandHandler('cancel', self.command_cancelorder)],
+            name='addorder_conversation',
         )
 
     @check_chat_id
-    def command_createorder(self, update: Update, context: CallbackContext):
+    def command_addorder(self, update: Update, context: CallbackContext):
         assert update.callback_query and context.user_data is not None
         query = update.callback_query
         assert query.data
@@ -77,7 +77,7 @@ class CreateOrderConversation:
             self.command_error(update, context, text='Invalid token address.')
             return ConversationHandler.END
         token = self.parent.watchers[token_address]
-        context.user_data['createorder'] = {'token_address': token_address}
+        context.user_data['addorder'] = {'token_address': token_address}
         reply_markup = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -100,13 +100,13 @@ class CreateOrderConversation:
         return self.next.TYPE
 
     @check_chat_id
-    def command_createorder_type(self, update: Update, context: CallbackContext):
+    def command_addorder_type(self, update: Update, context: CallbackContext):
         assert update.callback_query and context.user_data is not None
         query = update.callback_query
         if query.data == 'cancel':
             self.cancel_command(update, context)
             return ConversationHandler.END
-        order = context.user_data['createorder']
+        order = context.user_data['addorder']
         if query.data == 'stop_loss':
             order['type'] = 'sell'
             order['above'] = False  # below
@@ -161,9 +161,9 @@ class CreateOrderConversation:
         return self.next.TRAILING
 
     @check_chat_id
-    def command_createorder_trailing(self, update: Update, context: CallbackContext):
+    def command_addorder_trailing(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
-        order = context.user_data['createorder']
+        order = context.user_data['addorder']
         token = self.parent.watchers[order['token_address']]
         current_price, _ = self.net.get_token_price(
             token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
@@ -209,9 +209,9 @@ class CreateOrderConversation:
         return self.next.PRICE
 
     @check_chat_id
-    def command_createorder_price(self, update: Update, context: CallbackContext):
+    def command_addorder_price(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
-        order = context.user_data['createorder']
+        order = context.user_data['addorder']
         token = self.parent.watchers[order['token_address']]
         if update.message is None:  # we got a cancel callback
             self.cancel_command(update, context)
@@ -274,9 +274,9 @@ class CreateOrderConversation:
         return self.next.AMOUNT
 
     @check_chat_id
-    def command_createorder_amount(self, update: Update, context: CallbackContext):
+    def command_addorder_amount(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
-        order = context.user_data['createorder']
+        order = context.user_data['addorder']
         token = self.parent.watchers[order['token_address']]
         if update.message is None:  # we got a button callback, either cancel or fraction of token balance
             assert update.callback_query
@@ -360,9 +360,9 @@ class CreateOrderConversation:
         return self.next.SLIPPAGE
 
     @check_chat_id
-    def command_createorder_slippage(self, update: Update, context: CallbackContext):
+    def command_addorder_slippage(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
-        order = context.user_data['createorder']
+        order = context.user_data['addorder']
         if update.message is None:
             assert update.callback_query
             query = update.callback_query
@@ -410,9 +410,9 @@ class CreateOrderConversation:
         return self.next.GAS
 
     @check_chat_id
-    def command_createorder_gas(self, update: Update, context: CallbackContext):
+    def command_addorder_gas(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
-        order = context.user_data['createorder']
+        order = context.user_data['addorder']
         if update.message is None:
             assert update.callback_query
             query = update.callback_query
@@ -464,7 +464,7 @@ class CreateOrderConversation:
 
     def print_summary(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
-        order = context.user_data['createorder']
+        order = context.user_data['addorder']
         token = self.parent.watchers[order['token_address']]
         type_name = self.get_type_name(order)
         comparision = self.get_comparison_symbol(order)
@@ -512,13 +512,13 @@ class CreateOrderConversation:
         return self.next.SUMMARY
 
     @check_chat_id
-    def command_createorder_summary(self, update: Update, context: CallbackContext):
+    def command_addorder_summary(self, update: Update, context: CallbackContext):
         assert update.effective_chat and update.callback_query and context.user_data is not None
         query = update.callback_query
         if query.data != 'ok':
             self.cancel_command(update, context)
             return ConversationHandler.END
-        add = context.user_data['createorder']
+        add = context.user_data['addorder']
         token: TokenWatcher = self.parent.watchers[add['token_address']]
         del add['token_address']  # not needed in order record creation
         try:
@@ -529,7 +529,7 @@ class CreateOrderConversation:
             self.command_error(update, context, text=f'Failed to create database record: {e}')
             return ConversationHandler.END
         finally:
-            del context.user_data['createorder']
+            del context.user_data['addorder']
             db.close()
         order = OrderWatcher(
             order_record=order_record, net=self.net, dispatcher=context.dispatcher, chat_id=update.effective_chat.id
@@ -583,10 +583,10 @@ class CreateOrderConversation:
 
     def cancel_command(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
-        del context.user_data['createorder']
+        del context.user_data['addorder']
         chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=False)
 
     def command_error(self, update: Update, context: CallbackContext, text: str):
         assert context.user_data is not None
-        del context.user_data['createorder']
+        del context.user_data['addorder']
         chat_message(update, context, text=f'⛔️ {text}', edit=False)
