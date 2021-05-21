@@ -88,5 +88,6 @@ def get_tokens_keyboard_layout(
     for token in sorted(watchers.values(), key=lambda token: token.symbol.lower()):
         callback = f'{callback_prefix}:{token.address}' if callback_prefix else token.address
         buttons.append(InlineKeyboardButton(token.name, callback_data=callback))
+    buttons.append(InlineKeyboardButton('❌ Cancel', callback_data='cancel'))
     buttons_layout = [buttons[i : i + per_row] for i in range(0, len(buttons), per_row)]  # noqa: E203
     return buttons_layout

@@ -87,6 +87,7 @@ class TradeBot:
                 self.command_show_all_tokens, pattern='^addorder$|^removeorder$|^buysell$|^sellall$|^address$'
             )
         )
+        self.dispatcher.add_handler(CallbackQueryHandler(self.cancel_command, pattern='^cancel$'))
         for convo in self.convos.values():
             self.dispatcher.add_handler(convo.handler)
         commands = [
@@ -216,6 +217,12 @@ class TradeBot:
             reply_markup=reply_markup,
             edit=False,
         )
+
+    @check_chat_id
+    def cancel_command(self, update: Update, context: CallbackContext):
+        assert update.callback_query and update.effective_chat
+        query = update.callback_query
+        query.delete_message()
 
     def update_status(self):
         if self.last_status_message_id is None:
