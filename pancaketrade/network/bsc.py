@@ -306,7 +306,7 @@ class Network:
             return False, Decimal(0), txhash
         print(receipt)
         amount_out = Decimal(0)
-        for log in receipt['logs']:
+        for log in reversed(receipt['logs']):  # only get last withdrawal call
             if log['address'] != token_address:
                 continue
             # topic for transfer function
@@ -318,7 +318,8 @@ class Network:
                 continue
             out_token_wei = Web3.toWei(Web3.toInt(hexstr=log['data']), unit='wei')
             out_token = Decimal(out_token_wei) / Decimal(10 ** self.get_token_decimals(token_address))
-            amount_out += out_token
+            amount_out = out_token
+            break
         logger.success(f'Buy transaction succeeded at tx {txhash}')
         return True, amount_out, txhash
 
@@ -392,7 +393,7 @@ class Network:
             return False, Decimal(0), txhash
         print(receipt)
         amount_out = Decimal(0)
-        for log in receipt['logs']:
+        for log in reversed(receipt['logs']):  # only get last withdrawal call
             if log['address'] != self.addr.wbnb:
                 continue
             # topic for withdrawal function
@@ -406,7 +407,8 @@ class Network:
                 continue
             out_bnb_wei = Web3.toWei(Web3.toInt(hexstr=log['data']), unit='wei')
             out_bnb = Decimal(out_bnb_wei) / Decimal(10 ** 18)
-            amount_out += out_bnb
+            amount_out = out_bnb
+            break
         logger.success(f'Sell transaction succeeded at tx {txhash}')
         return True, amount_out, txhash
 

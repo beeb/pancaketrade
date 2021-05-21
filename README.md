@@ -72,12 +72,17 @@ However, sometimes the LP on a given version has very little liquidity, which me
 In order to avoid swapping on the version that has little liquidity, the bot checks that at least `min_pool_size_bnb`
 is staked in the LP. If that's not the case, the bot will use the other version even if the price is worse.
 
+The `update_messages` parameter will update the status messages every 15 seconds. Use at your own risk as in the past,
+this caused some of my bots to become permanently unable to update any kind of message, thereby breaking the interaction
+through the inline buttons. If you have trouble with these buttons, disable `update_messages`.
+
 ```yaml
 ---
 bsc_rpc: 'https://bsc-dataseed.binance.org:443' # you can use any BSC RPC url you want
 wallet: '0x0000000000000000000000000000000000000000' # insert your wallet adddress here
 min_pool_size_bnb: 25 # PancakeSwap LPs that have less than 25 BNB will not be considered
 monitor_interval: 5 # the script will check the token prices with this interval in seconds
+update_messages: false # status messages will update periodically to show current values
 secrets:
   bscscan_api_key: 'enter_your_api_key' # enter your BscScan API key
   telegram_token: 'enter_your_bot_token' # enter your Telegram Bot token

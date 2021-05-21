@@ -21,13 +21,12 @@ class SellAllConversation:
         self.config = config
         self.next = SellAllResponses()
         self.handler = ConversationHandler(
-            entry_points=[CallbackQueryHandler(self.command_sellall, pattern='^sell_all:0x[a-fA-F0-9]{40}$')],
+            entry_points=[CallbackQueryHandler(self.command_sellall, pattern='^sellall:0x[a-fA-F0-9]{40}$')],
             states={
                 self.next.CONFIRM: [CallbackQueryHandler(self.command_sellall_confirm, pattern='^[^:]*$')],
             },
-            fallbacks=[CommandHandler('cancelsell', self.command_cancelsell)],
+            fallbacks=[CommandHandler('cancel', self.command_cancelsell)],
             name='sellall_conversation',
-            conversation_timeout=30,
         )
 
     @check_chat_id

@@ -26,9 +26,8 @@ class RemoveTokenConversation:
                 self.next.CONFIRM: [CallbackQueryHandler(self.command_removetoken_confirm)],
                 self.next.TOKENCHOICE: [CallbackQueryHandler(self.command_removetoken_tokenchoice)],
             },
-            fallbacks=[CommandHandler('cancelremovetoken', self.command_cancelremovetoken)],
+            fallbacks=[CommandHandler('cancel', self.command_cancelremovetoken)],
             name='removetoken_conversation',
-            conversation_timeout=60,
         )
 
     @check_chat_id
@@ -75,7 +74,7 @@ class RemoveTokenConversation:
 
     @check_chat_id
     def command_removetoken_tokenchoice(self, update: Update, context: CallbackContext):
-        assert update.callback_query
+        assert update.callback_query and update.effective_chat
         query = update.callback_query
         if query.data == 'cancel':
             chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=self.config.update_messages)
@@ -84,8 +83,12 @@ class RemoveTokenConversation:
         if not Web3.isChecksumAddress(query.data):
             chat_message(update, context, text='⛔️ Invalid token address.', edit=self.config.update_messages)
             return ConversationHandler.END
+        token = self.parent.watchers[query.data]
+        token.stop_monitoring()
+        token_name = token.name
+        if token.last_status_message_id is not None:
+            context.bot.delete_message(chat_id=update.effective_chat.id, message_id=token.last_status_message_id)
         remove_token(self.parent.watchers[query.data].token_record)
-        token_name = self.parent.watchers[query.data].name
         del self.parent.watchers[query.data]
         chat_message(
             update,
