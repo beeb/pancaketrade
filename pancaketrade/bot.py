@@ -133,19 +133,16 @@ class TradeBot:
         self.pause_status_update(True)  # prevent running an update while we are changing the last message id
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
         for token in sorted_tokens:
-            status, _ = self.get_token_status(token)
-            # reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
-            msg = chat_message(update, context, text=status, reply_markup=None, edit=False)
+            status = self.get_token_status(token)
+            msg = chat_message(update, context, text=status, edit=False)
             if msg is not None:
                 self.watchers[token.address].last_status_message_id = msg.message_id
-        balance_bnb = self.net.get_bnb_balance()
-        price_bnb = self.net.get_bnb_price()
-        reply_markup = InlineKeyboardMarkup(self.get_global_keyboard())
+        message, buttons = self.get_summary_message()
+        reply_markup = InlineKeyboardMarkup(buttons)
         stat_msg = chat_message(
             update,
             context,
-            text=f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})\n'
-            + 'Which action do you want to perform next?',
+            text=message,
             reply_markup=reply_markup,
             edit=False,
         )
@@ -223,45 +220,26 @@ class TradeBot:
     def update_status(self):
         if self.last_status_message_id is None:
             return  # we probably did not call status since start
-        balance_bnb = self.net.get_bnb_balance()
-        price_bnb = self.net.get_bnb_price()
-        reply_markup = InlineKeyboardMarkup(self.get_global_keyboard())
-        self.dispatcher.bot.edit_message_text(
-            f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})',
-            chat_id=self.config.secrets.admin_chat_id,
-            message_id=self.last_status_message_id,
-            reply_markup=reply_markup,
-        )
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
         for token in sorted_tokens:
             if token.last_status_message_id is None:
                 continue
-            status, _ = self.get_token_status(token)
-            # reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
+            status = self.get_token_status(token)
             self.dispatcher.bot.edit_message_text(
                 status,
                 chat_id=self.config.secrets.admin_chat_id,
                 message_id=token.last_status_message_id,
-                reply_markup=None,
             )
+        message, buttons = self.get_summary_message()
+        reply_markup = InlineKeyboardMarkup(buttons)
+        self.dispatcher.bot.edit_message_text(
+            message,
+            chat_id=self.config.secrets.admin_chat_id,
+            message_id=self.last_status_message_id,
+            reply_markup=reply_markup,
+        )
 
-    def get_token_status(self, token: TokenWatcher) -> Tuple[str, List[List[InlineKeyboardButton]]]:
-        """
-        buttons = [
-            [
-                InlineKeyboardButton('➕ Create order...', callback_data=f'create_order:{token.address}'),
-            ],
-            [
-                InlineKeyboardButton('❗️ Sell all now!', callback_data=f'sell_all:{token.address}'),
-                InlineKeyboardButton('💰 Buy/Sell now...', callback_data=f'buy_sell:{token.address}'),
-            ],
-        ]
-        if len(token.orders):
-            buttons[0].insert(
-                0,
-                InlineKeyboardButton('➖ Delete order...', callback_data=f'delete_order:{token.address}'),
-            )
-        """
+    def get_token_status(self, token: TokenWatcher) -> str:
         token_balance = self.net.get_token_balance(token_address=token.address)
         token_balance_bnb = self.net.get_token_balance_bnb(token_address=token.address, balance=token_balance)
         token_balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance=token_balance)
@@ -281,7 +259,16 @@ class TradeBot:
             + '<b>Orders</b>: (underlined = tracking trailing stop loss)\n'
             + '\n'.join(orders)
         )
-        return message, [[]]
+        return message
+
+    def get_summary_message(self) -> Tuple[str, List[List[InlineKeyboardButton]]]:
+        balance_bnb = self.net.get_bnb_balance()
+        price_bnb = self.net.get_bnb_price()
+        msg = (
+            f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})\n'
+            + 'Which action do you want to perform next?'
+        )
+        return msg, self.get_global_keyboard()
 
     def get_global_keyboard(self) -> List[List[InlineKeyboardButton]]:
         buttons = [
