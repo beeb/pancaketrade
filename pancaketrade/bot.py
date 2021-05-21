@@ -12,6 +12,7 @@ from web3 import Web3
 
 from pancaketrade.conversations import (
     AddTokenConversation,
+    EditTokenConversation,
     BuySellConversation,
     AddOrderConversation,
     RemoveOrderConversation,
@@ -45,6 +46,7 @@ class TradeBot:
         self.dispatcher = self.updater.dispatcher
         self.convos = {
             'addtoken': AddTokenConversation(parent=self, config=self.config),
+            'edittoken': EditTokenConversation(parent=self, config=self.config),
             'removetoken': RemoveTokenConversation(parent=self, config=self.config),
             'addorder': AddOrderConversation(parent=self, config=self.config),
             'removeorder': RemoveOrderConversation(parent=self, config=self.config),
@@ -70,6 +72,7 @@ class TradeBot:
             'removeorder': 'Delete order for which token?',
             'buysell': 'Buy or sell now which token?',
             'address': 'Get address for which token?',
+            'edittoken': 'Edit which token icon and slippage?',
         }
 
     def setup_telegram(self):
@@ -80,6 +83,7 @@ class TradeBot:
         self.dispatcher.add_handler(CommandHandler('removeorder', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('buysell', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('address', self.command_show_all_tokens))
+        self.dispatcher.add_handler(CommandHandler('edittoken', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('order', self.command_order))
         self.dispatcher.add_handler(CallbackQueryHandler(self.command_address, pattern='^address:0x[a-fA-F0-9]{40}$'))
         self.dispatcher.add_handler(
@@ -98,6 +102,7 @@ class TradeBot:
             ('order', 'display order information, pass the order ID as argument'),
             ('addtoken', 'add a token that you want to trade'),
             ('removetoken', 'remove a token that you added'),
+            ('edittoken', 'edit token emoji and slippage'),
             ('address', 'get the contract address for a token'),
         ]
         self.dispatcher.bot.set_my_commands(commands=commands)
