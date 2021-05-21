@@ -33,7 +33,7 @@ class BuySellConversation:
         self.config = config
         self.next = BuySellResponses()
         self.handler = ConversationHandler(
-            entry_points=[CallbackQueryHandler(self.command_buysell, pattern='^buy_sell:0x[a-fA-F0-9]{40}$')],
+            entry_points=[CallbackQueryHandler(self.command_buysell, pattern='^buysell:0x[a-fA-F0-9]{40}$')],
             states={
                 self.next.TYPE: [CallbackQueryHandler(self.command_buysell_type, pattern='^[^:]*$')],
                 self.next.TRAILING: [
@@ -48,7 +48,7 @@ class BuySellConversation:
                     CallbackQueryHandler(self.command_buysell_summary, pattern='^[^:]*$'),
                 ],
             },
-            fallbacks=[CommandHandler('cancelbuysell', self.command_cancelbuysell)],
+            fallbacks=[CommandHandler('cancel', self.command_cancelbuysell)],
             name='buysell_conversation',
         )
 

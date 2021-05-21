@@ -41,7 +41,7 @@ class AddTokenConversation:
                 ],
                 self.next.SLIPPAGE: [MessageHandler(Filters.text & ~Filters.command, self.command_addtoken_slippage)],
             },
-            fallbacks=[CommandHandler('canceltoken', self.command_canceltoken)],
+            fallbacks=[CommandHandler('cancel', self.command_canceltoken)],
             name='addtoken_conversation',
         )
 
