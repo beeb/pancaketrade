@@ -535,7 +535,12 @@ class AddOrderConversation:
             order_record=order_record, net=self.net, dispatcher=context.dispatcher, chat_id=update.effective_chat.id
         )
         token.orders.append(order)
-        chat_message(update, context, text='✅ Order was added successfully!', edit=self.config.update_messages)
+        chat_message(
+            update,
+            context,
+            text=f'✅ Order #{order_record.id} was added successfully!',
+            edit=self.config.update_messages,
+        )
         for job in token.scheduler.get_jobs():  # check prices now
             job.modify(next_run_time=datetime.now())
         return ConversationHandler.END
