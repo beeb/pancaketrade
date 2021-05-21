@@ -91,7 +91,7 @@ class TradeBot:
                 self.command_show_all_tokens, pattern='^addorder$|^removeorder$|^buysell$|^sellall$|^address$'
             )
         )
-        self.dispatcher.add_handler(CallbackQueryHandler(self.cancel_command, pattern='^cancel$'))
+        self.dispatcher.add_handler(CallbackQueryHandler(self.cancel_command, pattern='^canceltokenchoice$'))
         for convo in self.convos.values():
             self.dispatcher.add_handler(convo.handler)
         commands = [
