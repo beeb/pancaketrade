@@ -154,7 +154,7 @@ class TradeBot:
 
     @check_chat_id
     def command_order(self, update: Update, context: CallbackContext):
-        error_msg = 'You need to provide the order ID number as argument to this command.'
+        error_msg = 'You need to provide the order ID number as argument to this command, like <code>/order 12</code>.'
         if context.args is None:
             chat_message(update, context, text=error_msg, edit=False)
             return
