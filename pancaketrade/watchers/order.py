@@ -208,7 +208,7 @@ class OrderWatcher:
         if not self.net.is_approved(token_address=self.token_record.address, v2=sell_v2):
             # pre-approve for later sell
             version = 'v2' if sell_v2 else 'v1'
-            logger.info(f'Approvin {self.token_record.symbol} for trading on PancakeSwap {version}.')
+            logger.info(f'Approving {self.token_record.symbol} for trading on PancakeSwap {version}.')
             self.dispatcher.bot.send_message(
                 chat_id=self.chat_id,
                 text=f'Approving {self.token_record.symbol} for trading on PancakeSwap {version}...',
