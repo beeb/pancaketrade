@@ -82,11 +82,11 @@ class OrderWatcher:
             return
 
         if self.type == 'buy':
-            self.price_update_buy(buy_price=buy_price, v2=buy_v2)
+            self.price_update_buy(buy_price=buy_price, sell_v2=sell_v2, buy_v2=buy_v2)
         else:
-            self.price_update_sell(sell_price=sell_price, v2=sell_v2)
+            self.price_update_sell(sell_price=sell_price, sell_v2=sell_v2, buy_v2=buy_v2)
 
-    def price_update_buy(self, buy_price: Decimal, v2: bool):
+    def price_update_buy(self, buy_price: Decimal, sell_v2: bool, buy_v2: bool):
         if buy_price == 0:
             logger.error(f'Price of {self.token_record.symbol} is zero or not available')
             self.dispatcher.bot.send_message(
@@ -98,7 +98,7 @@ class OrderWatcher:
         )  # fulfill condition immediately if we have no limit price
         if self.trailing_stop is None and not self.above and buy_price <= limit_price:
             logger.success(f'Limit buy triggered at price {buy_price:.3e} BNB')  # buy
-            self.close(v2=v2)
+            self.close(sell_v2=sell_v2, buy_v2=buy_v2)
             return
         elif self.trailing_stop and not self.above and (buy_price <= limit_price or self.min_price is not None):
             if self.min_price is None:
@@ -113,10 +113,10 @@ class OrderWatcher:
                 return
             elif rise > self.trailing_stop:
                 logger.success(f'Trailing stop loss triggered at price {buy_price:.3e} BNB')  # buy
-                self.close(v2=v2)
+                self.close(sell_v2=sell_v2, buy_v2=buy_v2)
                 return
 
-    def price_update_sell(self, sell_price: Decimal, v2: bool):
+    def price_update_sell(self, sell_price: Decimal, sell_v2: bool, buy_v2: bool):
         if sell_price == 0:
             logger.error(f'Price of {self.token_record.symbol} is zero or not available')
             self.dispatcher.bot.send_message(
@@ -128,11 +128,11 @@ class OrderWatcher:
         )  # fulfill condition immediately if we have no limit price
         if self.trailing_stop is None and not self.above and sell_price <= limit_price:
             logger.warning(f'Stop loss triggered at price {sell_price:.3e} BNB')
-            self.close(v2=v2)
+            self.close(sell_v2=sell_v2, buy_v2=buy_v2)
             return
         elif self.trailing_stop is None and self.above and sell_price >= limit_price:
             logger.success(f'Take profit triggered at price {sell_price:.3e} BNB')
-            self.close(v2=v2)
+            self.close(sell_v2=sell_v2, buy_v2=buy_v2)
             return
         elif self.trailing_stop and self.above and (sell_price >= limit_price or self.max_price is not None):
             if self.max_price is None:
@@ -147,28 +147,30 @@ class OrderWatcher:
                 return
             elif drop > self.trailing_stop:
                 logger.success(f'Trailing stop loss triggered at price {sell_price:.3e} BNB')
-                self.close(v2=v2)
+                self.close(sell_v2=sell_v2, buy_v2=buy_v2)
                 return
 
-    def close(self, v2: bool):
+    def close(self, sell_v2: bool, buy_v2: bool):
         self.active = False
-        version = 'v2' if v2 else 'v1'
+
         if self.type == 'buy':
+            version = 'v2' if buy_v2 else 'v1'
             logger.info(f'Buying tokens on {version}')
             amount = Decimal(self.amount) / Decimal(10 ** 18)
             self.dispatcher.bot.send_message(
                 chat_id=self.chat_id, text=f'🔸 Trying to buy for {amount:.3g} BNB of {self.token_record.symbol}...'
             )
-            start_in_thread(self.buy, args=(v2,))
-        else:
+            start_in_thread(self.buy, args=(buy_v2, sell_v2))
+        else:  # sell
+            version = 'v2' if sell_v2 else 'v1'
             logger.info(f'Selling tokens on {version}')
             amount = Decimal(self.amount) / Decimal(10 ** self.token_record.decimals)
             self.dispatcher.bot.send_message(
                 chat_id=self.chat_id, text=f'🔸 Trying to sell {amount:.1f} {self.token_record.symbol}...'
             )
-            start_in_thread(self.sell, args=(v2,))
+            start_in_thread(self.sell, args=(sell_v2,))
 
-    def buy(self, v2: bool):
+    def buy(self, v2: bool, sell_v2: bool):
         res, tokens_out, txhash_or_error = self.net.buy_tokens(
             self.token_record.address,
             amount_bnb=self.amount,
@@ -203,6 +205,25 @@ class OrderWatcher:
             + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>\n'
             + f'Effective price (after tax) {effective_price:.4g} BNB/token',
         )
+        if not self.net.is_approved(token_address=self.token_record.address, v2=sell_v2):
+            # pre-approve for later sell
+            version = 'v2' if sell_v2 else 'v1'
+            logger.info(f'Approving {self.token_record.symbol} for trading on PancakeSwap {version}.')
+            self.dispatcher.bot.send_message(
+                chat_id=self.chat_id,
+                text=f'Approving {self.token_record.symbol} for trading on PancakeSwap {version}...',
+            )
+            res = self.net.approve(token_address=self.token_record.address, v2=sell_v2)
+            if res:
+                self.dispatcher.bot.send_message(
+                    chat_id=self.chat_id,
+                    text='✅ Approval successful!',
+                )
+            else:
+                self.dispatcher.bot.send_message(
+                    chat_id=self.chat_id,
+                    text='⛔ Approval failed',
+                )
         self.remove_order()
         self.finished = True  # will trigger deletion of the object
 

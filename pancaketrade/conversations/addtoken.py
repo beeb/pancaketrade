@@ -174,10 +174,19 @@ class AddTokenConversation:
         self.parent.watchers[token.address] = token
         balance = self.net.get_token_balance(token_address=token.address)
         balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance=balance)
+        reply_markup = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton('➕ Create order', callback_data=f'addorder:{token.address}'),
+                    InlineKeyboardButton('💰 Buy/Sell now', callback_data=f'buysell:{token.address}'),
+                ]
+            ]
+        )
         chat_message(
             update,
             context,
             text=f'✅ Token was added successfully. Balance is {balance:,.1f} {token.symbol} (${balance_usd:.2f}).',
+            reply_markup=reply_markup,
             edit=False,
         )
         return ConversationHandler.END

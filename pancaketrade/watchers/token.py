@@ -74,7 +74,8 @@ class TokenWatcher:
                 indices_to_remove.append(i)
                 continue
             v2 = buy_v2 if order.type == 'buy' else sell_v2
-            if not self.net.is_approved(token_address=self.address, v2=v2):
+            if not self.net.is_approved(token_address=self.address, v2=v2) and order.type == 'sell':
+                # when selling we require that the token is approved on pcs beforehand
                 version = 'v2' if v2 else 'v1'
                 logger.info(f'Need to approve {self.symbol} for trading on PancakeSwap {version}.')
                 self.dispatcher.bot.send_message(

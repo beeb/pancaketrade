@@ -104,6 +104,7 @@ class TradeBot:
             ('removetoken', 'remove a token that you added'),
             ('edittoken', 'edit token emoji and slippage'),
             ('address', 'get the contract address for a token'),
+            ('cancel', 'cancel current operation'),
         ]
         self.dispatcher.bot.set_my_commands(commands=commands)
         self.dispatcher.add_error_handler(self.error_handler)
