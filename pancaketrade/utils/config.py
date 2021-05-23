@@ -18,7 +18,6 @@ from web3.types import ChecksumAddress
 class ConfigSecrets:
     """Class to hold secrets from the config file."""
 
-    bscscan_api_key: str
     telegram_token: str
     admin_chat_id: int
     _pk: str = field(repr=False, default='')
@@ -39,7 +38,9 @@ class Config:
 
     def __post_init__(self):
         self.wallet = Web3.toChecksumAddress(self.wallet)
-        self.secrets = ConfigSecrets(**self.secrets, _pk=self._pk)
+        # below we remove any extra key that might exist in the secrets section (formerly we had bscscan api key there)
+        secrets = {key: val for key, val in self.secrets.items() if key in ['telegram_token', 'admin_chat_id']}
+        self.secrets = ConfigSecrets(**secrets, _pk=self._pk)
 
 
 class PrivateKeyValidator(Validator):

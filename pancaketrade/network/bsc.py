@@ -1,6 +1,7 @@
 import time
 from decimal import Decimal
 from typing import Dict, NamedTuple, Optional, Set, Tuple
+from pathlib import Path
 
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -8,7 +9,6 @@ from apscheduler.triggers.interval import IntervalTrigger
 from cachetools import LRUCache, TTLCache, cached
 from loguru import logger
 from pancaketrade.utils.config import ConfigSecrets
-from pancaketrade.utils.network import fetch_abi
 from web3 import Web3
 from web3.contract import Contract, ContractFunction
 from web3.exceptions import ABIFunctionNotFound, ContractLogicError
@@ -34,9 +34,17 @@ class NetworkContracts:
     router_v1: Contract
     router_v2: Contract
 
-    def __init__(self, addr: NetworkAddresses, w3: Web3, api_key: str) -> None:
+    def __init__(self, addr: NetworkAddresses, w3: Web3) -> None:
         for contract, address in addr._asdict().items():
-            setattr(self, contract, w3.eth.contract(address=address, abi=fetch_abi(contract=address, api_key=api_key)))
+            if 'factory' in contract:
+                filename = 'factory.abi'
+            elif 'router' in contract:
+                filename = 'router.abi'
+            else:
+                filename = 'bep20.abi'
+            with Path('pancaketrade/abi').joinpath(filename).open('r') as f:
+                abi = f.read()
+            setattr(self, contract, w3.eth.contract(address=address, abi=abi))
 
 
 class Network:
@@ -51,7 +59,7 @@ class Network:
         w3_provider = Web3.HTTPProvider(endpoint_uri=rpc, session=session)
         self.w3 = Web3(provider=w3_provider)
         self.addr = NetworkAddresses()
-        self.contracts = NetworkContracts(addr=self.addr, w3=self.w3, api_key=secrets.bscscan_api_key)
+        self.contracts = NetworkContracts(addr=self.addr, w3=self.w3)
         self.max_approval_hex = f"0x{64 * 'f'}"
         self.max_approval_int = int(self.max_approval_hex, 16)
         self.max_approval_check_hex = f"0x{15 * '0'}{49 * 'f'}"
@@ -217,10 +225,9 @@ class Network:
 
     @cached(cache=LRUCache(maxsize=256))
     def get_token_contract(self, token_address: ChecksumAddress) -> Contract:
-        logger.debug(f'Token contract initiated for {token_address}')
-        return self.w3.eth.contract(
-            address=token_address, abi=fetch_abi(contract=token_address, api_key=self.secrets.bscscan_api_key)
-        )
+        with Path('pancaketrade/abi/bep20.abi').open('r') as f:
+            abi = f.read()
+        return self.w3.eth.contract(address=token_address, abi=abi)
 
     def find_lp_address(self, token_address: ChecksumAddress, v2: bool = False) -> Optional[ChecksumAddress]:
         cached = self.lp_cache.get((str(token_address), v2))

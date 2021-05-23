@@ -7,7 +7,6 @@ from peewee import (
     Model,
     SmallIntegerField,
     SqliteDatabase,
-    TextField,
 )
 
 db = SqliteDatabase('pancaketrade.db')
@@ -19,14 +18,6 @@ class Token(Model):
     icon = CharField(null=True)  # emoji
     decimals = SmallIntegerField()
     default_slippage = SmallIntegerField()
-
-    class Meta:
-        database = db
-
-
-class Abi(Model):
-    address = FixedCharField(max_length=42, unique=True)  # no foreign because we want to store PcS contracts as well
-    abi = TextField()
 
     class Meta:
         database = db
