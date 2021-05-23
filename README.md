@@ -3,7 +3,7 @@
 PancakeTrade helps you create limit orders and more for your BEP-20 tokens that swap against BNB on PancakeSwap.
 The bot is controlled by Telegram so you can interact from anywhere.
 
-![screenshot](screenshot.jpg | width=50)
+![screenshot](screenshot.jpg)
 
 ## DISCLAIMER
 
