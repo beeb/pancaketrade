@@ -5,7 +5,7 @@ from typing import Mapping, NamedTuple
 from pancaketrade.network import Network
 from pancaketrade.persistence import Order, db
 from pancaketrade.utils.config import Config
-from pancaketrade.utils.generic import chat_message, check_chat_id
+from pancaketrade.utils.generic import chat_message, check_chat_id, format_token_amount
 from pancaketrade.watchers import OrderWatcher, TokenWatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -132,7 +132,6 @@ class BuySellConversation:
             if order['type'] == 'buy'
             else self.net.get_token_balance(token_address=token.address)
         )
-        balance_formatted = f'{balance:.4g}' if order['type'] == 'buy' else f'{balance:,.1f}'
         reply_markup = (
             InlineKeyboardMarkup(
                 inline_keyboard=[
@@ -166,7 +165,7 @@ class BuySellConversation:
                     + f'Next, <u>how much {unit}</u> do you want me to use for {order["type"]}ing?\n'
                     + f'You can also use scientific notation like <code>{balance:.1e}</code> or a percentage like '
                     + '<code>63%</code>.\n'
-                    + f'<b>Current balance</b>: <code>{balance_formatted}</code> {unit}',
+                    + f'<b>Current balance</b>: <code>{format_token_amount(balance)}</code> {unit}',
                     reply_markup=reply_markup,
                     edit=self.config.update_messages,
                 )
@@ -191,7 +190,7 @@ class BuySellConversation:
             + f'Next, <u>how much {unit}</u> do you want me to use for {order["type"]}ing?\n'
             + f'You can also use scientific notation like <code>{balance:.1e}</code> or a percentage like '
             + '<code>63%</code>.\n'
-            + f'<b>Current balance</b>: <code>{balance:.4g}</code> {unit}',
+            + f'<b>Current balance</b>: <code>{format_token_amount(balance)}</code> {unit}',
             reply_markup=reply_markup,
             edit=self.config.update_messages,
         )
@@ -245,16 +244,13 @@ class BuySellConversation:
         current_price, _ = self.net.get_token_price(
             token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
         )
-        amount_formatted = (
-            f'{amount:.4g}' if order['type'] == 'buy' else f'{amount:,.1f}'
-        )  # tokens are display in float
         usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * current_price * amount
         unit = f'BNB worth of {token.symbol}' if order['type'] == 'buy' else token.symbol
         order['amount'] = str(int(amount * Decimal(10 ** decimals)))
         chat_message(
             update,
             context,
-            text=f'OK, I will {order["type"]} {amount_formatted} {unit} (~${usd_amount:.2f}).\n'
+            text=f'OK, I will {order["type"]} {format_token_amount(amount)} {unit} (~${usd_amount:.2f}).\n'
             + '<u>Confirm</u> the order below!',
             edit=self.config.update_messages,
         )
@@ -273,15 +269,12 @@ class BuySellConversation:
             token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
         )
         bnb_price = self.net.get_bnb_price()
-        amount_formatted = (
-            f'{amount:.4g}' if order['type'] == 'buy' else f'{amount:,.1f}'
-        )  # tokens are display in float
         usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * current_price * amount
         message = (
             '<u>Preview:</u>\n'
             + f'{token.name}\n'
             + trailing
-            + f'Amount: {amount_formatted} {unit} (${usd_amount:.2f})'
+            + f'Amount: {format_token_amount(amount)} {unit} (${usd_amount:.2f})'
         )
         chat_message(
             update,

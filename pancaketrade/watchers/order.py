@@ -5,7 +5,7 @@ from typing import Optional
 from loguru import logger
 from pancaketrade.network import Network
 from pancaketrade.persistence import Order, Token, db
-from pancaketrade.utils.generic import start_in_thread
+from pancaketrade.utils.generic import format_token_amount, start_in_thread
 from telegram.ext import Dispatcher
 from web3.types import Wei
 
@@ -38,7 +38,6 @@ class OrderWatcher:
         type_name = self.get_type_name()
         comparison = self.get_comparison_symbol()
         amount = self.get_human_amount()
-        amount_formatted = f'{amount:.4g}' if self.type == 'buy' else f'{amount:,.1f}'  # tokens are display in float
         unit = self.get_amount_unit()
         trailing = f' tsl {self.trailing_stop}%' if self.trailing_stop is not None else ''
         order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
@@ -46,7 +45,7 @@ class OrderWatcher:
         icon = '🟢' if self.type == 'buy' else '🔴'
         return (
             f'💱 {order_id}: {self.token_record.symbol} <code>{comparison} {limit_price}</code> - '
-            + f'{icon}<b>{type_name}</b> {amount_formatted} {unit}{trailing}'
+            + f'{icon}<b>{type_name}</b> {format_token_amount(amount)} {unit}{trailing}'
         )
 
     def long_repr(self) -> str:
@@ -54,7 +53,6 @@ class OrderWatcher:
         type_name = self.get_type_name()
         comparision = self.get_comparison_symbol()
         amount = self.get_human_amount()
-        amount_formatted = f'{amount:.4g}' if self.type == 'buy' else f'{amount:,.1f}'  # tokens are display in float
         unit = self.get_amount_unit()
         trailing = f'Trailing stop loss {self.trailing_stop}% callback\n' if self.trailing_stop is not None else ''
         gas_price = (
@@ -69,7 +67,7 @@ class OrderWatcher:
         limit_price = f'{self.limit_price:.3g} BNB' if self.limit_price is not None else 'market price'
         return (
             f'{icon}{self.token_record.symbol} - ({order_id}) <b>{type_name}</b> {type_icon}\n'
-            + f'<b>Amount</b>: {amount_formatted} {unit}\n'
+            + f'<b>Amount</b>: {format_token_amount(amount)} {unit}\n'
             + f'<b>Price</b>: <code>{comparision} {limit_price}</code>\n'
             + trailing
             + f'<b>Slippage</b>: {self.slippage}%\n'
@@ -158,7 +156,8 @@ class OrderWatcher:
             logger.info(f'Buying tokens on {version}')
             amount = Decimal(self.amount) / Decimal(10 ** 18)
             self.dispatcher.bot.send_message(
-                chat_id=self.chat_id, text=f'🔸 Trying to buy for {amount:.3g} BNB of {self.token_record.symbol}...'
+                chat_id=self.chat_id,
+                text=f'🔸 Trying to buy for {format_token_amount(amount)} BNB of {self.token_record.symbol}...',
             )
             start_in_thread(self.buy, args=(buy_v2, sell_v2))
         else:  # sell
@@ -166,7 +165,8 @@ class OrderWatcher:
             logger.info(f'Selling tokens on {version}')
             amount = Decimal(self.amount) / Decimal(10 ** self.token_record.decimals)
             self.dispatcher.bot.send_message(
-                chat_id=self.chat_id, text=f'🔸 Trying to sell {amount:.1f} {self.token_record.symbol}...'
+                chat_id=self.chat_id,
+                text=f'🔸 Trying to sell {format_token_amount(amount)} {self.token_record.symbol}...',
             )
             start_in_thread(self.sell, args=(sell_v2,))
 
@@ -193,7 +193,7 @@ class OrderWatcher:
             return
         effective_price = self.get_human_amount() / tokens_out
         logger.success(
-            f'Buy transaction succeeded. Received {tokens_out:.3g} {self.token_record.symbol}. '
+            f'Buy transaction succeeded. Received {format_token_amount(tokens_out)} {self.token_record.symbol}. '
             + f'Effective price (after tax) {effective_price:.4g} BNB/token'
         )
         self.dispatcher.bot.send_message(
@@ -201,7 +201,7 @@ class OrderWatcher:
         )
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id,
-            text=f'✅ Got {tokens_out:,.1f} {self.token_record.symbol} at '
+            text=f'✅ Got {format_token_amount(tokens_out)} {self.token_record.symbol} at '
             + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>\n'
             + f'Effective price (after tax) {effective_price:.4g} BNB/token',
         )

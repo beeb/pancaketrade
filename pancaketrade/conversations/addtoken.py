@@ -1,10 +1,11 @@
 from typing import NamedTuple
 
+from loguru import logger
 from pancaketrade.network import Network
 from pancaketrade.persistence import Token, db
 from pancaketrade.utils.config import Config
-from pancaketrade.utils.db import token_exists
-from pancaketrade.utils.generic import check_chat_id, chat_message
+from pancaketrade.utils.db import Abi, token_exists
+from pancaketrade.utils.generic import chat_message, check_chat_id, format_token_amount
 from pancaketrade.watchers import TokenWatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -69,10 +70,19 @@ class AddTokenConversation:
             add['decimals'] = self.net.get_token_decimals(token_address)
             add['symbol'] = self.net.get_token_symbol(token_address)
         except (ABIFunctionNotFound, ContractLogicError):
+            # let's delete the wrong existing ABI record
+            db.connect()
+            try:
+                query = Abi.delete().where(Abi.address == token_address)
+                query.execute()
+            except Exception as e:
+                logger.warning(f'Database error: {e}')
+            finally:
+                db.close()
             chat_message(
                 update,
                 context,
-                text='⛔ Wrong ABi for this address.\n'
+                text='⛔ Wrong ABI for this address.\n'
                 + 'Check that address is a contract at '
                 + f'<a href="https://bscscan.com/address/{token_address}">BscScan</a> and try again.',
                 edit=False,
@@ -185,7 +195,8 @@ class AddTokenConversation:
         chat_message(
             update,
             context,
-            text=f'✅ Token was added successfully. Balance is {balance:,.1f} {token.symbol} (${balance_usd:.2f}).',
+            text='✅ Token was added successfully. '
+            + f'Balance is {format_token_amount(balance)} {token.symbol} (${balance_usd:.2f}).',
             reply_markup=reply_markup,
             edit=False,
         )

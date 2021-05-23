@@ -2,10 +2,11 @@
 import functools
 import logging
 import threading
+from decimal import Decimal
 from typing import Any, Callable, Iterable, List, Mapping, Optional
 
 from loguru import logger
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Message
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update
 from telegram.ext import CallbackContext
 
 
@@ -91,3 +92,9 @@ def get_tokens_keyboard_layout(
     buttons.append(InlineKeyboardButton('❌ Cancel', callback_data='canceltokenchoice'))
     buttons_layout = [buttons[i : i + per_row] for i in range(0, len(buttons), per_row)]  # noqa: E203
     return buttons_layout
+
+
+def format_token_amount(amount: Decimal) -> str:
+    if amount >= 100:
+        return f'{amount:,.1f}'
+    return f'{amount:.4g}'
