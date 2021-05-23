@@ -1,10 +1,9 @@
 from typing import NamedTuple
 
-from loguru import logger
 from pancaketrade.network import Network
 from pancaketrade.persistence import Token, db
 from pancaketrade.utils.config import Config
-from pancaketrade.utils.db import Abi, token_exists
+from pancaketrade.utils.db import token_exists
 from pancaketrade.utils.generic import chat_message, check_chat_id, format_token_amount
 from pancaketrade.watchers import TokenWatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -70,15 +69,6 @@ class AddTokenConversation:
             add['decimals'] = self.net.get_token_decimals(token_address)
             add['symbol'] = self.net.get_token_symbol(token_address)
         except (ABIFunctionNotFound, ContractLogicError):
-            # let's delete the wrong existing ABI record
-            db.connect()
-            try:
-                query = Abi.delete().where(Abi.address == token_address)
-                query.execute()
-            except Exception as e:
-                logger.warning(f'Database error: {e}')
-            finally:
-                db.close()
             chat_message(
                 update,
                 context,

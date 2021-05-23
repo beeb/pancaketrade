@@ -112,7 +112,7 @@ class TradeBot:
     def start_status_update(self):
         if not self.config.update_messages:
             return
-        trigger = IntervalTrigger(seconds=15)
+        trigger = IntervalTrigger(seconds=30)
         self.status_scheduler.add_job(self.update_status, trigger=trigger)
         self.status_scheduler.start()
 

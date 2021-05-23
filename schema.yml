@@ -5,6 +5,6 @@ min_pool_size_bnb: num(min=0.0001)
 monitor_interval: num(min=1)
 update_messages: bool(required=False)
 secrets:
-  bscscan_api_key: str(min=34, max=34)
+  bscscan_api_key: str(required=False)
   telegram_token: regex('[0-9]{9,}:[a-zA-Z0-9_-]{35}', 'telegram token')
   admin_chat_id: int(min=1)
