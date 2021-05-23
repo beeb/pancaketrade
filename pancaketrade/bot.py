@@ -11,10 +11,10 @@ from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, 
 from web3 import Web3
 
 from pancaketrade.conversations import (
-    AddTokenConversation,
-    EditTokenConversation,
-    BuySellConversation,
     AddOrderConversation,
+    AddTokenConversation,
+    BuySellConversation,
+    EditTokenConversation,
     RemoveOrderConversation,
     RemoveTokenConversation,
     SellAllConversation,
@@ -23,7 +23,7 @@ from pancaketrade.network import Network
 from pancaketrade.persistence import db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.db import get_token_watchers, init_db
-from pancaketrade.utils.generic import chat_message, check_chat_id, get_tokens_keyboard_layout
+from pancaketrade.utils.generic import chat_message, check_chat_id, format_token_amount, get_tokens_keyboard_layout
 from pancaketrade.watchers import OrderWatcher, TokenWatcher
 
 
@@ -265,7 +265,7 @@ class TradeBot:
         )  # if no limit price (market price) display first (big artificial value)
         orders = [str(order) for order in orders_sorted]
         message = (
-            f'<b>{token.name}</b>: {token_balance:,.1f}        '
+            f'<b>{token.name}</b>: {format_token_amount(token_balance)}        '
             + f'<a href="https://poocoin.app/tokens/{token.address}">Chart</a>\n'
             + f'<b>Value</b>: <code>{token_balance_bnb:.3g}</code> BNB (${token_balance_usd:.2f})\n'
             + f'<b>Price</b>: <code>{token_price:.3g}</code> BNB per token (${token_price_usd:.3g})\n'
