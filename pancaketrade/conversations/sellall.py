@@ -52,7 +52,7 @@ class SellAllConversation:
                     ]
                 ]
             ),
-            edit=False,
+            edit=self.config.update_messages,
         )
         return self.next.CONFIRM
 

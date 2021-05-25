@@ -73,6 +73,7 @@ class TradeBot:
             'buysell': 'Buy or sell now which token?',
             'address': 'Get address for which token?',
             'edittoken': 'Edit which token icon and slippage?',
+            'removetoken': 'Which token do you want to remove?',
         }
 
     def setup_telegram(self):
@@ -84,6 +85,7 @@ class TradeBot:
         self.dispatcher.add_handler(CommandHandler('buysell', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('address', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('edittoken', self.command_show_all_tokens))
+        self.dispatcher.add_handler(CommandHandler('removetoken', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('order', self.command_order))
         self.dispatcher.add_handler(CallbackQueryHandler(self.command_address, pattern='^address:0x[a-fA-F0-9]{40}$'))
         self.dispatcher.add_handler(

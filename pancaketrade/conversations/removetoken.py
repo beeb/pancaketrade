@@ -3,7 +3,7 @@ from typing import NamedTuple
 from pancaketrade.network import Network
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.db import remove_token
-from pancaketrade.utils.generic import chat_message, check_chat_id, get_tokens_keyboard_layout
+from pancaketrade.utils.generic import chat_message, check_chat_id
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, ConversationHandler
 from web3 import Web3
@@ -11,7 +11,6 @@ from web3 import Web3
 
 class RemoveTokenResponses(NamedTuple):
     CONFIRM: int = 0
-    TOKENCHOICE: int = 1
 
 
 class RemoveTokenConversation:
@@ -21,10 +20,9 @@ class RemoveTokenConversation:
         self.config = config
         self.next = RemoveTokenResponses()
         self.handler = ConversationHandler(
-            entry_points=[CommandHandler('removetoken', self.command_removetoken)],
+            entry_points=[CallbackQueryHandler(self.command_removetoken, pattern='^removetoken:0x[a-fA-F0-9]{40}$')],
             states={
                 self.next.CONFIRM: [CallbackQueryHandler(self.command_removetoken_confirm)],
-                self.next.TOKENCHOICE: [CallbackQueryHandler(self.command_removetoken_tokenchoice)],
             },
             fallbacks=[CommandHandler('cancel', self.command_cancelremovetoken)],
             name='removetoken_conversation',
@@ -32,30 +30,14 @@ class RemoveTokenConversation:
 
     @check_chat_id
     def command_removetoken(self, update: Update, context: CallbackContext):
-        buttons_layout = get_tokens_keyboard_layout(self.parent.watchers)
-        buttons_layout.append([InlineKeyboardButton('❌ Cancel', callback_data='cancel')])
-        reply_markup = InlineKeyboardMarkup(buttons_layout)
-        chat_message(
-            update,
-            context,
-            text='Choose the token to remove from the list below.',
-            reply_markup=reply_markup,
-            edit=False,
-        )
-        return self.next.CONFIRM
-
-    @check_chat_id
-    def command_removetoken_confirm(self, update: Update, context: CallbackContext):
         assert update.callback_query
         query = update.callback_query
-        if query.data == 'cancel':
-            chat_message(update, context, text='⚠️ OK, I\'m cancelling this command.', edit=self.config.update_messages)
-            return ConversationHandler.END
         assert query.data
-        if not Web3.isChecksumAddress(query.data):
+        token_address = query.data.split(':')[1]
+        if not Web3.isChecksumAddress(token_address):
             chat_message(update, context, text='⛔️ Invalid token address.', edit=self.config.update_messages)
             return ConversationHandler.END
-        token = self.parent.watchers[query.data]
+        token = self.parent.watchers[token_address]
         chat_message(
             update,
             context,
@@ -63,17 +45,17 @@ class RemoveTokenConversation:
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
-                        InlineKeyboardButton('✅ Confirm', callback_data=query.data),
+                        InlineKeyboardButton('✅ Confirm', callback_data=token_address),
                         InlineKeyboardButton('❌ Cancel', callback_data='cancel'),
                     ]
                 ]
             ),
             edit=self.config.update_messages,
         )
-        return self.next.TOKENCHOICE
+        return self.next.CONFIRM
 
     @check_chat_id
-    def command_removetoken_tokenchoice(self, update: Update, context: CallbackContext):
+    def command_removetoken_confirm(self, update: Update, context: CallbackContext):
         assert update.callback_query and update.effective_chat
         query = update.callback_query
         if query.data == 'cancel':

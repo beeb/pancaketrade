@@ -79,7 +79,7 @@ class BuySellConversation:
             context,
             text=f'Which <u>type of transaction</u> would you like to create for {token.name}?',
             reply_markup=reply_markup,
-            edit=False,
+            edit=self.config.update_messages,
         )
         return self.next.TYPE
 
