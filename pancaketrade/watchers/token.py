@@ -62,6 +62,7 @@ class TokenWatcher:
     def monitor_price(self):
         if not self.orders:
             return
+        self.update_effective_buy_price()
         sell_price, sell_v2 = self.net.get_token_price(
             token_address=self.address, token_decimals=self.decimals, sell=True
         )
@@ -99,3 +100,8 @@ class TokenWatcher:
                     )
             order.price_update(sell_price=sell_price, buy_price=buy_price, sell_v2=sell_v2, buy_v2=buy_v2)
         self.orders = [o for i, o in enumerate(self.orders) if i not in indices_to_remove]
+
+    def update_effective_buy_price(self):
+        self.effective_buy_price = (
+            Decimal(self.token_record.effective_buy_price) if self.token_record.effective_buy_price else None
+        )
