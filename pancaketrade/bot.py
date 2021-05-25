@@ -240,19 +240,25 @@ class TradeBot:
             if token.last_status_message_id is None:
                 continue
             status = self.get_token_status(token)
-            self.dispatcher.bot.edit_message_text(
-                status,
-                chat_id=self.config.secrets.admin_chat_id,
-                message_id=token.last_status_message_id,
-            )
+            try:
+                self.dispatcher.bot.edit_message_text(
+                    status,
+                    chat_id=self.config.secrets.admin_chat_id,
+                    message_id=token.last_status_message_id,
+                )
+            except Exception:  # for example message content was not changed
+                pass
         message, buttons = self.get_summary_message()
         reply_markup = InlineKeyboardMarkup(buttons)
-        self.dispatcher.bot.edit_message_text(
-            message,
-            chat_id=self.config.secrets.admin_chat_id,
-            message_id=self.last_status_message_id,
-            reply_markup=reply_markup,
-        )
+        try:
+            self.dispatcher.bot.edit_message_text(
+                message,
+                chat_id=self.config.secrets.admin_chat_id,
+                message_id=self.last_status_message_id,
+                reply_markup=reply_markup,
+            )
+        except Exception:  # for example message content was not changed
+            pass
 
     def get_token_status(self, token: TokenWatcher) -> str:
         token_balance = self.net.get_token_balance(token_address=token.address)
