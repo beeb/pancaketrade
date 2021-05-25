@@ -198,11 +198,12 @@ class OrderWatcher:
         try:
             with db.atomic():
                 if buy_price_before is not None:
-                    self.token_record.effective_buy_price = (
-                        balance_before * Decimal(buy_price_before) + tokens_out * effective_price
-                    ) / (balance_before + tokens_out)
+                    self.token_record.effective_buy_price = str(
+                        (balance_before * Decimal(buy_price_before) + tokens_out * effective_price)
+                        / (balance_before + tokens_out)
+                    )
                 else:
-                    self.token_record.effective_buy_price = effective_price
+                    self.token_record.effective_buy_price = str(effective_price)
                 self.token_record.save()
         except Exception as e:
             logger.error(f'Effective buy price update failed: {e}')
