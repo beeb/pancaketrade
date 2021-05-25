@@ -277,7 +277,7 @@ class TradeBot:
             f'<b>{token.name}</b>: {format_token_amount(token_balance)}        '
             + f'<a href="https://poocoin.app/tokens/{token.address}">Chart</a>\n'
             + f'<b>Value</b>: <code>{token_balance_bnb:.3g}</code> BNB (${token_balance_usd:.2f})\n'
-            + f'<b>Price</b>: <code>{token_price:.3g}</code> BNB per token (${token_price_usd:.3g})\n'
+            + f'<b>Price</b>: <code>{token_price:.3g}</code> BNB/token (${token_price_usd:.3g})\n'
             + effective_buy_price
             + '<b>Orders</b>: (underlined = tracking trailing stop loss)\n'
             + '\n'.join(orders)

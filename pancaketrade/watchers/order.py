@@ -171,6 +171,8 @@ class OrderWatcher:
             start_in_thread(self.sell, args=(sell_v2,))
 
     def buy(self, v2: bool, sell_v2: bool):
+        balance_before = self.net.get_token_balance(token_address=self.token_record.address)
+        buy_price_before = self.token_record.effective_buy_price
         res, tokens_out, txhash_or_error = self.net.buy_tokens(
             self.token_record.address,
             amount_bnb=self.amount,
@@ -192,6 +194,24 @@ class OrderWatcher:
             self.finished = True  # will trigger deletion of the object
             return
         effective_price = self.get_human_amount() / tokens_out
+        db.connect()
+        try:
+            with db.atomic():
+                if buy_price_before is not None:
+                    self.token_record.effective_buy_price = (
+                        balance_before * Decimal(buy_price_before) + tokens_out * effective_price
+                    ) / (balance_before + tokens_out)
+                else:
+                    self.token_record.effective_buy_price = effective_price
+                self.token_record.save()
+        except Exception as e:
+            logger.error(f'Effective buy price update failed: {e}')
+            self.dispatcher.bot.send_message(
+                chat_id=self.chat_id,
+                text=f'⛔️ Effective buy price update failed: {e}',
+            )
+        finally:
+            db.close()
         logger.success(
             f'Buy transaction succeeded. Received {format_token_amount(tokens_out)} {self.token_record.symbol}. '
             + f'Effective price (after tax) {effective_price:.4g} BNB/token'
