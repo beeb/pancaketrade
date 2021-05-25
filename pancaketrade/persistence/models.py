@@ -18,6 +18,7 @@ class Token(Model):
     icon = CharField(null=True)  # emoji
     decimals = SmallIntegerField()
     default_slippage = SmallIntegerField()
+    effective_buy_price = CharField(null=True)
 
     class Meta:
         database = db

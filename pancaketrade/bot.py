@@ -262,6 +262,13 @@ class TradeBot:
         token_price_usd = self.net.get_token_price_usd(
             token_address=token.address, token_decimals=token.decimals, sell=True
         )
+        effective_buy_price = ''
+        if token.effective_buy_price:
+            price_diff_percent = ((token_price / token.effective_buy_price) - Decimal(1)) * Decimal(100)
+            effective_buy_price = (
+                f'<b>At buy (after tax)</b>: {token.effective_buy_price:.3g} BNB/token '
+                + f'(now {price_diff_percent:+.1f}%)\n'
+            )
         orders_sorted = sorted(
             token.orders, key=lambda o: o.limit_price if o.limit_price else Decimal(1e12), reverse=True
         )  # if no limit price (market price) display first (big artificial value)
@@ -271,6 +278,7 @@ class TradeBot:
             + f'<a href="https://poocoin.app/tokens/{token.address}">Chart</a>\n'
             + f'<b>Value</b>: <code>{token_balance_bnb:.3g}</code> BNB (${token_balance_usd:.2f})\n'
             + f'<b>Price</b>: <code>{token_price:.3g}</code> BNB per token (${token_price_usd:.3g})\n'
+            + effective_buy_price
             + '<b>Orders</b>: (underlined = tracking trailing stop loss)\n'
             + '\n'.join(orders)
         )

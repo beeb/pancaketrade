@@ -1,4 +1,5 @@
 """Token watcher."""
+from decimal import Decimal
 from typing import List, Optional
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -6,8 +7,8 @@ from apscheduler.triggers.interval import IntervalTrigger
 from loguru import logger
 from pancaketrade.network import Network
 from pancaketrade.persistence import Token
-from pancaketrade.watchers.order import OrderWatcher
 from pancaketrade.utils.config import Config
+from pancaketrade.watchers.order import OrderWatcher
 from telegram.ext import Dispatcher
 from web3 import Web3
 
@@ -31,6 +32,9 @@ class TokenWatcher:
         self.emoji = token_record.icon + ' ' if token_record.icon else ''
         self.name = self.emoji + self.symbol
         self.default_slippage = token_record.default_slippage
+        self.effective_buy_price: Optional[Decimal] = (
+            Decimal(token_record.effective_buy_price) if token_record.effective_buy_price else None
+        )
         self.orders: List[OrderWatcher] = [
             OrderWatcher(
                 order_record=order_record,
