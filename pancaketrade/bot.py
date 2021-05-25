@@ -271,9 +271,10 @@ class TradeBot:
         effective_buy_price = ''
         if token.effective_buy_price:
             price_diff_percent = ((token_price / token.effective_buy_price) - Decimal(1)) * Decimal(100)
+            diff_icon = '🆙' if price_diff_percent >= 0 else '🔽'
             effective_buy_price = (
                 f'<b>At buy (after tax)</b>: {token.effective_buy_price:.3g} BNB/token '
-                + f'(now {price_diff_percent:+.1f}%)\n'
+                + f'(now {price_diff_percent:+.1f}% {diff_icon})\n'
             )
         orders_sorted = sorted(
             token.orders, key=lambda o: o.limit_price if o.limit_price else Decimal(1e12), reverse=True
