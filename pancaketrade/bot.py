@@ -99,6 +99,7 @@ class TradeBot:
         commands = [
             ('status', 'display all tokens and their price, orders'),
             ('buysell', 'buy or sell a token now'),
+            ('sellall', 'sell all balance for a token now'),
             ('addorder', 'add order to one of the tokens'),
             ('removeorder', 'delete order for one of the tokens'),
             ('order', 'display order information, pass the order ID as argument'),
