@@ -1,9 +1,10 @@
+from decimal import Decimal
 from typing import NamedTuple
 
 from loguru import logger
 from pancaketrade.network import Network
 from pancaketrade.utils.config import Config
-from pancaketrade.utils.generic import chat_message, check_chat_id
+from pancaketrade.utils.generic import chat_message, check_chat_id, format_token_amount
 from pancaketrade.watchers import TokenWatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, ConversationHandler
@@ -51,7 +52,7 @@ class SellAllConversation:
                     ]
                 ]
             ),
-            edit=False,
+            edit=self.config.update_messages,
         )
         return self.next.CONFIRM
 
@@ -67,8 +68,30 @@ class SellAllConversation:
             return ConversationHandler.END
         token: TokenWatcher = self.parent.watchers[query.data]
         _, v2 = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
+        if not self.net.is_approved(token_address=token.address, v2=v2):
+            # when selling we require that the token is approved on pcs beforehand
+            version = 'v2' if v2 else 'v1'
+            logger.info(f'Need to approve {token.symbol} for trading on PancakeSwap {version}.')
+            chat_message(
+                update,
+                context,
+                text=f'Approving {token.symbol} for trading on PancakeSwap {version}...',
+                edit=self.config.update_messages,
+            )
+            res = self.net.approve(token_address=token.address, v2=v2)
+            if res:
+                chat_message(update, context, text='✅ Approval successful!', edit=self.config.update_messages)
+            else:
+                chat_message(update, context, text='⛔ Approval failed', edit=False)
+                return ConversationHandler.END
         balance_tokens = self.net.get_token_balance_wei(token_address=token.address)
-        chat_message(update, context, text=f'Selling all {token.symbol}...', edit=self.config.update_messages)
+        balance_decimal = Decimal(balance_tokens) / Decimal(10 ** token.decimals)
+        chat_message(
+            update,
+            context,
+            text=f'Selling {format_token_amount(balance_decimal)} {token.symbol}...',
+            edit=self.config.update_messages,
+        )
         res, bnb_out, txhash_or_error = self.net.sell_tokens(
             token.address,
             amount_tokens=balance_tokens,

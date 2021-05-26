@@ -73,6 +73,7 @@ class TradeBot:
             'buysell': 'Buy or sell now which token?',
             'address': 'Get address for which token?',
             'edittoken': 'Edit which token icon and slippage?',
+            'removetoken': 'Which token do you want to remove?',
         }
 
     def setup_telegram(self):
@@ -84,6 +85,7 @@ class TradeBot:
         self.dispatcher.add_handler(CommandHandler('buysell', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('address', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('edittoken', self.command_show_all_tokens))
+        self.dispatcher.add_handler(CommandHandler('removetoken', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('order', self.command_order))
         self.dispatcher.add_handler(CallbackQueryHandler(self.command_address, pattern='^address:0x[a-fA-F0-9]{40}$'))
         self.dispatcher.add_handler(
@@ -238,19 +240,25 @@ class TradeBot:
             if token.last_status_message_id is None:
                 continue
             status = self.get_token_status(token)
-            self.dispatcher.bot.edit_message_text(
-                status,
-                chat_id=self.config.secrets.admin_chat_id,
-                message_id=token.last_status_message_id,
-            )
+            try:
+                self.dispatcher.bot.edit_message_text(
+                    status,
+                    chat_id=self.config.secrets.admin_chat_id,
+                    message_id=token.last_status_message_id,
+                )
+            except Exception:  # for example message content was not changed
+                pass
         message, buttons = self.get_summary_message()
         reply_markup = InlineKeyboardMarkup(buttons)
-        self.dispatcher.bot.edit_message_text(
-            message,
-            chat_id=self.config.secrets.admin_chat_id,
-            message_id=self.last_status_message_id,
-            reply_markup=reply_markup,
-        )
+        try:
+            self.dispatcher.bot.edit_message_text(
+                message,
+                chat_id=self.config.secrets.admin_chat_id,
+                message_id=self.last_status_message_id,
+                reply_markup=reply_markup,
+            )
+        except Exception:  # for example message content was not changed
+            pass
 
     def get_token_status(self, token: TokenWatcher) -> str:
         token_balance = self.net.get_token_balance(token_address=token.address)
@@ -260,6 +268,14 @@ class TradeBot:
         token_price_usd = self.net.get_token_price_usd(
             token_address=token.address, token_decimals=token.decimals, sell=True
         )
+        effective_buy_price = ''
+        if token.effective_buy_price:
+            price_diff_percent = ((token_price / token.effective_buy_price) - Decimal(1)) * Decimal(100)
+            diff_icon = '🆙' if price_diff_percent >= 0 else '🔽'
+            effective_buy_price = (
+                f'<b>At buy (after tax)</b>: {token.effective_buy_price:.3g} BNB/token '
+                + f'(now {price_diff_percent:+.1f}% {diff_icon})\n'
+            )
         orders_sorted = sorted(
             token.orders, key=lambda o: o.limit_price if o.limit_price else Decimal(1e12), reverse=True
         )  # if no limit price (market price) display first (big artificial value)
@@ -268,7 +284,8 @@ class TradeBot:
             f'<b>{token.name}</b>: {format_token_amount(token_balance)}        '
             + f'<a href="https://poocoin.app/tokens/{token.address}">Chart</a>\n'
             + f'<b>Value</b>: <code>{token_balance_bnb:.3g}</code> BNB (${token_balance_usd:.2f})\n'
-            + f'<b>Price</b>: <code>{token_price:.3g}</code> BNB per token (${token_price_usd:.3g})\n'
+            + f'<b>Price</b>: <code>{token_price:.3g}</code> BNB/token (${token_price_usd:.3g})\n'
+            + effective_buy_price
             + '<b>Orders</b>: (underlined = tracking trailing stop loss)\n'
             + '\n'.join(orders)
         )

@@ -1,4 +1,5 @@
 """Token watcher."""
+from decimal import Decimal
 from typing import List, Optional
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -6,8 +7,8 @@ from apscheduler.triggers.interval import IntervalTrigger
 from loguru import logger
 from pancaketrade.network import Network
 from pancaketrade.persistence import Token
-from pancaketrade.watchers.order import OrderWatcher
 from pancaketrade.utils.config import Config
+from pancaketrade.watchers.order import OrderWatcher
 from telegram.ext import Dispatcher
 from web3 import Web3
 
@@ -31,6 +32,9 @@ class TokenWatcher:
         self.emoji = token_record.icon + ' ' if token_record.icon else ''
         self.name = self.emoji + self.symbol
         self.default_slippage = token_record.default_slippage
+        self.effective_buy_price: Optional[Decimal] = (
+            Decimal(token_record.effective_buy_price) if token_record.effective_buy_price else None
+        )
         self.orders: List[OrderWatcher] = [
             OrderWatcher(
                 order_record=order_record,
@@ -58,6 +62,7 @@ class TokenWatcher:
     def monitor_price(self):
         if not self.orders:
             return
+        self.update_effective_buy_price()
         sell_price, sell_v2 = self.net.get_token_price(
             token_address=self.address, token_decimals=self.decimals, sell=True
         )
@@ -95,3 +100,8 @@ class TokenWatcher:
                     )
             order.price_update(sell_price=sell_price, buy_price=buy_price, sell_v2=sell_v2, buy_v2=buy_v2)
         self.orders = [o for i, o in enumerate(self.orders) if i not in indices_to_remove]
+
+    def update_effective_buy_price(self):
+        self.effective_buy_price = (
+            Decimal(self.token_record.effective_buy_price) if self.token_record.effective_buy_price else None
+        )

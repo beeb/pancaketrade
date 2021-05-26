@@ -74,10 +74,13 @@ def chat_message(
     assert update.effective_chat
     if update.callback_query is not None and edit:
         query = update.callback_query
-        query.edit_message_text(
-            text=text,
-            reply_markup=reply_markup,
-        )
+        try:
+            query.edit_message_text(
+                text=text,
+                reply_markup=reply_markup,
+            )
+        except Exception:  # if the message did not change, we can get an exception, we ignore it
+            pass
         return None
     return context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
 

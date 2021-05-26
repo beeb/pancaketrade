@@ -65,7 +65,7 @@ class EditTokenConversation:
             text=f'Please send me and EMOJI you would like to associate with {token.symbol} for easy spotting, '
             + 'or click the buttons below.',
             reply_markup=reply_markup,
-            edit=False,
+            edit=self.config.update_messages,
         )
         return self.next.EMOJI
 

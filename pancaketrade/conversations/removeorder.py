@@ -58,7 +58,7 @@ class RemoveOrderConversation:
             context,
             text=f'Select the order you want to remove for {token.name}.',
             reply_markup=reply_markup,
-            edit=False,
+            edit=self.config.update_messages,
         )
         return self.next.CONFIRM
 
