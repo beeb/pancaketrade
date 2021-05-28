@@ -130,6 +130,7 @@ dmypy.json
 
 .vscode/
 
+user_data/config.yml
+user_data/pancaketrade.db
 config.yml
 pancaketrade.db
-botpersistence

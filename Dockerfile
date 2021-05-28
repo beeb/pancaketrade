@@ -35,4 +35,4 @@ COPY --from=build-deps /app .
 USER 1000
 
 ENTRYPOINT [ "trade" ]
-CMD [ "config.yml" ]
+CMD [ "user_data/config.yml" ]
