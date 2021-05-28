@@ -1,0 +1,13 @@
+*
+
+!pancaketrade/*.py
+!pancaketrade/conversations/*.py
+!pancaketrade/network/*.py
+!pancaketrade/persistence/*.py
+!pancaketrade/utils/*.py
+!pancaketrade/watchers/*.py
+!pancaketrade/abi
+!poetry.lock
+!poetry.toml
+!pyproject.toml
+!schema.yml
