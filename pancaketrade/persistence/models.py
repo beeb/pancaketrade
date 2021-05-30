@@ -9,7 +9,7 @@ from peewee import (
     SqliteDatabase,
 )
 
-db = SqliteDatabase('pancaketrade.db')
+db = SqliteDatabase('user_data/pancaketrade.db')
 
 
 class Token(Model):
