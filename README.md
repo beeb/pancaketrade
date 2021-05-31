@@ -48,10 +48,11 @@ Run the following commands
 git clone https://github.com/beeb/pancaketrade.git
 cd pancaketrade
 poetry install --no-dev
-cp config.example.yml config.yml
+cp user_data/config.example.yml user_data/config.yml
 ```
 
-Next, open the `config.yml` file with a text editor and populate the `wallet` and `secrets` section.
+Next, open the `config.yml` file inside the `user_data` folder with a text editor and populate the `wallet` and
+`secrets` section.
 
 The bot needs your wallet's private key in order to sign and execute orders on your behalf. You can either run the
 command below and enter your private key in the prompt that will be shown, or you can provide an environment variable
@@ -71,8 +72,8 @@ The other most useful command is the `/status` command that will display all you
 
 ## Configuration file
 
-The script looks for a file named `config.yml` by default. You can pass another filename to the `trade` command as a
-positional argument.
+The script looks for a file named `config.yml` located inside the `user_data`folder by default.
+You can pass another file path to the `trade` command as a positional argument.
 
 The only parameter that is not self-explanatory is `min_pool_size_bnb`. Since PancakeSwap migrated to version 2, some
 tokens have Liquidity Pairs (LP) on both v1 and v2. As a result, the price might be better for buying or selling on
