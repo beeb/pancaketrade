@@ -93,7 +93,7 @@ class EditTokenConversation:
         edit = context.user_data['edittoken']
         token: TokenWatcher = self.parent.watchers[edit['token_address']]
         if query.data == 'cancel':
-            return self.command_canceltoken()
+            return self.command_canceltoken(update, context)
         elif query.data == 'emoji':
             buttons = [
                 InlineKeyboardButton('🙅‍♂️ No emoji', callback_data='None'),
@@ -111,7 +111,7 @@ class EditTokenConversation:
             return self.next.EMOJI
         elif query.data == 'slippage':
             buttons = [
-                InlineKeyboardButton(f'{token.default_slippage}%', callback_data=token.default_slippage),
+                InlineKeyboardButton(f'Keep {token.default_slippage}%', callback_data=token.default_slippage),
                 InlineKeyboardButton('❌ Cancel', callback_data='cancel'),
             ]
             reply_markup = InlineKeyboardMarkup([buttons])
@@ -162,7 +162,7 @@ class EditTokenConversation:
             query = update.callback_query
             assert query.data
             if query.data == 'cancel':
-                return self.command_canceltoken()
+                return self.command_canceltoken(update, context)
             elif query.data == 'None':
                 edit['icon'] = None
             else:
@@ -213,7 +213,7 @@ class EditTokenConversation:
             query = update.callback_query
             assert query.data
             if query.data == 'cancel':
-                return self.command_canceltoken()
+                return self.command_canceltoken(update, context)
             try:
                 slippage = int(query.data)
             except ValueError:
@@ -286,7 +286,7 @@ class EditTokenConversation:
             query = update.callback_query
             assert query.data
             if query.data == 'cancel':
-                return self.command_canceltoken()
+                return self.command_canceltoken(update, context)
             elif query.data == 'None':
                 effective_buy_price = None
             else:
