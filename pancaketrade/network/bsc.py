@@ -317,7 +317,6 @@ class Network:
         if receipt['status'] == 0:  # fail
             logger.error(f'Buy transaction failed at tx {txhash}')
             return False, Decimal(0), txhash
-        print(receipt)
         amount_out = Decimal(0)
         for log in reversed(receipt['logs']):  # only get last withdrawal call
             if log['address'] != token_address:
@@ -404,7 +403,6 @@ class Network:
         if receipt['status'] == 0:  # fail
             logger.error(f'Sell transaction failed at tx {txhash}')
             return False, Decimal(0), txhash
-        print(receipt)
         amount_out = Decimal(0)
         for log in reversed(receipt['logs']):  # only get last withdrawal call
             if log['address'] != self.addr.wbnb:
