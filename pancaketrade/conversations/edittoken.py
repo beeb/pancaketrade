@@ -1,9 +1,10 @@
-from typing import NamedTuple
+from decimal import Decimal
+from typing import NamedTuple, Optional
 
 from pancaketrade.network import Network
 from pancaketrade.persistence import db
 from pancaketrade.utils.config import Config
-from pancaketrade.utils.generic import check_chat_id, chat_message
+from pancaketrade.utils.generic import chat_message, check_chat_id, format_price_fixed
 from pancaketrade.watchers import TokenWatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -21,6 +22,7 @@ class EditTokenResponses(NamedTuple):
     ACTION_CHOICE: int = 0
     EMOJI: int = 1
     SLIPPAGE: int = 2
+    BUYPRICE: int = 3
 
 
 class EditTokenConversation:
@@ -42,6 +44,10 @@ class EditTokenConversation:
                 self.next.SLIPPAGE: [
                     MessageHandler(Filters.text & ~Filters.command, self.command_edittoken_slippage),
                     CallbackQueryHandler(self.command_edittoken_slippage, pattern='^[^:]*$'),
+                ],
+                self.next.BUYPRICE: [
+                    MessageHandler(Filters.text & ~Filters.command, self.command_edittoken_buyprice),
+                    CallbackQueryHandler(self.command_edittoken_buyprice, pattern='^[^:]*$'),
                 ],
             },
             fallbacks=[CommandHandler('cancel', self.command_canceltoken)],
@@ -88,7 +94,7 @@ class EditTokenConversation:
         token: TokenWatcher = self.parent.watchers[edit['token_address']]
         if query.data == 'cancel':
             return self.command_canceltoken()
-        if query.data == 'emoji':
+        elif query.data == 'emoji':
             buttons = [
                 InlineKeyboardButton('🙅‍♂️ No emoji', callback_data='None'),
                 InlineKeyboardButton('❌ Cancel', callback_data='cancel'),
@@ -117,6 +123,31 @@ class EditTokenConversation:
                 edit=self.config.update_messages,
             )
             return self.next.SLIPPAGE
+        elif query.data == 'buyprice':
+            current_price, _ = self.net.get_token_price(
+                token_address=token.address, token_decimals=token.decimals, sell=True
+            )
+            current_price_fixed = format_price_fixed(current_price)
+            buttons2 = [
+                [InlineKeyboardButton('No price (disable profit calc)', callback_data='None')],
+                [InlineKeyboardButton('❌ Cancel', callback_data='cancel')],
+            ]
+            reply_markup = InlineKeyboardMarkup(buttons2)
+            chat_message(
+                update,
+                context,
+                text=f'What was the effective buy price (after tax) for {token.name} when you invested? '
+                + 'You have 3 options for this:\n'
+                + f' ・ Standard notation like "<code>{current_price_fixed}</code>"\n'
+                + f' ・ Scientific notation like "<code>{current_price:.1e}</code>"\n'
+                + ' ・ Amount you bought in BNB like "<code>0.5BNB</code>" (include "BNB" at the end)\n',
+                reply_markup=reply_markup,
+                edit=self.config.update_messages,
+            )
+            return self.next.BUYPRICE
+        else:
+            self.command_error(update, context, text='Invalid callback')
+            return ConversationHandler.END
 
     @check_chat_id
     def command_edittoken_emoji(self, update: Update, context: CallbackContext):
@@ -154,7 +185,7 @@ class EditTokenConversation:
         chat_message(
             update,
             context,
-            text=f'Alright, the token will show as <b>"{token.name}"</b>. ',
+            text=f'✅ Alright, the token will show as <b>"{token.name}"</b>. ',
             edit=self.config.update_messages,
         )
         return ConversationHandler.END
@@ -215,10 +246,85 @@ class EditTokenConversation:
         chat_message(
             update,
             context,
-            text=f'Alright, the token {token.name} '
+            text=f'✅ Alright, the token {token.name} '
             + f'will use <b>{edit["default_slippage"]}%</b> slippage by default.',
             edit=self.config.update_messages,
         )
+        return ConversationHandler.END
+
+    @check_chat_id
+    def command_edittoken_buyprice(self, update: Update, context: CallbackContext):
+        assert context.user_data is not None
+        edit = context.user_data['edittoken']
+        token: TokenWatcher = self.parent.watchers[edit['token_address']]
+        effective_buy_price: Optional[Decimal]
+        if update.message is not None:
+            assert update.message.text
+            user_input = update.message.text.strip().lower()
+            if 'bnb' in user_input:
+                try:
+                    buy_amount = Decimal(user_input[:-3])
+                except Exception:
+                    chat_message(
+                        update, context, text='⚠️ The BNB amount you inserted is not valid. Try again:', edit=False
+                    )
+                    return self.next.BUYPRICE
+                effective_buy_price = buy_amount / self.net.get_token_balance(token_address=token.address)
+            else:
+                try:
+                    effective_buy_price = Decimal(user_input)
+                except ValueError:
+                    chat_message(
+                        update,
+                        context,
+                        text='⚠️ This is not a valid price value. Try again:',
+                        edit=False,
+                    )
+                    return self.next.BUYPRICE
+        else:
+            assert update.callback_query
+            query = update.callback_query
+            assert query.data
+            if query.data == 'cancel':
+                return self.command_canceltoken()
+            elif query.data == 'None':
+                effective_buy_price = None
+            else:
+                self.command_error(update, context, text='Invalid callback.')
+                return ConversationHandler.END
+
+        edit['effective_buy_price'] = effective_buy_price
+
+        token_record = token.token_record
+        try:
+            db.connect()
+            with db.atomic():
+                token_record.effective_buy_price = (
+                    str(edit['effective_buy_price']) if edit['effective_buy_price'] else None
+                )
+                token_record.save()
+        except Exception as e:
+            self.command_error(update, context, text=f'Failed to update database record: {e}')
+            return ConversationHandler.END
+        finally:
+            del context.user_data['edittoken']
+            db.close()
+        token.effective_buy_price = edit['effective_buy_price']
+        if effective_buy_price is None:
+            chat_message(
+                update,
+                context,
+                text='✅ Alright, effective buy price for profit calculation is disabled.',
+                edit=self.config.update_messages,
+            )
+        else:
+            chat_message(
+                update,
+                context,
+                text=f'✅ Alright, the token {token.name} '
+                + f'was bought at {token.effective_buy_price:.4g} BNB per token.',
+                edit=self.config.update_messages,
+            )
         return ConversationHandler.END
 
     @check_chat_id

@@ -101,3 +101,8 @@ def format_token_amount(amount: Decimal) -> str:
     if amount >= 100:
         return f'{amount:,.1f}'
     return f'{amount:.4g}'
+
+
+def format_price_fixed(price: Decimal) -> str:
+    price_fixed = f'{price:.{-price.adjusted()+2}f}' if price < 100 else f'{price:.1f}'
+    return price_fixed
