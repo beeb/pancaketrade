@@ -35,7 +35,7 @@ class EditTokenConversation:
             entry_points=[CallbackQueryHandler(self.command_edittoken, pattern='^edittoken:0x[a-fA-F0-9]{40}$')],
             states={
                 self.next.ACTION_CHOICE: [
-                    CallbackQueryHandler(self.command_edittoken_action, pattern='^$emoji$|^slippage$|^buyprice$')
+                    CallbackQueryHandler(self.command_edittoken_action, pattern='^emoji$|^slippage$|^buyprice$')
                 ],
                 self.next.EMOJI: [
                     MessageHandler(Filters.text & ~Filters.command, self.command_edittoken_emoji),
