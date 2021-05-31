@@ -18,6 +18,7 @@ from web3 import Web3
 
 
 class EditTokenResponses(NamedTuple):
+    ACTION_CHOICE: int = 0
     EMOJI: int = 1
     SLIPPAGE: int = 2
 
@@ -31,6 +32,9 @@ class EditTokenConversation:
         self.handler = ConversationHandler(
             entry_points=[CallbackQueryHandler(self.command_edittoken, pattern='^edittoken:0x[a-fA-F0-9]{40}$')],
             states={
+                self.next.ACTION_CHOICE: [
+                    CallbackQueryHandler(self.command_edittoken_action, pattern='^$emoji$|^slippage$|^buyprice$')
+                ],
                 self.next.EMOJI: [
                     MessageHandler(Filters.text & ~Filters.command, self.command_edittoken_emoji),
                     CallbackQueryHandler(self.command_edittoken_emoji, pattern='^[^:]*$'),
@@ -55,19 +59,64 @@ class EditTokenConversation:
             return ConversationHandler.END
         token: TokenWatcher = self.parent.watchers[token_address]
         context.user_data['edittoken'] = {'token_address': token_address}
-        buttons = [InlineKeyboardButton('🙅‍♂️ No emoji', callback_data='None')]
-        if token.emoji:
-            buttons.insert(0, InlineKeyboardButton(f'Keep {token.emoji}', callback_data=token.emoji))
-        reply_markup = InlineKeyboardMarkup([buttons])
+        buttons = [
+            [
+                InlineKeyboardButton(f'{token.emoji}Edit emoji', callback_data='emoji'),
+                InlineKeyboardButton('Edit default slippage', callback_data='slippage'),
+            ],
+            [
+                InlineKeyboardButton('Edit buy price', callback_data='buyprice'),
+                InlineKeyboardButton('❌ Cancel', callback_data='cancel'),
+            ],
+        ]
+        reply_markup = InlineKeyboardMarkup(buttons)
         chat_message(
             update,
             context,
-            text=f'Please send me and EMOJI you would like to associate with {token.symbol} for easy spotting, '
-            + 'or click the buttons below.',
+            text=f'What do you want to edit for token {token.name}?',
             reply_markup=reply_markup,
             edit=self.config.update_messages,
         )
-        return self.next.EMOJI
+        return self.next.ACTION_CHOICE
+
+    @check_chat_id
+    def command_edittoken_action(self, update: Update, context: CallbackContext):
+        assert update.callback_query and context.user_data is not None
+        query = update.callback_query
+        assert query.data
+        edit = context.user_data['edittoken']
+        token: TokenWatcher = self.parent.watchers[edit['token_address']]
+        if query.data == 'cancel':
+            return self.command_canceltoken()
+        if query.data == 'emoji':
+            buttons = [
+                InlineKeyboardButton('🙅‍♂️ No emoji', callback_data='None'),
+                InlineKeyboardButton('❌ Cancel', callback_data='cancel'),
+            ]
+            reply_markup = InlineKeyboardMarkup([buttons])
+            chat_message(
+                update,
+                context,
+                text=f'Please send me and EMOJI you would like to associate with {token.symbol} for easy spotting, '
+                + 'or click the buttons below.',
+                reply_markup=reply_markup,
+                edit=self.config.update_messages,
+            )
+            return self.next.EMOJI
+        elif query.data == 'slippage':
+            buttons = [
+                InlineKeyboardButton(f'{token.default_slippage}%', callback_data=token.default_slippage),
+                InlineKeyboardButton('❌ Cancel', callback_data='cancel'),
+            ]
+            reply_markup = InlineKeyboardMarkup([buttons])
+            chat_message(
+                update,
+                context,
+                text=f'What is the default slippage in % to use for swapping {token.name} on PancakeSwap?',
+                reply_markup=reply_markup,
+                edit=self.config.update_messages,
+            )
+            return self.next.SLIPPAGE
 
     @check_chat_id
     def command_edittoken_emoji(self, update: Update, context: CallbackContext):
@@ -81,24 +130,34 @@ class EditTokenConversation:
             assert update.callback_query
             query = update.callback_query
             assert query.data
-            if query.data == 'None':
+            if query.data == 'cancel':
+                return self.command_canceltoken()
+            elif query.data == 'None':
                 edit['icon'] = None
             else:
                 edit['icon'] = query.data
-        emoji = edit['icon'] + ' ' if edit['icon'] else ''
-        reply_markup = InlineKeyboardMarkup(
-            [[InlineKeyboardButton(f'{token.default_slippage}%', callback_data=token.default_slippage)]]
-        )
+
+        token_record = token.token_record
+        try:
+            db.connect()
+            with db.atomic():
+                token_record.icon = edit['icon']
+                token_record.save()
+        except Exception as e:
+            self.command_error(update, context, text=f'Failed to update database record: {e}')
+            return ConversationHandler.END
+        finally:
+            del context.user_data['edittoken']
+            db.close()
+        token.emoji = token_record.icon + ' ' if token_record.icon else ''
+        token.name = token.emoji + token.symbol
         chat_message(
             update,
             context,
-            text='Alright, the token will show as '
-            + f'<b>"{emoji}{token.symbol}"</b>. '
-            + 'What is the default slippage in % to use for swapping on PancakeSwap?',
-            edit=False,
-            reply_markup=reply_markup,
+            text=f'Alright, the token will show as <b>"{token.name}"</b>. ',
+            edit=self.config.update_messages,
         )
-        return self.next.SLIPPAGE
+        return ConversationHandler.END
 
     @check_chat_id
     def command_edittoken_slippage(self, update: Update, context: CallbackContext):
@@ -122,6 +181,8 @@ class EditTokenConversation:
             assert update.callback_query
             query = update.callback_query
             assert query.data
+            if query.data == 'cancel':
+                return self.command_canceltoken()
             try:
                 slippage = int(query.data)
             except ValueError:
@@ -137,36 +198,26 @@ class EditTokenConversation:
             )
             return self.next.SLIPPAGE
         edit['default_slippage'] = slippage
-        emoji = edit['icon'] + ' ' if edit['icon'] else ''
-        chat_message(
-            update,
-            context,
-            text=f'Alright, the token <b>{emoji}{token.symbol}</b> '
-            + f'will use <b>{edit["default_slippage"]}%</b> slippage by default.',
-            edit=False,
-        )
+
         token_record = token.token_record
         try:
             db.connect()
             with db.atomic():
-                token_record.icon = edit['icon']
                 token_record.default_slippage = edit['default_slippage']
                 token_record.save()
         except Exception as e:
-            chat_message(update, context, text=f'⛔ Failed to update database record: {e}', edit=False)
-            del context.user_data['edittoken']
+            self.command_error(update, context, text=f'Failed to update database record: {e}')
             return ConversationHandler.END
         finally:
             del context.user_data['edittoken']
             db.close()
-        token.emoji = token_record.icon + ' ' if token_record.icon else ''
-        token.name = token.emoji + token.symbol
         token.default_slippage = token_record.default_slippage
         chat_message(
             update,
             context,
-            text='✅ Token was edited successfully.',
-            edit=False,
+            text=f'Alright, the token {token.name} '
+            + f'will use <b>{edit["default_slippage"]}%</b> slippage by default.',
+            edit=self.config.update_messages,
         )
         return ConversationHandler.END
 
