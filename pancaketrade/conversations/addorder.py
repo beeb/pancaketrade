@@ -5,7 +5,7 @@ from typing import Mapping, NamedTuple
 from pancaketrade.network import Network
 from pancaketrade.persistence import Order, db
 from pancaketrade.utils.config import Config
-from pancaketrade.utils.generic import chat_message, check_chat_id, format_token_amount
+from pancaketrade.utils.generic import chat_message, check_chat_id, format_price_fixed, format_token_amount
 from pancaketrade.watchers import OrderWatcher, TokenWatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -565,9 +565,7 @@ class AddOrderConversation:
         return token.symbol if order['type'] == 'sell' else 'BNB'
 
     def get_price_message(self, current_price: Decimal, token_symbol: str) -> str:
-        current_price_fixed = (
-            f'{current_price:.{-current_price.adjusted()+2}f}' if current_price < 100 else f'{current_price:.1f}'
-        )
+        current_price_fixed = format_price_fixed(current_price)
         next_message = (
             f'Next, please indicate the <u>price in <b>BNB per {token_symbol}</b></u> '
             + 'at which the order will activate.\n'

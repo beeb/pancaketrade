@@ -266,7 +266,12 @@ class Network:
         router_address = self.addr.router_v2 if v2 else self.addr.router_v1
         func = token_contract.functions.approve(router_address, max_approval)
         logger.info(f'Approving {self.get_token_symbol(token_address=token_address)} - {token_address}...')
-        tx = self.build_and_send_tx(func)
+        try:
+            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.5)))
+        except Exception:
+            gas_limit = Wei(100000)
+        tx_params = self.get_tx_params(gas=gas_limit)
+        tx = self.build_and_send_tx(func, tx_params=tx_params)
         receipt = self.w3.eth.wait_for_transaction_receipt(tx, timeout=6000)
         if receipt['status'] == 0:  # fail
             logger.error(f'Approval call failed at tx {Web3.toHex(primitive=receipt["transactionHash"])}')
@@ -306,13 +311,12 @@ class Network:
             v2=v2,
         )
         if receipt is None:
-            logger.error('Can\'t get price estimate')
-            return False, Decimal(0), 'Can\'t get price estimate'
+            logger.error('Can\'t get gas estimate')
+            return False, Decimal(0), 'Can\'t get gas estimate'
         txhash = Web3.toHex(primitive=receipt["transactionHash"])
         if receipt['status'] == 0:  # fail
             logger.error(f'Buy transaction failed at tx {txhash}')
             return False, Decimal(0), txhash
-        print(receipt)
         amount_out = Decimal(0)
         for log in reversed(receipt['logs']):  # only get last withdrawal call
             if log['address'] != token_address:
@@ -355,7 +359,7 @@ class Network:
                     int(Decimal(func.estimateGas({'from': self.wallet, 'value': amount_bnb})) * Decimal(1.5))
                 )
             except Exception:
-                logger.error('Can\'t get price estimate, cancelling transaction.')
+                logger.error('Can\'t get gas estimate, cancelling transaction.')
                 return None
         if gas_limit > GAS_LIMIT_FAILSAFE:
             gas_limit = GAS_LIMIT_FAILSAFE
@@ -393,13 +397,12 @@ class Network:
             v2=v2,
         )
         if receipt is None:
-            logger.error('Can\'t get price estimate')
-            return False, Decimal(0), 'Can\'t get price estimate'
+            logger.error('Can\'t get gas estimate')
+            return False, Decimal(0), 'Can\'t get gas estimate'
         txhash = Web3.toHex(primitive=receipt["transactionHash"])
         if receipt['status'] == 0:  # fail
             logger.error(f'Sell transaction failed at tx {txhash}')
             return False, Decimal(0), txhash
-        print(receipt)
         amount_out = Decimal(0)
         for log in reversed(receipt['logs']):  # only get last withdrawal call
             if log['address'] != self.addr.wbnb:
@@ -442,7 +445,7 @@ class Network:
             try:
                 gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.5)))
             except Exception:
-                logger.error('Can\'t get price estimate, cancelling transaction.')
+                logger.error('Can\'t get gas estimate, cancelling transaction.')
                 return None
         if gas_limit > GAS_LIMIT_FAILSAFE:
             gas_limit = GAS_LIMIT_FAILSAFE
@@ -460,8 +463,8 @@ class Network:
         finally:
             self.last_nonce = Nonce(tx_params["nonce"] + 1)
 
-    def get_tx_params(self, value: Wei = Wei(0), gas: Wei = Wei(50000), gas_price: Optional[Wei] = None) -> TxParams:
-        # 50000 gas is OK for approval tx, so it's the default
+    def get_tx_params(self, value: Wei = Wei(0), gas: Wei = Wei(100000), gas_price: Optional[Wei] = None) -> TxParams:
+        # 100000 gas is OK for approval tx, so it's the default
         params: TxParams = {
             'from': self.wallet,
             'value': value,

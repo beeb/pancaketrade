@@ -22,7 +22,7 @@ logging.basicConfig(handlers=[InterceptHandler()], level=0)
 
 
 @click.command()
-@click.argument('config_file', required=False, default='config.yml')
+@click.argument('config_file', required=False, default='user_data/config.yml')
 def main(config_file: str) -> None:
     try:
         config = read_config(config_file)

@@ -99,6 +99,7 @@ class TradeBot:
         commands = [
             ('status', 'display all tokens and their price, orders'),
             ('buysell', 'buy or sell a token now'),
+            ('sellall', 'sell all balance for a token now'),
             ('addorder', 'add order to one of the tokens'),
             ('removeorder', 'delete order for one of the tokens'),
             ('order', 'display order information, pass the order ID as argument'),
@@ -141,12 +142,14 @@ class TradeBot:
     def command_status(self, update: Update, context: CallbackContext):
         self.pause_status_update(True)  # prevent running an update while we are changing the last message id
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
+        balances: List[Decimal] = []
         for token in sorted_tokens:
-            status = self.get_token_status(token)
+            status, balance_bnb = self.get_token_status(token)
+            balances.append(balance_bnb)
             msg = chat_message(update, context, text=status, edit=False)
             if msg is not None:
                 self.watchers[token.address].last_status_message_id = msg.message_id
-        message, buttons = self.get_summary_message()
+        message, buttons = self.get_summary_message(balances)
         reply_markup = InlineKeyboardMarkup(buttons)
         stat_msg = chat_message(
             update,
@@ -260,7 +263,7 @@ class TradeBot:
         except Exception:  # for example message content was not changed
             pass
 
-    def get_token_status(self, token: TokenWatcher) -> str:
+    def get_token_status(self, token: TokenWatcher) -> Tuple[str, Decimal]:
         token_balance = self.net.get_token_balance(token_address=token.address)
         token_balance_bnb = self.net.get_token_balance_bnb(token_address=token.address, balance=token_balance)
         token_balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance=token_balance)
@@ -289,13 +292,15 @@ class TradeBot:
             + '<b>Orders</b>: (underlined = tracking trailing stop loss)\n'
             + '\n'.join(orders)
         )
-        return message
+        return message, token_balance_bnb
 
-    def get_summary_message(self) -> Tuple[str, List[List[InlineKeyboardButton]]]:
+    def get_summary_message(self, token_balances: List[Decimal]) -> Tuple[str, List[List[InlineKeyboardButton]]]:
         balance_bnb = self.net.get_bnb_balance()
         price_bnb = self.net.get_bnb_price()
+        total_positions = sum(token_balances)
         msg = (
             f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})\n'
+            + f'<b>Total portfolio</b>: {total_positions:.4f} BNB (${total_positions*price_bnb:.2f})\n'
             + 'Which action do you want to perform next?'
         )
         return msg, self.get_global_keyboard()

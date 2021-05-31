@@ -15,7 +15,7 @@ the mechanism of this bot.
 
 ## Features
 
-The bot provides a lot of convenience trading featuers including:
+The bot provides a lot of convenience trading features including:
 
 - Tokens balance and price shown in status messages
 - Ability to make buy and sell limit orders including trailing stop loss
