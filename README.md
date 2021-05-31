@@ -18,6 +18,7 @@ the mechanism of this bot.
 The bot provides a lot of convenience trading features including:
 
 - Tokens balance and price shown in status messages
+- Price tracking relative to buy transaction
 - Ability to make buy and sell limit orders including trailing stop loss
 - Automatic smart price selection in case PancakeSwap v1 and v2 LPs are available
 - Automatic approval for selling
