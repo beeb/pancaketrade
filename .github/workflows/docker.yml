@@ -24,7 +24,8 @@ jobs:
           TAG=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
           LATEST=""
           # Strip "v" prefix from tag name if we're dealing with a version tag and tag as latest
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && TAG=$(echo $TAG | sed -e 's/^v//') && LATEST=",vbersier/pancaketrade:latest"
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && TAG=$(echo $TAG | sed -e 's/^v//')
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && LATEST=",vbersier/pancaketrade:latest"
           echo "::set-output name=tag::$TAG"
           echo "::set-output name=latest::$LATEST"
       - name: Build and push
