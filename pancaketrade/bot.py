@@ -239,10 +239,12 @@ class TradeBot:
         if self.last_status_message_id is None:
             return  # we probably did not call status since start
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
+        balances: List[Decimal] = []
         for token in sorted_tokens:
             if token.last_status_message_id is None:
                 continue
-            status = self.get_token_status(token)
+            status, balance_bnb = self.get_token_status(token)
+            balances.append(balance_bnb)
             try:
                 self.dispatcher.bot.edit_message_text(
                     status,
@@ -251,7 +253,7 @@ class TradeBot:
                 )
             except Exception:  # for example message content was not changed
                 pass
-        message, buttons = self.get_summary_message()
+        message, buttons = self.get_summary_message(balances)
         reply_markup = InlineKeyboardMarkup(buttons)
         try:
             self.dispatcher.bot.edit_message_text(
@@ -284,8 +286,10 @@ class TradeBot:
         )  # if no limit price (market price) display first (big artificial value)
         orders = [str(order) for order in orders_sorted]
         message = (
-            f'<b>{token.name}</b>: {format_token_amount(token_balance)}        '
-            + f'<a href="https://poocoin.app/tokens/{token.address}">Chart</a>\n'
+            f'<b>{token.name}</b>: {format_token_amount(token_balance)}\n'
+            + f'<b>Charts</b>: <a href="https://poocoin.app/tokens/{token.address}">Poocoin</a>     '
+            + f'<a href="https://charts.bogged.finance/?token={token.address}">Bogged</a>     '
+            + f'<a href="https://dex.guru/token/{token.address}">Dex.Guru</a>\n'
             + f'<b>Value</b>: <code>{token_balance_bnb:.3g}</code> BNB (${token_balance_usd:.2f})\n'
             + f'<b>Price</b>: <code>{token_price:.3g}</code> BNB/token (${token_price_usd:.3g})\n'
             + effective_buy_price
