@@ -103,6 +103,10 @@ secrets:
 
 This bot now gets published as docker images on [Docker Hub](https://hub.docker.com/repository/docker/vbersier/pancaketrade).
 
+Before you start, make sure you have your Telegram Bot token + user ID available.
+Initiate the chat with your bot on Telegram (click the "Start" button) to initialize the chat ID before you start the
+bot the first time.
+
 Steps to use docker:
 
 1. Copy the example `docker-compose.example.yml` file in this repository, rename it to `docker-compose.yml`
