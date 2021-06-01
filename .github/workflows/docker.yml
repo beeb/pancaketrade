@@ -3,6 +3,7 @@ name: Docker Image CI
 on:
   push:
     branches: [develop]
+    tags: ['v*.*.*']
 
 jobs:
   build:
@@ -16,12 +17,23 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Get image tag
+        id: image_tag
+        run: |
+          # Strip git ref prefix from ref
+          TAG=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          LATEST=""
+          # Strip "v" prefix from tag name if we're dealing with a version tag and tag as latest
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && TAG=$(echo $TAG | sed -e 's/^v//') && LATEST=",vbersier/pancaketrade:latest"
+          echo "::set-output name=tag::$TAG"
+          echo "::set-output name=latest::$LATEST"
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v2
         with:
           pull: true
           push: true
-          tags: vbersier/pancaketrade:${{ github.sha }}
+          no-cache: true
+          tags: vbersier/pancaketrade:${{ steps.version_tag.outputs.tag }}${{ steps.version_tag.outputs.latest }}
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
