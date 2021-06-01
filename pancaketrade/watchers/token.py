@@ -60,9 +60,9 @@ class TokenWatcher:
         self.scheduler.shutdown(wait=False)
 
     def monitor_price(self):
+        self.update_effective_buy_price()
         if not self.orders:
             return
-        self.update_effective_buy_price()
         sell_price, sell_v2 = self.net.get_token_price(
             token_address=self.address, token_decimals=self.decimals, sell=True
         )
