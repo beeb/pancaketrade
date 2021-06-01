@@ -2,12 +2,10 @@ version: '3'
 services:
   pancaketrade:
     image: vbersier/pancaketrade:latest
-    build:
-      context: .
     restart: unless-stopped
     container_name: pancaketrade
     tty: true
-    env_file: .env
+    env_file: .env # add a WALLET_PK environment variable with your private key in that file
     volumes:
       - type: bind
         source: ./user_data

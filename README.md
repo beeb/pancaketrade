@@ -99,6 +99,25 @@ secrets:
   admin_chat_id: 123456 # enter your chat ID/user ID to prevent other users to use the bot
 ```
 
+## Use docker
+
+This bot now gets published as docker images on [Docker Hub](https://hub.docker.com/repository/docker/vbersier/pancaketrade).
+
+Before you start, make sure you have your Telegram Bot token + user ID available.
+Initiate the chat with your bot on Telegram (click the "Start" button) to initialize the chat ID before you start the
+bot the first time.
+
+Steps to use docker:
+
+1. Copy the example `docker-compose.example.yml` file in this repository, rename it to `docker-compose.yml`
+2. Create a file named `.env` next to your docker-compose file and insert your private key: `WALLET_PK=123abc...`
+3. Create a `user_data` folder if it doesn't already exist, and create your `config.yml` file inside (see previous section)
+4. Run the service with `docker-compose up -d` or `docker compose up -d` depending on your docker version.
+
+Note: the bot will create a file for the database named `pancaketrade.db` inside the `user_data` folder on your local machine.
+Do not delete or move that file because it holds all your token configurations and orders data. This is the file to back
+up if you want to move the bot elsewhere, etc.
+
 ## Run as a service
 
 On systems that support `systemd`, you can use the included `pancaketrade.service` file to run this script as a service.
