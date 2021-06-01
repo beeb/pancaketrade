@@ -239,10 +239,12 @@ class TradeBot:
         if self.last_status_message_id is None:
             return  # we probably did not call status since start
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
+        balances: List[Decimal] = []
         for token in sorted_tokens:
             if token.last_status_message_id is None:
                 continue
-            status = self.get_token_status(token)
+            status, balance_bnb = self.get_token_status(token)
+            balances.append(balance_bnb)
             try:
                 self.dispatcher.bot.edit_message_text(
                     status,
@@ -251,7 +253,7 @@ class TradeBot:
                 )
             except Exception:  # for example message content was not changed
                 pass
-        message, buttons = self.get_summary_message()
+        message, buttons = self.get_summary_message(balances)
         reply_markup = InlineKeyboardMarkup(buttons)
         try:
             self.dispatcher.bot.edit_message_text(
