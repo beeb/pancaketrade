@@ -17,19 +17,15 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Get image tag
-        id: image_tag
-        run: |
-          # Strip git ref prefix from ref
-          TAG=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          LATEST=""
-          # Strip "v" prefix from tag name if we're dealing with a version tag and tag as latest
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && TAG=$(echo $TAG | sed -e 's/^v//')
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && LATEST=",vbersier/pancaketrade:latest"
-          echo "::set-output name=tag::$TAG"
-          echo "::set-output name=latest::$LATEST"
-          echo $TAG
-          echo $LATEST
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: vbersier/pancaketrade
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v2
@@ -37,6 +33,7 @@ jobs:
           pull: true
           push: true
           no-cache: true
-          tags: vbersier/pancaketrade:${{ steps.version_tag.outputs.tag }}${{ steps.version_tag.outputs.latest }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
