@@ -28,6 +28,13 @@ RUN /opt/poetry/bin/poetry install --no-dev
 # final image
 FROM python:3.9-slim-buster
 
+# update, upgrade, cleanup
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    apt-get update && \
+    apt-get upgrade --yes && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 RUN groupadd -r -g $GROUP_ID pancaketrade && \
