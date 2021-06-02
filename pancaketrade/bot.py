@@ -253,6 +253,7 @@ class TradeBot:
                 )
             except Exception as e:  # for example message content was not changed
                 if not str(e).startswith('Message is not modified'):
+                    logger.error(f'Exception during message update: {e}')
                     self.dispatcher.bot.send_message(
                         chat_id=self.config.secrets.admin_chat_id, text=f'Exception during message update: {e}'
                     )
@@ -267,6 +268,7 @@ class TradeBot:
             )
         except Exception as e:  # for example message content was not changed
             if not str(e).startswith('Message is not modified'):
+                logger.error(f'Exception during message update: {e}')
                 self.dispatcher.bot.send_message(
                     chat_id=self.config.secrets.admin_chat_id, text=f'Exception during message update: {e}'
                 )
