@@ -86,8 +86,9 @@ In order to avoid swapping on the version that has little liquidity, the bot che
 is staked in the LP. If that's not the case, the bot will use the other version even if the price is worse.
 
 The `update_messages` parameter will update the status messages every 30 seconds if set to `true`.
-If you have trouble with the inline buttons not working, or messages not updating, disable `update_messages` as it has
-happened in the past that some edge cases break message editing for a given bot token.
+If you have trouble with the inline buttons not working, this means this bot token is not able to update messages anymore.
+It's unclear what the reason is, but it happened a few times to the developer and testers of this bot.
+The solution is to create a new bot token and try again, or disable `update_messages` (not ideal).
 
 ```yaml
 ---
