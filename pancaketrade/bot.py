@@ -302,9 +302,11 @@ class TradeBot:
         balance_bnb = self.net.get_bnb_balance()
         price_bnb = self.net.get_bnb_price()
         total_positions = sum(token_balances)
+        grand_total = balance_bnb + total_positions
         msg = (
-            f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})\n'
-            + f'<b>Total portfolio</b>: {total_positions:.4f} BNB (${total_positions*price_bnb:.2f})\n'
+            f'<b>BNB balance</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})\n'
+            + f'<b>Tokens balance</b>: {total_positions:.4f} BNB (${total_positions*price_bnb:.2f})\n'
+            + f'<b>Total</b>: {grand_total:.4f} BNB (${grand_total*price_bnb:.2f})\n'
             + 'Which action do you want to perform next?'
         )
         return msg, self.get_global_keyboard()
