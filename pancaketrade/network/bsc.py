@@ -1,7 +1,7 @@
 import time
 from decimal import Decimal
-from typing import Dict, NamedTuple, Optional, Set, Tuple
 from pathlib import Path
+from typing import Dict, NamedTuple, Optional, Set, Tuple
 
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -87,15 +87,21 @@ class Network:
     def get_bnb_balance(self) -> Decimal:
         return Decimal(self.w3.eth.get_balance(self.wallet)) / Decimal(10 ** 18)
 
-    def get_token_balance_usd(self, token_address: ChecksumAddress, balance: Optional[Decimal] = None) -> Decimal:
-        balance_bnb = self.get_token_balance_bnb(token_address, balance=balance)
+    def get_token_balance_usd(
+        self, token_address: ChecksumAddress, balance: Optional[Decimal] = None, balance_bnb: Optional[Decimal] = None
+    ) -> Decimal:
+        if balance_bnb is None:
+            balance_bnb = self.get_token_balance_bnb(token_address, balance=balance)
         bnb_price = self.get_bnb_price()
         return bnb_price * balance_bnb
 
-    def get_token_balance_bnb(self, token_address: ChecksumAddress, balance: Optional[Decimal] = None) -> Decimal:
+    def get_token_balance_bnb(
+        self, token_address: ChecksumAddress, balance: Optional[Decimal] = None, token_price: Optional[Decimal] = None
+    ) -> Decimal:
         if balance is None:
             balance = self.get_token_balance(token_address=token_address)
-        token_price, _ = self.get_token_price(token_address=token_address)
+        if token_price is None:
+            token_price, _ = self.get_token_price(token_address=token_address)
         return token_price * balance
 
     def get_token_balance(self, token_address: ChecksumAddress) -> Decimal:
@@ -119,11 +125,16 @@ class Network:
         return Wei(0)
 
     def get_token_price_usd(
-        self, token_address: ChecksumAddress, token_decimals: Optional[int] = None, sell: bool = True
+        self,
+        token_address: ChecksumAddress,
+        token_decimals: Optional[int] = None,
+        sell: bool = True,
+        token_price: Optional[Decimal] = None,
     ) -> Decimal:
-        bnb_per_token, _ = self.get_token_price(token_address=token_address, token_decimals=token_decimals, sell=sell)
+        if token_price is None:
+            token_price, _ = self.get_token_price(token_address=token_address, token_decimals=token_decimals, sell=sell)
         usd_per_bnb = self.get_bnb_price()
-        return bnb_per_token * usd_per_bnb
+        return token_price * usd_per_bnb
 
     @cached(cache=TTLCache(maxsize=256, ttl=1))
     def get_token_price(

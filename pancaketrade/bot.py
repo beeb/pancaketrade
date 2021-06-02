@@ -266,13 +266,15 @@ class TradeBot:
             pass
 
     def get_token_status(self, token: TokenWatcher) -> Tuple[str, Decimal]:
-        token_balance = self.net.get_token_balance(token_address=token.address)
-        token_balance_bnb = self.net.get_token_balance_bnb(token_address=token.address, balance=token_balance)
-        token_balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance=token_balance)
         token_price, _ = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
         token_price_usd = self.net.get_token_price_usd(
-            token_address=token.address, token_decimals=token.decimals, sell=True
+            token_address=token.address, token_decimals=token.decimals, sell=True, token_price=token_price
         )
+        token_balance = self.net.get_token_balance(token_address=token.address)
+        token_balance_bnb = self.net.get_token_balance_bnb(
+            token_address=token.address, balance=token_balance, token_price=token_price
+        )
+        token_balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance_bnb=token_balance_bnb)
         effective_buy_price = ''
         if token.effective_buy_price:
             price_diff_percent = ((token_price / token.effective_buy_price) - Decimal(1)) * Decimal(100)
@@ -305,8 +307,8 @@ class TradeBot:
         grand_total = balance_bnb + total_positions
         msg = (
             f'<b>BNB balance</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})\n'
-            + f'<b>Tokens balance</b>: {total_positions:.4f} BNB (${total_positions*price_bnb:.2f})\n'
-            + f'<b>Total</b>: {grand_total:.4f} BNB (${grand_total*price_bnb:.2f})\n'
+            + f'<b>Tokens balance</b>: {total_positions:.4f} BNB (${total_positions * price_bnb:.2f})\n'
+            + f'<b>Total</b>: {grand_total:.4f} BNB (${grand_total * price_bnb:.2f})\n'
             + 'Which action do you want to perform next?'
         )
         return msg, self.get_global_keyboard()
