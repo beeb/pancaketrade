@@ -1,6 +1,5 @@
 ---
 bsc_rpc: 'https://bsc-dataseed.binance.org:443' # you can use any BSC RPC url you want
-wallet: '0x0000000000000000000000000000000000000000' # insert your wallet adddress here
 min_pool_size_bnb: 25 # PancakeSwap LPs that have less than 25 BNB will not be considered
 monitor_interval: 5 # the script will check the token prices with this interval in seconds
 update_messages: true # status messages will update periodically to show current values

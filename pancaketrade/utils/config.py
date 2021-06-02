@@ -8,6 +8,7 @@ from pathlib import Path
 import questionary
 import yamale
 import yaml
+from eth_account import Account
 from loguru import logger
 from questionary import ValidationError, Validator
 from web3 import Web3
@@ -58,6 +59,8 @@ def parse_config_file(path: Path) -> Config:
             f'In order to make transactions, I need the private key for wallet {conf["wallet"]}:',
             validate=PrivateKeyValidator,
         ).ask()
+    account = Account.from_key(conf['_pk'])
+    conf['wallet'] = account.address
     conf['config_file'] = str(path)
     return Config(**conf)
 

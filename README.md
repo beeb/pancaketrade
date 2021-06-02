@@ -54,8 +54,7 @@ poetry install --no-dev
 cp user_data/config.example.yml user_data/config.yml
 ```
 
-Next, open the `config.yml` file inside the `user_data` folder with a text editor and populate the `wallet` and
-`secrets` section.
+Next, open the `config.yml` file inside the `user_data` folder with a text editor and populate the `secrets` section.
 
 The bot needs your wallet's private key in order to sign and execute orders on your behalf. You can either run the
 command below and enter your private key in the prompt that will be shown, or you can provide an environment variable
@@ -93,7 +92,6 @@ The solution is to create a new bot token and try again, or disable `update_mess
 ```yaml
 ---
 bsc_rpc: 'https://bsc-dataseed.binance.org:443' # you can use any BSC RPC url you want
-wallet: '0x0000000000000000000000000000000000000000' # insert your wallet adddress here
 min_pool_size_bnb: 25 # PancakeSwap LPs that have less than 25 BNB will not be considered
 monitor_interval: 5 # the script will check the token prices with this interval in seconds
 update_messages: true # status messages will update periodically to show current values
