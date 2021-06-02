@@ -23,6 +23,6 @@ jobs:
       - name: Install deps
         run: poetry install
       - name: flake8
-        run: python -m flake8 --max-line-length=120 --exclude=.git,__pycache__,dist,.venv
+        run: poetry run python -m flake8 --max-line-length=120 --exclude=.git,__pycache__,dist,.venv
       - name: mypy
-        run: python -m mypy --ignore-missing-imports pancaketrade
+        run: poetry run python -m mypy --ignore-missing-imports pancaketrade
