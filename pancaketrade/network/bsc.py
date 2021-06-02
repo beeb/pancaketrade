@@ -40,6 +40,8 @@ class NetworkContracts:
                 filename = 'factory.abi'
             elif 'router' in contract:
                 filename = 'router.abi'
+            elif contract == 'wbnb':
+                filename = 'wbnb.abi'
             else:
                 filename = 'bep20.abi'
             with Path('pancaketrade/abi').joinpath(filename).open('r') as f:
@@ -329,19 +331,13 @@ class Network:
             logger.error(f'Buy transaction failed at tx {txhash}')
             return False, Decimal(0), txhash
         amount_out = Decimal(0)
-        for log in reversed(receipt['logs']):  # only get last withdrawal call
+        logs = self.get_token_contract(token_address=token_address).events.Transfer().processReceipt(receipt)
+        for log in reversed(logs):  # only get last withdrawal call
             if log['address'] != token_address:
                 continue
-            # topic for transfer function
-            if log['topics'][0] != HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'):
+            if log['args']['to'] != self.wallet:
                 continue
-            if len(log['topics']) < 3:
-                continue
-            if Web3.toInt(primitive=log['topics'][2]) != Web3.toInt(hexstr=self.wallet):  # transfer to our wallet
-                continue
-            out_token_wei = Web3.toWei(Web3.toInt(hexstr=log['data']), unit='wei')
-            out_token = Decimal(out_token_wei) / Decimal(10 ** self.get_token_decimals(token_address))
-            amount_out = out_token
+            amount_out = Decimal(log['args']['value']) / Decimal(10 ** self.get_token_decimals(token_address))
             break
         logger.success(f'Buy transaction succeeded at tx {txhash}')
         return True, amount_out, txhash
@@ -415,21 +411,13 @@ class Network:
             logger.error(f'Sell transaction failed at tx {txhash}')
             return False, Decimal(0), txhash
         amount_out = Decimal(0)
-        for log in reversed(receipt['logs']):  # only get last withdrawal call
+        logs = self.contracts.wbnb.events.Withdrawal().processReceipt(receipt)
+        for log in reversed(logs):  # only get last withdrawal call
             if log['address'] != self.addr.wbnb:
                 continue
-            # topic for withdrawal function
-            if log['topics'][0] != HexBytes('0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65'):
+            if log['args']['src'] != router_contract.address:
                 continue
-            if len(log['topics']) < 2:
-                continue
-            if Web3.toInt(primitive=log['topics'][1]) != Web3.toInt(
-                hexstr=router_contract.address
-            ):  # transfer to PcS router
-                continue
-            out_bnb_wei = Web3.toWei(Web3.toInt(hexstr=log['data']), unit='wei')
-            out_bnb = Decimal(out_bnb_wei) / Decimal(10 ** 18)
-            amount_out = out_bnb
+            amount_out = Web3.fromWei(log['args']['wad'], unit='ether')
             break
         logger.success(f'Sell transaction succeeded at tx {txhash}')
         return True, amount_out, txhash
