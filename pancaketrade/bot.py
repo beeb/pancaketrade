@@ -251,8 +251,11 @@ class TradeBot:
                     chat_id=self.config.secrets.admin_chat_id,
                     message_id=token.last_status_message_id,
                 )
-            except Exception:  # for example message content was not changed
-                pass
+            except Exception as e:  # for example message content was not changed
+                if not str(e).startswith('Message is not modified'):
+                    self.dispatcher.bot.send_message(
+                        chat_id=self.config.secrets.admin_chat_id, text=f'Exception during message update: {e}'
+                    )
         message, buttons = self.get_summary_message(balances)
         reply_markup = InlineKeyboardMarkup(buttons)
         try:
@@ -262,8 +265,11 @@ class TradeBot:
                 message_id=self.last_status_message_id,
                 reply_markup=reply_markup,
             )
-        except Exception:  # for example message content was not changed
-            pass
+        except Exception as e:  # for example message content was not changed
+            if not str(e).startswith('Message is not modified'):
+                self.dispatcher.bot.send_message(
+                    chat_id=self.config.secrets.admin_chat_id, text=f'Exception during message update: {e}'
+                )
 
     def get_token_status(self, token: TokenWatcher) -> Tuple[str, Decimal]:
         token_price, _ = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)

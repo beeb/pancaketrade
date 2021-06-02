@@ -79,8 +79,9 @@ def chat_message(
                 text=text,
                 reply_markup=reply_markup,
             )
-        except Exception:  # if the message did not change, we can get an exception, we ignore it
-            pass
+        except Exception as e:  # if the message did not change, we can get an exception, we ignore it
+            if not str(e).startswith('Message is not modified'):
+                context.bot.send_message(chat_id=update.effective_chat.id, text=f'Exception during message update: {e}')
         return None
     return context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
 
