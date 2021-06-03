@@ -36,7 +36,7 @@ In order to use this bot, you will need the following:
 - A Telegram bot token (interact with [@BotFather](https://telegram.me/BotFather))
 - Your Telegram chat ID/user ID (interact with [@userinfobot](https://telegram.me/userinfobot))
 
-If you choose to use the [Docker image](#use-docker), you'll just need docker installed, see the section below.
+If you choose to use the Docker image, you'll just need docker installed, see the [section below](#use-docker).
 
 If you choose to run the script with Python, you'll need the following:
 
