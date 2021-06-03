@@ -33,10 +33,15 @@ The bot provides a lot of convenience trading features including:
 In order to use this bot, you will need the following:
 
 - A server or computer that can run the script continuously (linux or macOS, as well as WSL have been tested)
-- Python version between 3.7.1 and 3.9.x
-- [Poetry](https://github.com/python-poetry/poetry)
 - A Telegram bot token (interact with [@BotFather](https://telegram.me/BotFather))
 - Your Telegram chat ID/user ID (interact with [@userinfobot](https://telegram.me/userinfobot))
+
+If you choose to use the [Docker image](#use-docker), you'll just need docker installed, see the section below.
+
+If you choose to run the script with Python, you'll need the following:
+
+- Python version between 3.7.1 and 3.9.x
+- [Poetry](https://github.com/python-poetry/poetry)
 - Optional: `git` to clone this repository, you can also download the source from the github website.
 
 ## Quick Start
@@ -59,7 +64,9 @@ Next, open the `config.yml` file inside the `user_data` folder with a text edito
 The bot needs your wallet's private key in order to sign and execute orders on your behalf. You can either run the
 command below and enter your private key in the prompt that will be shown, or you can provide an environment variable
 named `WALLET_PK` that will be used by the bot.
-The private key is **not** the same as the seed words. You need the 64-characters hexadecimal private key.
+The private key is **not** the same as the seed words/mnemonic. You need the 64-characters hexadecimal private key.
+
+Your wallet address will be inferred from the private key and doesn't need to be provided.
 
 Run the bot:
 
@@ -96,7 +103,7 @@ min_pool_size_bnb: 25 # PancakeSwap LPs that have less than 25 BNB will not be c
 monitor_interval: 5 # the script will check the token prices with this interval in seconds
 update_messages: true # status messages will update periodically to show current values
 secrets:
-  telegram_token: 'enter_your_bot_token' # enter your Telegram Bot token
+  telegram_token: 'enter_your:bot_token' # enter your Telegram Bot token
   admin_chat_id: 123456 # enter your chat ID/user ID to prevent other users to use the bot
 ```
 
@@ -112,7 +119,8 @@ Steps to use docker:
 
 1. Copy the example `docker-compose.example.yml` file in this repository, rename it to `docker-compose.yml`
 2. Create a file named `.env` next to your docker-compose file and insert your private key: `WALLET_PK=123abc...`
-3. Create a `user_data` folder if it doesn't already exist, and create your `config.yml` file inside (see previous section)
+3. Create a `user_data` folder if it doesn't already exist, and create your `config.yml` file inside
+   (see [previous section](#configuration-file)).
 4. Run the service with `docker-compose up -d` or `docker compose up -d` depending on your docker version.
 
 Note: the bot will create a file for the database named `pancaketrade.db` inside the `user_data` folder on your local machine.
