@@ -251,8 +251,12 @@ class TradeBot:
                     chat_id=self.config.secrets.admin_chat_id,
                     message_id=token.last_status_message_id,
                 )
-            except Exception:  # for example message content was not changed
-                pass
+            except Exception as e:  # for example message content was not changed
+                if not str(e).startswith('Message is not modified'):
+                    logger.error(f'Exception during message update: {e}')
+                    self.dispatcher.bot.send_message(
+                        chat_id=self.config.secrets.admin_chat_id, text=f'Exception during message update: {e}'
+                    )
         message, buttons = self.get_summary_message(balances)
         reply_markup = InlineKeyboardMarkup(buttons)
         try:
@@ -262,17 +266,23 @@ class TradeBot:
                 message_id=self.last_status_message_id,
                 reply_markup=reply_markup,
             )
-        except Exception:  # for example message content was not changed
-            pass
+        except Exception as e:  # for example message content was not changed
+            if not str(e).startswith('Message is not modified'):
+                logger.error(f'Exception during message update: {e}')
+                self.dispatcher.bot.send_message(
+                    chat_id=self.config.secrets.admin_chat_id, text=f'Exception during message update: {e}'
+                )
 
     def get_token_status(self, token: TokenWatcher) -> Tuple[str, Decimal]:
-        token_balance = self.net.get_token_balance(token_address=token.address)
-        token_balance_bnb = self.net.get_token_balance_bnb(token_address=token.address, balance=token_balance)
-        token_balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance=token_balance)
         token_price, _ = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
         token_price_usd = self.net.get_token_price_usd(
-            token_address=token.address, token_decimals=token.decimals, sell=True
+            token_address=token.address, token_decimals=token.decimals, sell=True, token_price=token_price
         )
+        token_balance = self.net.get_token_balance(token_address=token.address)
+        token_balance_bnb = self.net.get_token_balance_bnb(
+            token_address=token.address, balance=token_balance, token_price=token_price
+        )
+        token_balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance_bnb=token_balance_bnb)
         effective_buy_price = ''
         if token.effective_buy_price:
             price_diff_percent = ((token_price / token.effective_buy_price) - Decimal(1)) * Decimal(100)
@@ -302,9 +312,11 @@ class TradeBot:
         balance_bnb = self.net.get_bnb_balance()
         price_bnb = self.net.get_bnb_price()
         total_positions = sum(token_balances)
+        grand_total = balance_bnb + total_positions
         msg = (
-            f'<b>Wallet</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})\n'
-            + f'<b>Total portfolio</b>: {total_positions:.4f} BNB (${total_positions*price_bnb:.2f})\n'
+            f'<b>BNB balance</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})\n'
+            + f'<b>Tokens balance</b>: {total_positions:.4f} BNB (${total_positions * price_bnb:.2f})\n'
+            + f'<b>Total</b>: {grand_total:.4f} BNB (${grand_total * price_bnb:.2f})\n'
             + 'Which action do you want to perform next?'
         )
         return msg, self.get_global_keyboard()
