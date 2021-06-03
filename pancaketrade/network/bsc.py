@@ -1,7 +1,7 @@
 import time
 from decimal import Decimal
 from pathlib import Path
-from typing import Dict, NamedTuple, Optional, Set, Tuple
+from typing import Dict, List, NamedTuple, Optional, Set, Tuple
 
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -12,7 +12,8 @@ from pancaketrade.utils.config import ConfigSecrets
 from web3 import Web3
 from web3.contract import Contract, ContractFunction
 from web3.exceptions import ABIFunctionNotFound, ContractLogicError
-from web3.types import ChecksumAddress, HexBytes, Nonce, TxParams, TxReceipt, Wei
+from web3.middleware import geth_poa_middleware
+from web3.types import BlockIdentifier, ChecksumAddress, HexBytes, Nonce, TxParams, TxReceipt, Wei
 
 GAS_LIMIT_FAILSAFE = Wei(1000000)  # if the estimated limit is above this one, don't use the estimated price
 
@@ -60,6 +61,7 @@ class Network:
         session.mount('https://', adapter)
         w3_provider = Web3.HTTPProvider(endpoint_uri=rpc, session=session)
         self.w3 = Web3(provider=w3_provider)
+        self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
         self.addr = NetworkAddresses()
         self.contracts = NetworkContracts(addr=self.addr, w3=self.w3)
         self.max_approval_hex = f"0x{64 * 'f'}"
@@ -193,20 +195,56 @@ class Network:
         return min(price_v1, price_v2), price_v2 < price_v1
 
     def get_token_price_by_lp(
-        self, token_contract: Contract, token_lp: ChecksumAddress, token_decimals: int, ignore_poolsize: bool = False
+        self,
+        token_contract: Contract,
+        token_lp: ChecksumAddress,
+        token_decimals: int,
+        ignore_poolsize: bool = False,
+        block_identifier: BlockIdentifier = 'latest',
     ) -> Decimal:
-        lp_bnb_amount = Decimal(self.contracts.wbnb.functions.balanceOf(token_lp).call())
+        lp_bnb_amount = Decimal(
+            self.contracts.wbnb.functions.balanceOf(token_lp).call(block_identifier=block_identifier)
+        )
         if lp_bnb_amount / Decimal(10 ** 18) < self.min_pool_size_bnb and not ignore_poolsize:  # not enough liquidity
             return Decimal(0)
-        lp_token_amount = Decimal(token_contract.functions.balanceOf(token_lp).call()) * Decimal(
-            10 ** (18 - token_decimals)
-        )
+        lp_token_amount = Decimal(
+            token_contract.functions.balanceOf(token_lp).call(block_identifier=block_identifier)
+        ) * Decimal(10 ** (18 - token_decimals))
         # normalize to 18 decimals
         try:
             bnb_per_token = lp_bnb_amount / lp_token_amount
         except Exception:
             bnb_per_token = Decimal(0)
         return bnb_per_token
+
+    def get_token_price_history(
+        self,
+        token_contract: Contract,
+        token_lp: ChecksumAddress,
+        token_decimals: int,
+        block_to: BlockIdentifier = 'latest',
+        duration: int = 100,
+    ) -> List[Tuple[int, Decimal]]:
+        # make it smarter with filtering only blocks that have tx https://web3py.readthedocs.io/en/stable/filters.html
+        start = time.time()
+        prices: List[Tuple[int, Decimal]] = []
+        end_block = self.w3.eth.block_number if not isinstance(block_to, int) else block_to
+        for block in range(end_block + 1 - duration, end_block + 1):
+            block_data = self.w3.eth.get_block(block)
+            prices.append(
+                (
+                    block_data['timestamp'],
+                    self.get_token_price_by_lp(
+                        token_contract=token_contract,
+                        token_lp=token_lp,
+                        token_decimals=token_decimals,
+                        ignore_poolsize=False,
+                        block_identifier=block,
+                    ),
+                )
+            )
+        print(time.time() - start)
+        return prices
 
     @cached(cache=TTLCache(maxsize=1, ttl=30))
     def get_bnb_price(self) -> Decimal:
