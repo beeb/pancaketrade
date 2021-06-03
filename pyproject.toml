@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pancaketrade"
-version = "0.4.3"
+version = "0.4.4"
 description = "Trading bot for PancakeSwap"
 authors = ["Valentin Bersier <vbersier@gmail.com>"]
 
