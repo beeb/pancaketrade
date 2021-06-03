@@ -1,6 +1,6 @@
 # PancakeTrade - Limit orders and more for PancakeSwap on Binance Smart Chain
 
-[![Docker Image CI](https://github.com/beeb/pancaketrade/actions/workflows/docker.yml/badge.svg?branch=develop)](https://github.com/beeb/pancaketrade/actions/workflows/docker.yml)
+[![Docker Image CI](https://github.com/beeb/pancaketrade/actions/workflows/docker.yml/badge.svg?branch=develop)](https://github.com/beeb/pancaketrade/actions/workflows/docker.yml) [![Linting](https://github.com/beeb/pancaketrade/actions/workflows/lint.yml/badge.svg?branch=develop)](https://github.com/beeb/pancaketrade/actions/workflows/lint.yml)
 
 PancakeTrade helps you create limit orders and more for your BEP-20 tokens that swap against BNB on PancakeSwap.
 The bot is controlled by Telegram so you can interact from anywhere.
