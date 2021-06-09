@@ -4,7 +4,7 @@ FROM python:3.9-slim-buster AS build-deps
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
     apt-get upgrade --yes && \
-    apt-get install --yes build-essential curl && \
+    apt-get install --no-install-recommends --yes build-essential curl && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -19,6 +19,7 @@ ENV PYTHONUNBUFFERED=1 \
     POETRY_NO_ANSI=1
 
 # install poetry
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
 
 # copy source and install deps
