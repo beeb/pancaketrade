@@ -46,7 +46,7 @@ class TokenWatcher:
         ]
         self.interval = self.config.monitor_interval
         self.scheduler = BackgroundScheduler(
-            job_defaults={'coalesce': True, 'max_instances': 1, 'misfire_grace_time': 0.8 * self.interval}
+            job_defaults={'coalesce': True, 'max_instances': 1, 'misfire_grace_time': max(1, int(0.8 * self.interval))}
         )
         self.last_status_message_id: Optional[int] = None
         self.start_monitoring()
