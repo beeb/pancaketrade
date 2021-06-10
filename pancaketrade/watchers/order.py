@@ -86,10 +86,7 @@ class OrderWatcher:
 
     def price_update_buy(self, buy_price: Decimal, sell_v2: bool, buy_v2: bool):
         if buy_price == 0:
-            logger.error(f'Price of {self.token_record.symbol} is zero or not available')
-            self.dispatcher.bot.send_message(
-                chat_id=self.chat_id, text=f'⛔️ Price of {self.token_record.symbol} is zero or not available.'
-            )
+            logger.warning(f'Price of {self.token_record.symbol} is zero or not available')
             return
         limit_price = (
             self.limit_price if self.limit_price is not None else buy_price
@@ -116,10 +113,7 @@ class OrderWatcher:
 
     def price_update_sell(self, sell_price: Decimal, sell_v2: bool, buy_v2: bool):
         if sell_price == 0:
-            logger.error(f'Price of {self.token_record.symbol} is zero or not available')
-            self.dispatcher.bot.send_message(
-                chat_id=self.chat_id, text=f'⛔️ Price of {self.token_record.symbol} is zero or not available.'
-            )
+            logger.warning(f'Price of {self.token_record.symbol} is zero or not available')
             return
         limit_price = (
             self.limit_price if self.limit_price is not None else sell_price
