@@ -107,6 +107,11 @@ secrets:
   admin_chat_id: 123456 # enter your chat ID/user ID to prevent other users to use the bot
 ```
 
+## Updating the bot
+
+When a new version is released, if you cloned the repository with git, you can simply perform a `git pull` on the master
+branch. After that, run the `poetry install --no-dev` command again to update dependencies.
+
 ## Use docker
 
 This bot now gets published as docker images on [Docker Hub](https://hub.docker.com/repository/docker/vbersier/pancaketrade).
