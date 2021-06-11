@@ -56,11 +56,12 @@ def parse_config_file(path: Path) -> Config:
     conf['_pk'] = os.environ.get('WALLET_PK')
     if not conf['_pk'] or len(conf['_pk']) != 64 or not all(c in string.hexdigits for c in conf['_pk']):
         conf['_pk'] = questionary.password(
-            f'In order to make transactions, I need the private key for wallet {conf["wallet"]}:',
+            'In order to make transactions, I need the private key for your wallet:',
             validate=PrivateKeyValidator,
         ).ask()
     account = Account.from_key(conf['_pk'])
     conf['wallet'] = account.address
+    logger.info(f'Using wallet address {conf["wallet"]}.')
     conf['config_file'] = str(path)
     return Config(**conf)
 
