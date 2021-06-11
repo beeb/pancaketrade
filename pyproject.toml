@@ -25,7 +25,7 @@ apscheduler = "<4.0.0"
 [tool.poetry.dev-dependencies]
 flake8 = "^3.9.1"
 black = { version = "*", allow-prereleases = true }
-mypy = ">=0.812"
+mypy = "<0.900"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

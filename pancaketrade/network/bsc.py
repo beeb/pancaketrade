@@ -348,7 +348,7 @@ class Network:
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith('+'):
             offset = Web3.toWei(Decimal(gas_price) * Decimal(10 ** 9), unit='wei')
-            final_gas_price += offset
+            final_gas_price += offset  # type: ignore
         elif gas_price is not None:
             final_gas_price = Web3.toWei(gas_price, unit='wei')
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
@@ -426,7 +426,7 @@ class Network:
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith('+'):
             offset = Web3.toWei(Decimal(gas_price) * Decimal(10 ** 9), unit='wei')
-            final_gas_price += offset
+            final_gas_price += offset  # type: ignore
         elif gas_price is not None:
             final_gas_price = Web3.toWei(gas_price, unit='wei')
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
@@ -455,7 +455,7 @@ class Network:
                 continue
             if log['args']['src'] != router_contract.address:
                 continue
-            amount_out = Web3.fromWei(log['args']['wad'], unit='ether')
+            amount_out = Decimal(Web3.fromWei(log['args']['wad'], unit='ether'))
             break
         logger.success(f'Sell transaction succeeded at tx {txhash}')
         return True, amount_out, txhash
