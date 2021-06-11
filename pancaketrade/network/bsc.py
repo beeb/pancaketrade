@@ -1,7 +1,7 @@
 import time
 from decimal import Decimal
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional, Set, Tuple
+from typing import Dict, NamedTuple, Optional, Set, Tuple
 
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -216,35 +216,6 @@ class Network:
         except Exception:
             bnb_per_token = Decimal(0)
         return bnb_per_token
-
-    def get_token_price_history(
-        self,
-        token_contract: Contract,
-        token_lp: ChecksumAddress,
-        token_decimals: int,
-        block_to: BlockIdentifier = 'latest',
-        duration: int = 100,
-    ) -> List[Tuple[int, Decimal]]:
-        # make it smarter with filtering only blocks that have tx https://web3py.readthedocs.io/en/stable/filters.html
-        start = time.time()
-        prices: List[Tuple[int, Decimal]] = []
-        end_block = self.w3.eth.block_number if not isinstance(block_to, int) else block_to
-        for block in range(end_block + 1 - duration, end_block + 1):
-            block_data = self.w3.eth.get_block(block)
-            prices.append(
-                (
-                    block_data['timestamp'],
-                    self.get_token_price_by_lp(
-                        token_contract=token_contract,
-                        token_lp=token_lp,
-                        token_decimals=token_decimals,
-                        ignore_poolsize=False,
-                        block_identifier=block,
-                    ),
-                )
-            )
-        print(time.time() - start)
-        return prices
 
     @cached(cache=TTLCache(maxsize=1, ttl=30))
     def get_bnb_price(self) -> Decimal:
