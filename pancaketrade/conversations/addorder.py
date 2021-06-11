@@ -81,11 +81,11 @@ class AddOrderConversation:
         reply_markup = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
-                    InlineKeyboardButton('Stop loss sell', callback_data='stop_loss'),
-                    InlineKeyboardButton('Take profit sell', callback_data='limit_sell'),
+                    InlineKeyboardButton('🚫 Stop loss sell', callback_data='stop_loss'),
+                    InlineKeyboardButton('💰 Take profit sell', callback_data='limit_sell'),
                 ],
                 [
-                    InlineKeyboardButton('Limit buy', callback_data='limit_buy'),
+                    InlineKeyboardButton('💵 Limit buy', callback_data='limit_buy'),
                     InlineKeyboardButton('❌ Cancel', callback_data='cancel'),
                 ],
             ]
