@@ -348,7 +348,7 @@ class Network:
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith('+'):
             offset = Web3.toWei(Decimal(gas_price) * Decimal(10 ** 9), unit='wei')
-            final_gas_price += offset  # type: ignore
+            final_gas_price = Wei(final_gas_price + offset)
         elif gas_price is not None:
             final_gas_price = Web3.toWei(gas_price, unit='wei')
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
@@ -426,7 +426,7 @@ class Network:
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith('+'):
             offset = Web3.toWei(Decimal(gas_price) * Decimal(10 ** 9), unit='wei')
-            final_gas_price += offset  # type: ignore
+            final_gas_price = Wei(final_gas_price + offset)
         elif gas_price is not None:
             final_gas_price = Web3.toWei(gas_price, unit='wei')
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
