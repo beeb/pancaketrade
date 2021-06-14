@@ -1,5 +1,5 @@
 ---
-bsc_rpc: regex("^(https?://.*):(\d*)\/?(.*)$", 'URI')
+bsc_rpc: regex("^(https?|ftp)://(-\.)?([^\s/?\.#]+\.?)+(/[^\s]*)?$", 'URI')
 wallet: regex('^0x[a-fA-F0-9]{40}$', 'ethereum address', required=False)
 min_pool_size_bnb: num(min=0.0001)
 monitor_interval: num(min=1)

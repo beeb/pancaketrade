@@ -264,6 +264,16 @@ class EditTokenConversation:
             assert update.message.text
             user_input = update.message.text.strip().lower()
             if 'bnb' in user_input:
+                balance = self.net.get_token_balance(token_address=token.address)
+                if balance == 0:  # would lead to division by zero
+                    chat_message(
+                        update,
+                        context,
+                        text='⚠️ The token balance is zero, can\'t use calculation from BNB amount. '
+                        + 'Try again with a price instead:',
+                        edit=False,
+                    )
+                    return self.next.BUYPRICE
                 try:
                     buy_amount = Decimal(user_input[:-3])
                 except Exception:
@@ -271,7 +281,7 @@ class EditTokenConversation:
                         update, context, text='⚠️ The BNB amount you inserted is not valid. Try again:', edit=False
                     )
                     return self.next.BUYPRICE
-                effective_buy_price = buy_amount / self.net.get_token_balance(token_address=token.address)
+                effective_buy_price = buy_amount / balance
             else:
                 try:
                     effective_buy_price = Decimal(user_input)

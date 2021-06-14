@@ -42,10 +42,10 @@ class OrderWatcher:
         trailing = f' tsl {self.trailing_stop}%' if self.trailing_stop is not None else ''
         order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
         limit_price = f'{self.limit_price:.3g} BNB' if self.limit_price is not None else 'market price'
-        icon = '🟢' if self.type == 'buy' else '🔴'
+        type_icon = self.get_type_icon()
         return (
-            f'💱 {order_id}: {self.token_record.symbol} <code>{comparison} {limit_price}</code> - '
-            + f'{icon}<b>{type_name}</b> {format_token_amount(amount)} {unit}{trailing}'
+            f'{type_icon} {order_id}: {self.token_record.symbol} <code>{comparison} {limit_price}</code> - '
+            + f'<b>{type_name}</b> {format_token_amount(amount)} {unit}{trailing}'
         )
 
     def long_repr(self) -> str:
@@ -63,7 +63,7 @@ class OrderWatcher:
             else f'network default {self.gas_price} Gwei'
         )
         order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
-        type_icon = '🟢' if self.type == 'buy' else '🔴'
+        type_icon = self.get_type_icon()
         limit_price = f'{self.limit_price:.3g} BNB' if self.limit_price is not None else 'market price'
         return (
             f'{icon}{self.token_record.symbol} - ({order_id}) <b>{type_name}</b> {type_icon}\n'
@@ -86,10 +86,7 @@ class OrderWatcher:
 
     def price_update_buy(self, buy_price: Decimal, sell_v2: bool, buy_v2: bool):
         if buy_price == 0:
-            logger.error(f'Price of {self.token_record.symbol} is zero or not available')
-            self.dispatcher.bot.send_message(
-                chat_id=self.chat_id, text=f'⛔️ Price of {self.token_record.symbol} is zero or not available.'
-            )
+            logger.warning(f'Price of {self.token_record.symbol} is zero or not available')
             return
         limit_price = (
             self.limit_price if self.limit_price is not None else buy_price
@@ -116,10 +113,7 @@ class OrderWatcher:
 
     def price_update_sell(self, sell_price: Decimal, sell_v2: bool, buy_v2: bool):
         if sell_price == 0:
-            logger.error(f'Price of {self.token_record.symbol} is zero or not available')
-            self.dispatcher.bot.send_message(
-                chat_id=self.chat_id, text=f'⛔️ Price of {self.token_record.symbol} is zero or not available.'
-            )
+            logger.warning(f'Price of {self.token_record.symbol} is zero or not available')
             return
         limit_price = (
             self.limit_price if self.limit_price is not None else sell_price
@@ -298,6 +292,17 @@ class OrderWatcher:
             else 'limit sell'
             if self.type == 'sell' and self.above
             else 'unknown'
+        )
+
+    def get_type_icon(self) -> str:
+        return (
+            '💵'
+            if self.type == 'buy' and not self.above
+            else '🚫'
+            if self.type == 'sell' and not self.above
+            else '💰'
+            if self.type == 'sell' and self.above
+            else ''
         )
 
     def get_comparison_symbol(self) -> str:

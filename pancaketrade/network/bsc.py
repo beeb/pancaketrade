@@ -12,7 +12,8 @@ from pancaketrade.utils.config import ConfigSecrets
 from web3 import Web3
 from web3.contract import Contract, ContractFunction
 from web3.exceptions import ABIFunctionNotFound, ContractLogicError
-from web3.types import ChecksumAddress, HexBytes, Nonce, TxParams, TxReceipt, Wei
+from web3.middleware import geth_poa_middleware
+from web3.types import BlockIdentifier, ChecksumAddress, HexBytes, Nonce, TxParams, TxReceipt, Wei
 
 GAS_LIMIT_FAILSAFE = Wei(1000000)  # if the estimated limit is above this one, don't use the estimated price
 
@@ -60,6 +61,7 @@ class Network:
         session.mount('https://', adapter)
         w3_provider = Web3.HTTPProvider(endpoint_uri=rpc, session=session)
         self.w3 = Web3(provider=w3_provider)
+        self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
         self.addr = NetworkAddresses()
         self.contracts = NetworkContracts(addr=self.addr, w3=self.w3)
         self.max_approval_hex = f"0x{64 * 'f'}"
@@ -193,14 +195,21 @@ class Network:
         return min(price_v1, price_v2), price_v2 < price_v1
 
     def get_token_price_by_lp(
-        self, token_contract: Contract, token_lp: ChecksumAddress, token_decimals: int, ignore_poolsize: bool = False
+        self,
+        token_contract: Contract,
+        token_lp: ChecksumAddress,
+        token_decimals: int,
+        ignore_poolsize: bool = False,
+        block_identifier: BlockIdentifier = 'latest',
     ) -> Decimal:
-        lp_bnb_amount = Decimal(self.contracts.wbnb.functions.balanceOf(token_lp).call())
+        lp_bnb_amount = Decimal(
+            self.contracts.wbnb.functions.balanceOf(token_lp).call(block_identifier=block_identifier)
+        )
         if lp_bnb_amount / Decimal(10 ** 18) < self.min_pool_size_bnb and not ignore_poolsize:  # not enough liquidity
             return Decimal(0)
-        lp_token_amount = Decimal(token_contract.functions.balanceOf(token_lp).call()) * Decimal(
-            10 ** (18 - token_decimals)
-        )
+        lp_token_amount = Decimal(
+            token_contract.functions.balanceOf(token_lp).call(block_identifier=block_identifier)
+        ) * Decimal(10 ** (18 - token_decimals))
         # normalize to 18 decimals
         try:
             bnb_per_token = lp_bnb_amount / lp_token_amount
@@ -310,7 +319,7 @@ class Network:
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith('+'):
             offset = Web3.toWei(Decimal(gas_price) * Decimal(10 ** 9), unit='wei')
-            final_gas_price += offset
+            final_gas_price = Wei(final_gas_price + offset)
         elif gas_price is not None:
             final_gas_price = Web3.toWei(gas_price, unit='wei')
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
@@ -388,7 +397,7 @@ class Network:
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith('+'):
             offset = Web3.toWei(Decimal(gas_price) * Decimal(10 ** 9), unit='wei')
-            final_gas_price += offset
+            final_gas_price = Wei(final_gas_price + offset)
         elif gas_price is not None:
             final_gas_price = Web3.toWei(gas_price, unit='wei')
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
@@ -417,7 +426,7 @@ class Network:
                 continue
             if log['args']['src'] != router_contract.address:
                 continue
-            amount_out = Web3.fromWei(log['args']['wad'], unit='ether')
+            amount_out = Decimal(Web3.fromWei(log['args']['wad'], unit='ether'))
             break
         logger.success(f'Sell transaction succeeded at tx {txhash}')
         return True, amount_out, txhash
