@@ -4,6 +4,7 @@ import string
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
 
 import questionary
 import yamale
@@ -21,6 +22,8 @@ class ConfigSecrets:
 
     telegram_token: str
     admin_chat_id: int
+    rpc_auth_user: Optional[str] = None
+    rpc_auth_password: Optional[str] = None
     _pk: str = field(repr=False, default='')
 
 
@@ -40,7 +43,11 @@ class Config:
     def __post_init__(self):
         self.wallet = Web3.toChecksumAddress(self.wallet)
         # below we remove any extra key that might exist in the secrets section (formerly we had bscscan api key there)
-        secrets = {key: val for key, val in self.secrets.items() if key in ['telegram_token', 'admin_chat_id']}
+        secrets = {
+            key: val
+            for key, val in self.secrets.items()
+            if key in ['telegram_token', 'admin_chat_id', 'rpc_auth_user', 'rpc_auth_password']
+        }
         self.secrets = ConfigSecrets(**secrets, _pk=self._pk)
 
 
