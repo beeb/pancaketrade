@@ -299,7 +299,7 @@ class TradeBot:
             f'<b>{token.name}</b>: {format_token_amount(token_balance)}\n'
             + f'<b>Charts</b>: <a href="https://poocoin.app/tokens/{token.address}">Poocoin</a>     '
             + f'<a href="https://charts.bogged.finance/?token={token.address}">Bogged</a>     '
-            + f'<a href="https://dex.guru/token/{token.address}">Dex.Guru</a>\n'
+            + f'<a href="https://dex.guru/token/{token.address}-bsc">Dex.Guru</a>\n'
             + f'<b>Value</b>: <code>{token_balance_bnb:.3g}</code> BNB (${token_balance_usd:.2f})\n'
             + f'<b>Price</b>: <code>{token_price:.3g}</code> BNB/token (${token_price_usd:.3g})\n'
             + effective_buy_price
