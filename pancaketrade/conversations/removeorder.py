@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import List, NamedTuple
 
 from pancaketrade.network import Network
@@ -43,6 +44,8 @@ class RemoveOrderConversation:
         token: TokenWatcher = self.parent.watchers[token_address]
         context.user_data['removeorder'] = {'token_address': token_address}
         orders = token.orders
+        orders_sorted = sorted(orders, key=lambda o: o.limit_price if o.limit_price else Decimal(1e12), reverse=True)
+        orders_display = [str(order) for order in orders_sorted]
         buttons: List[InlineKeyboardButton] = [
             InlineKeyboardButton(
                 f'{self.get_type_icon(o)} #{o.order_record.id} - {self.get_type_name(o)}',
@@ -56,7 +59,7 @@ class RemoveOrderConversation:
         chat_message(
             update,
             context,
-            text=f'Select the order you want to remove for {token.name}.',
+            text=f'Select the order you want to remove for {token.name}.\n\n' + '\n'.join(orders_display),
             reply_markup=reply_markup,
             edit=self.config.update_messages,
         )
