@@ -41,11 +41,11 @@ class OrderWatcher:
         unit = self.get_amount_unit()
         trailing = f' tsl {self.trailing_stop}%' if self.trailing_stop is not None else ''
         order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
-        limit_price = f'{self.limit_price:.3g} BNB' if self.limit_price is not None else 'market price'
+        limit_price = f'<code>{self.limit_price:.3g}</code> BNB' if self.limit_price is not None else 'market price'
         type_icon = self.get_type_icon()
         return (
-            f'{type_icon} {order_id}: {self.token_record.symbol} <code>{comparison} {limit_price}</code> - '
-            + f'<b>{type_name}</b> {format_token_amount(amount)} {unit}{trailing}'
+            f'{type_icon} {order_id}: {self.token_record.symbol} {comparison} {limit_price} - '
+            + f'<b>{type_name}</b> <code>{format_token_amount(amount)}</code> {unit}{trailing}'
         )
 
     def long_repr(self) -> str:
@@ -64,11 +64,11 @@ class OrderWatcher:
         )
         order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
         type_icon = self.get_type_icon()
-        limit_price = f'{self.limit_price:.3g} BNB' if self.limit_price is not None else 'market price'
+        limit_price = f'<code>{self.limit_price:.3g}</code> BNB' if self.limit_price is not None else 'market price'
         return (
             f'{icon}{self.token_record.symbol} - ({order_id}) <b>{type_name}</b> {type_icon}\n'
-            + f'<b>Amount</b>: {format_token_amount(amount)} {unit}\n'
-            + f'<b>Price</b>: <code>{comparision} {limit_price}</code>\n'
+            + f'<b>Amount</b>: <code>{format_token_amount(amount)}</code> {unit}\n'
+            + f'<b>Price</b>: {comparision} {limit_price}\n'
             + trailing
             + f'<b>Slippage</b>: {self.slippage}%\n'
             + f'<b>Gas</b>: {gas_price}\n'
