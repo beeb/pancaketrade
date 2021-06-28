@@ -9,6 +9,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from cachetools import LRUCache, TTLCache, cached
 from loguru import logger
 from pancaketrade.utils.config import ConfigSecrets
+from requests.auth import HTTPBasicAuth
 from web3 import Web3
 from web3.contract import Contract, ContractFunction
 from web3.exceptions import ABIFunctionNotFound, ContractLogicError
@@ -59,7 +60,12 @@ class Network:
         session = requests.Session()
         session.mount('http://', adapter)
         session.mount('https://', adapter)
-        w3_provider = Web3.HTTPProvider(endpoint_uri=rpc, session=session)
+        auth = (
+            {'auth': HTTPBasicAuth(secrets.rpc_auth_user, secrets.rpc_auth_password)}
+            if secrets.rpc_auth_user and secrets.rpc_auth_password
+            else None
+        )
+        w3_provider = Web3.HTTPProvider(endpoint_uri=rpc, session=session, request_kwargs=auth)
         self.w3 = Web3(provider=w3_provider)
         self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
         self.addr = NetworkAddresses()

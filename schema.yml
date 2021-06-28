@@ -8,3 +8,5 @@ secrets:
   bscscan_api_key: str(required=False)
   telegram_token: regex('[0-9]{9,}:[a-zA-Z0-9_-]{35}', 'telegram token')
   admin_chat_id: int(min=1)
+  rpc_auth_user: str(required=False)
+  rpc_auth_password: str(required=False)

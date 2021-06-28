@@ -274,7 +274,17 @@ class TradeBot:
                 )
 
     def get_token_status(self, token: TokenWatcher) -> Tuple[str, Decimal]:
-        token_price, _ = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
+        token_price, lp_v2 = self.net.get_token_price(
+            token_address=token.address, token_decimals=token.decimals, sell=True
+        )
+        chart_links = [
+            f'<a href="https://poocoin.app/tokens/{token.address}">Poocoin</a>',
+            f'<a href="https://charts.bogged.finance/?token={token.address}">Bogged</a>',
+            f'<a href="https://dex.guru/token/{token.address}-bsc">Dex.Guru</a>',
+        ]
+        token_lp = self.net.find_lp_address(token_address=token.address, v2=lp_v2)
+        if token_lp:
+            chart_links.append(f'<a href="https://www.dextools.io/app/pancakeswap/pair-explorer/{token_lp}">Dext</a>')
         token_price_usd = self.net.get_token_price_usd(
             token_address=token.address, token_decimals=token.decimals, sell=True, token_price=token_price
         )
@@ -288,7 +298,7 @@ class TradeBot:
             price_diff_percent = ((token_price / token.effective_buy_price) - Decimal(1)) * Decimal(100)
             diff_icon = '🆙' if price_diff_percent >= 0 else '🔽'
             effective_buy_price = (
-                f'<b>At buy (after tax)</b>: {token.effective_buy_price:.3g} BNB/token '
+                f'<b>At buy (after tax)</b>: <code>{token.effective_buy_price:.3g}</code> BNB/token '
                 + f'(now {price_diff_percent:+.1f}% {diff_icon})\n'
             )
         orders_sorted = sorted(
@@ -297,9 +307,7 @@ class TradeBot:
         orders = [str(order) for order in orders_sorted]
         message = (
             f'<b>{token.name}</b>: {format_token_amount(token_balance)}\n'
-            + f'<b>Charts</b>: <a href="https://poocoin.app/tokens/{token.address}">Poocoin</a>     '
-            + f'<a href="https://charts.bogged.finance/?token={token.address}">Bogged</a>     '
-            + f'<a href="https://dex.guru/token/{token.address}">Dex.Guru</a>\n'
+            + f'<b>Charts</b>: {"    ".join(chart_links)}\n'
             + f'<b>Value</b>: <code>{token_balance_bnb:.3g}</code> BNB (${token_balance_usd:.2f})\n'
             + f'<b>Price</b>: <code>{token_price:.3g}</code> BNB/token (${token_price_usd:.3g})\n'
             + effective_buy_price
@@ -314,9 +322,10 @@ class TradeBot:
         total_positions = sum(token_balances)
         grand_total = balance_bnb + total_positions
         msg = (
-            f'<b>BNB balance</b>: {balance_bnb:.4f} BNB (${balance_bnb * price_bnb:.2f})\n'
-            + f'<b>Tokens balance</b>: {total_positions:.4f} BNB (${total_positions * price_bnb:.2f})\n'
-            + f'<b>Total</b>: {grand_total:.4f} BNB (${grand_total * price_bnb:.2f})\n'
+            f'<b>BNB balance</b>: <code>{balance_bnb:.4f}</code> BNB (${balance_bnb * price_bnb:.2f})\n'
+            + f'<b>Tokens balance</b>: <code>{total_positions:.4f}</code> BNB (${total_positions * price_bnb:.2f})\n'
+            + f'<b>Total</b>: <code>{grand_total:.4f}</code> BNB (${grand_total * price_bnb:.2f})\n'
+            + f'<b>BNB price</b>: ${price_bnb:.2f}\n'
             + 'Which action do you want to perform next?'
         )
         return msg, self.get_global_keyboard()

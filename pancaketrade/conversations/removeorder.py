@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import List, NamedTuple
 
 from pancaketrade.network import Network
@@ -43,6 +44,8 @@ class RemoveOrderConversation:
         token: TokenWatcher = self.parent.watchers[token_address]
         context.user_data['removeorder'] = {'token_address': token_address}
         orders = token.orders
+        orders_sorted = sorted(orders, key=lambda o: o.limit_price if o.limit_price else Decimal(1e12), reverse=True)
+        orders_display = [str(order) for order in orders_sorted]
         buttons: List[InlineKeyboardButton] = [
             InlineKeyboardButton(
                 f'{self.get_type_icon(o)} #{o.order_record.id} - {self.get_type_name(o)}',
@@ -56,7 +59,7 @@ class RemoveOrderConversation:
         chat_message(
             update,
             context,
-            text=f'Select the order you want to remove for {token.name}.',
+            text=f'Select the order you want to remove for {token.name}.\n\n' + '\n'.join(orders_display),
             reply_markup=reply_markup,
             edit=self.config.update_messages,
         )
@@ -123,18 +126,10 @@ class RemoveOrderConversation:
         return ConversationHandler.END
 
     def get_type_name(self, order: OrderWatcher) -> str:
-        return (
-            'limit buy'
-            if order.type == 'buy' and not order.above
-            else 'stop loss'
-            if order.type == 'sell' and not order.above
-            else 'limit sell'
-            if order.type == 'sell' and order.above
-            else 'unknown'
-        )
+        return order.get_type_name()
 
     def get_type_icon(self, order: OrderWatcher) -> str:
-        return '🔴' if order.type == 'sell' else '🟢'
+        return order.get_type_icon()
 
     def cancel_command(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
