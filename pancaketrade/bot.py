@@ -183,7 +183,7 @@ class TradeBot:
         if not order:
             chat_message(update, context, text='⛔️ Could not find order with this ID.', edit=False)
             return
-        chat_message(update, context, text=order.long_repr(), edit=False)
+        chat_message(update, context, text=order.long_str(), edit=False)
 
     @check_chat_id
     def command_address(self, update: Update, context: CallbackContext):
