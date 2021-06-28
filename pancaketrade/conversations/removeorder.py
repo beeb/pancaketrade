@@ -123,18 +123,10 @@ class RemoveOrderConversation:
         return ConversationHandler.END
 
     def get_type_name(self, order: OrderWatcher) -> str:
-        return (
-            'limit buy'
-            if order.type == 'buy' and not order.above
-            else 'stop loss'
-            if order.type == 'sell' and not order.above
-            else 'limit sell'
-            if order.type == 'sell' and order.above
-            else 'unknown'
-        )
+        return order.get_type_name()
 
     def get_type_icon(self, order: OrderWatcher) -> str:
-        return '🔴' if order.type == 'sell' else '🟢'
+        return order.get_type_icon()
 
     def cancel_command(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
