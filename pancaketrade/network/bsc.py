@@ -16,7 +16,7 @@ from web3.exceptions import ABIFunctionNotFound, ContractLogicError
 from web3.middleware import geth_poa_middleware
 from web3.types import BlockIdentifier, ChecksumAddress, HexBytes, Nonce, TxParams, TxReceipt, Wei
 
-GAS_LIMIT_FAILSAFE = Wei(1000000)  # if the estimated limit is above this one, don't use the estimated price
+GAS_LIMIT_FAILSAFE = Wei(2000000)  # if the estimated limit is above this one, don't use the estimated price
 
 
 class NetworkAddresses(NamedTuple):
