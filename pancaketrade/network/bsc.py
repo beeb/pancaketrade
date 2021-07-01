@@ -151,7 +151,7 @@ class Network:
         self, token_address: ChecksumAddress, token_decimals: Optional[int] = None, sell: bool = True
     ) -> Tuple[Decimal, bool]:
         if token_address == self.addr.wbnb:  # special case for wbnb
-            return self.get_bnb_price(), True
+            return Decimal(1), True
         if token_decimals is None:
             token_decimals = self.get_token_decimals(token_address=token_address)
         token_contract = self.get_token_contract(token_address)
