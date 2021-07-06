@@ -342,7 +342,11 @@ class Network:
         )
         if receipt is None:
             logger.error('Can\'t get gas estimate')
-            return False, Decimal(0), 'Can\'t get gas estimate'
+            return (
+                False,
+                Decimal(0),
+                f'Can\'t get gas estimate, check if slippage is set correctly (currently {slippage_percent}%)',
+            )
         txhash = Web3.toHex(primitive=receipt["transactionHash"])
         if receipt['status'] == 0:  # fail
             logger.error(f'Buy transaction failed at tx {txhash}')
@@ -374,7 +378,7 @@ class Network:
         try:
             gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': amount_bnb})) * Decimal(1.5)))
         except Exception as e:
-            logger.warning(f'Error estimating gas price, trying again with alternative method: {e}')
+            logger.warning(f'Error estimating gas limit, trying again with alternative method: {e}')
             func = router_contract.functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
                 min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
             )
@@ -422,7 +426,11 @@ class Network:
         )
         if receipt is None:
             logger.error('Can\'t get gas estimate')
-            return False, Decimal(0), 'Can\'t get gas estimate'
+            return (
+                False,
+                Decimal(0),
+                f'Can\'t get gas estimate, check if slippage is set correctly (currently {slippage_percent}%)',
+            )
         txhash = Web3.toHex(primitive=receipt["transactionHash"])
         if receipt['status'] == 0:  # fail
             logger.error(f'Sell transaction failed at tx {txhash}')
@@ -454,7 +462,7 @@ class Network:
         try:
             gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.5)))
         except Exception as e:
-            logger.warning(f'Error estimating gas price, trying again with alternative method: {e}')
+            logger.warning(f'Error estimating gas limit, trying again with alternative method: {e}')
             func = router_contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
                 amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
             )
