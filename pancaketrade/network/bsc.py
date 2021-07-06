@@ -489,11 +489,12 @@ class Network:
 
     def get_tx_params(self, value: Wei = Wei(0), gas: Wei = Wei(100000), gas_price: Optional[Wei] = None) -> TxParams:
         # 100000 gas is OK for approval tx, so it's the default
+        nonce = max(self.last_nonce, self.w3.eth.get_transaction_count(self.wallet))
         params: TxParams = {
             'from': self.wallet,
             'value': value,
             'gas': gas,
-            'nonce': self.last_nonce,
+            'nonce': nonce,
         }
         if gas_price:
             params['gasPrice'] = gas_price
