@@ -16,7 +16,7 @@ from web3.exceptions import ABIFunctionNotFound, ContractLogicError
 from web3.middleware import geth_poa_middleware
 from web3.types import BlockIdentifier, ChecksumAddress, HexBytes, Nonce, TxParams, TxReceipt, Wei
 
-GAS_LIMIT_FAILSAFE = Wei(1000000)  # if the estimated limit is above this one, don't use the estimated price
+GAS_LIMIT_FAILSAFE = Wei(2000000)  # if the estimated limit is above this one, don't use the estimated price
 
 
 class NetworkAddresses(NamedTuple):
@@ -150,6 +150,8 @@ class Network:
     def get_token_price(
         self, token_address: ChecksumAddress, token_decimals: Optional[int] = None, sell: bool = True
     ) -> Tuple[Decimal, bool]:
+        if token_address == self.addr.wbnb:  # special case for wbnb
+            return Decimal(1), True
         if token_decimals is None:
             token_decimals = self.get_token_decimals(token_address=token_address)
         token_contract = self.get_token_contract(token_address)
@@ -340,7 +342,11 @@ class Network:
         )
         if receipt is None:
             logger.error('Can\'t get gas estimate')
-            return False, Decimal(0), 'Can\'t get gas estimate'
+            return (
+                False,
+                Decimal(0),
+                f'Can\'t get gas estimate, check if slippage is set correctly (currently {slippage_percent}%)',
+            )
         txhash = Web3.toHex(primitive=receipt["transactionHash"])
         if receipt['status'] == 0:  # fail
             logger.error(f'Buy transaction failed at tx {txhash}')
@@ -366,14 +372,14 @@ class Network:
         v2: bool,
     ) -> Optional[TxReceipt]:
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
-        func = router_contract.functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
+        func = router_contract.functions.swapExactETHForTokens(
             min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
         )
         try:
             gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': amount_bnb})) * Decimal(1.5)))
         except Exception as e:
-            logger.warning(f'Error estimating gas price, trying again with older method: {e}')
-            func = router_contract.functions.swapExactETHForTokens(
+            logger.warning(f'Error estimating gas limit, trying again with alternative method: {e}')
+            func = router_contract.functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
                 min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
             )
             try:
@@ -420,7 +426,11 @@ class Network:
         )
         if receipt is None:
             logger.error('Can\'t get gas estimate')
-            return False, Decimal(0), 'Can\'t get gas estimate'
+            return (
+                False,
+                Decimal(0),
+                f'Can\'t get gas estimate, check if slippage is set correctly (currently {slippage_percent}%)',
+            )
         txhash = Web3.toHex(primitive=receipt["transactionHash"])
         if receipt['status'] == 0:  # fail
             logger.error(f'Sell transaction failed at tx {txhash}')
@@ -446,14 +456,14 @@ class Network:
         v2: bool,
     ) -> Optional[TxReceipt]:
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
-        func = router_contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
+        func = router_contract.functions.swapExactTokensForETH(
             amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
         )
         try:
             gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.5)))
         except Exception as e:
-            logger.warning(f'Error estimating gas price, trying again with older method: {e}')
-            func = router_contract.functions.swapExactTokensForETH(
+            logger.warning(f'Error estimating gas limit, trying again with alternative method: {e}')
+            func = router_contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
                 amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
             )
             try:

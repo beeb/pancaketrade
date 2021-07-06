@@ -34,7 +34,7 @@ class OrderWatcher:
         self.min_price: Optional[Decimal] = None
         self.max_price: Optional[Decimal] = None
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         type_name = self.get_type_name()
         comparison = self.get_comparison_symbol()
         amount = self.get_human_amount()
@@ -48,7 +48,7 @@ class OrderWatcher:
             + f'<b>{type_name}</b> <code>{format_token_amount(amount)}</code> {unit}{trailing}'
         )
 
-    def long_repr(self) -> str:
+    def long_str(self) -> str:
         icon = self.token_record.icon + ' ' if self.token_record.icon else ''
         type_name = self.get_type_name()
         comparision = self.get_comparison_symbol()
@@ -182,7 +182,7 @@ class OrderWatcher:
             logger.error(f'Transaction failed: {reason_or_link}')
             self.dispatcher.bot.send_message(
                 chat_id=self.chat_id,
-                text=f'⛔️ <u>Transaction failed:</u> {txhash_or_error}\n' + 'Order below deleted:\n' + self.long_repr(),
+                text=f'⛔️ <u>Transaction failed:</u> {txhash_or_error}\n' + 'Order below deleted:\n' + self.long_str(),
             )
             self.remove_order()
             self.finished = True  # will trigger deletion of the object
@@ -212,7 +212,7 @@ class OrderWatcher:
             + f'Effective price (after tax) {effective_price:.4g} BNB/token'
         )
         self.dispatcher.bot.send_message(
-            chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_repr()
+            chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_str()
         )
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id,
@@ -259,7 +259,7 @@ class OrderWatcher:
                 reason_or_link = txhash_or_error
             self.dispatcher.bot.send_message(
                 chat_id=self.chat_id,
-                text=f'⛔️ <u>Transaction failed:</u> {reason_or_link}\n' + 'Order below deleted.\n' + self.long_repr(),
+                text=f'⛔️ <u>Transaction failed:</u> {reason_or_link}\n' + 'Order below deleted.\n' + self.long_str(),
             )
             self.remove_order()
             self.finished = True  # will trigger deletion of the object
@@ -271,7 +271,7 @@ class OrderWatcher:
             + f'Effective price (after tax) {effective_price:.4g} BNB/token'
         )
         self.dispatcher.bot.send_message(
-            chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_repr()
+            chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_str()
         )
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id,
