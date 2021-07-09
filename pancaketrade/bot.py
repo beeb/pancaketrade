@@ -89,6 +89,7 @@ class TradeBot:
         self.dispatcher.add_handler(CommandHandler('edittoken', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('removetoken', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('order', self.command_order))
+        self.dispatcher.add_handler(CallbackQueryHandler(self.command_approve, pattern='^approve:0x[a-fA-F0-9]{40}$'))
         self.dispatcher.add_handler(CallbackQueryHandler(self.command_address, pattern='^address:0x[a-fA-F0-9]{40}$'))
         self.dispatcher.add_handler(
             CallbackQueryHandler(
