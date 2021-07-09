@@ -179,7 +179,10 @@ class AddTokenConversation:
                 [
                     InlineKeyboardButton('➕ Create order', callback_data=f'addorder:{token.address}'),
                     InlineKeyboardButton('💰 Buy/Sell now', callback_data=f'buysell:{token.address}'),
-                ]
+                ],
+                [
+                    InlineKeyboardButton('☑️ Approve for selling', callback_data=f'approve:{token.address}'),
+                ],
             ]
         )
         chat_message(
