@@ -307,7 +307,7 @@ class Network:
             logger.error(f'Approval call failed at tx {Web3.toHex(primitive=receipt["transactionHash"])}')
             return False
         self.approved.add((str(token_address), v2))
-        time.sleep(10)  # let tx propagate
+        time.sleep(3)  # let tx propagate
         logger.success('Approved wallet for trading.')
         return True
 
