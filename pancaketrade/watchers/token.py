@@ -1,6 +1,6 @@
 """Token watcher."""
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -105,3 +105,8 @@ class TokenWatcher:
         self.effective_buy_price = (
             Decimal(self.token_record.effective_buy_price) if self.token_record.effective_buy_price else None
         )
+
+    def approve(self) -> Tuple[bool, str]:
+        _, v2 = self.net.get_token_price(token_address=self.address, token_decimals=self.decimals, sell=True)
+        version = 'v2' if v2 else 'v1'
+        return self.net.approve(self.address, v2=v2), version
