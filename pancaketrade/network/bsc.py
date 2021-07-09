@@ -112,7 +112,8 @@ class Network:
             balance = self.get_token_balance(token_address=token_address)
         if token_price is None:
             token_price, _ = self.get_token_price(token_address=token_address)
-        return token_price * balance
+        bal_bnb = token_price * balance  # artifact when balance is zero -> 0e-35
+        return Decimal(0) if bal_bnb < 1e-30 else bal_bnb
 
     def get_token_balance(self, token_address: ChecksumAddress) -> Decimal:
         token_contract = self.get_token_contract(token_address)
