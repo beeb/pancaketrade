@@ -386,7 +386,7 @@ class AddOrderConversation:
             text=f'OK, the order will use slippage of {slippage_percent}%.\n'
             + 'Finally, please indicate the <u>gas price in Gwei</u> for this order.\n'
             + 'Choose "Default" to use the default network price at the moment '
-            + f'of the transaction (currently {network_gas_price:.1g} Gwei) '
+            + f'of the transaction (currently {network_gas_price:.1f} Gwei) '
             + 'or message me the value.',
             reply_markup=InlineKeyboardMarkup(
                 [
@@ -470,7 +470,7 @@ class AddOrderConversation:
             f'Trailing stop loss {order["trailing_stop"]}% callback\n' if order["trailing_stop"] is not None else ''
         )
         gas_price = (
-            f'{Decimal(order["gas_price"]) / Decimal(10 ** 9):.1g} Gwei'
+            f'{Decimal(order["gas_price"]) / Decimal(10 ** 9):.1f} Gwei'
             if order["gas_price"] and not order["gas_price"].startswith('+')
             else 'network default'
             if order["gas_price"] is None

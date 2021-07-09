@@ -56,7 +56,7 @@ class OrderWatcher:
         unit = self.get_amount_unit()
         trailing = f'Trailing stop loss {self.trailing_stop}% callback\n' if self.trailing_stop is not None else ''
         gas_price = (
-            f'{Decimal(self.gas_price) / Decimal(10 ** 9):.1g} Gwei'
+            f'{Decimal(self.gas_price) / Decimal(10 ** 9):.1f} Gwei'
             if self.gas_price and not self.gas_price.startswith('+')
             else 'network default'
             if self.gas_price is None
