@@ -174,17 +174,16 @@ class AddTokenConversation:
         self.parent.watchers[token.address] = token
         balance = self.net.get_token_balance(token_address=token.address)
         balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance=balance)
-        reply_markup = InlineKeyboardMarkup(
+        buttons = [
             [
-                [
-                    InlineKeyboardButton('➕ Create order', callback_data=f'addorder:{token.address}'),
-                    InlineKeyboardButton('💰 Buy/Sell now', callback_data=f'buysell:{token.address}'),
-                ],
-                [
-                    InlineKeyboardButton('☑️ Approve for selling', callback_data=f'approve:{token.address}'),
-                ],
+                InlineKeyboardButton('➕ Create order', callback_data=f'addorder:{token.address}'),
+                InlineKeyboardButton('💰 Buy/Sell now', callback_data=f'buysell:{token.address}'),
             ]
-        )
+        ]
+        _, v2 = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
+        if not self.net.is_approved(token_address=token.address, v2=v2):
+            buttons.append([InlineKeyboardButton('☑️ Approve for selling', callback_data=f'approve:{token.address}')])
+        reply_markup = InlineKeyboardMarkup(buttons)
         chat_message(
             update,
             context,

@@ -199,18 +199,28 @@ class TradeBot:
             chat_message(update, context, text='⛔️ Invalid token address.', edit=self.config.update_messages)
             return
         token = self.watchers[token_address]
+        _, v2 = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
+        version = 'v2' if v2 else 'v1'
+        if token.net.is_approved(token.address, v2=v2):
+            chat_message(
+                update,
+                context,
+                text=f'{token.symbol} is already approved on PancakeSwap {version}',
+                edit=self.config.update_messages,
+            )
+            return
         chat_message(
             update,
             context,
-            text=f'Approving {token.symbol} for trading on PancakeSwap...',
+            text=f'Approving {token.symbol} for trading on PancakeSwap {version}...',
             edit=self.config.update_messages,
         )
-        approved, version = token.approve()
+        approved = token.approve(v2=v2)
         if approved:
             chat_message(
                 update,
                 context,
-                text=f'✅ Approval successful on PcS {version}!',
+                text=f'✅ Approval successful on PancakeSwap {version}!',
                 edit=self.config.update_messages,
             )
         else:
