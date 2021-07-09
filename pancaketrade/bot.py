@@ -71,6 +71,7 @@ class TradeBot:
             'addorder': 'Add order to which token?',
             'removeorder': 'Delete order for which token?',
             'buysell': 'Buy or sell now which token?',
+            'approve': 'Approve which token on PancakeSwap?',
             'address': 'Get address for which token?',
             'edittoken': 'Edit which token icon and slippage?',
             'removetoken': 'Which token do you want to remove?',
@@ -83,14 +84,16 @@ class TradeBot:
         self.dispatcher.add_handler(CommandHandler('addorder', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('removeorder', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('buysell', self.command_show_all_tokens))
+        self.dispatcher.add_handler(CommandHandler('approve', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('address', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('edittoken', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('removetoken', self.command_show_all_tokens))
         self.dispatcher.add_handler(CommandHandler('order', self.command_order))
+        self.dispatcher.add_handler(CallbackQueryHandler(self.command_approve, pattern='^approve:0x[a-fA-F0-9]{40}$'))
         self.dispatcher.add_handler(CallbackQueryHandler(self.command_address, pattern='^address:0x[a-fA-F0-9]{40}$'))
         self.dispatcher.add_handler(
             CallbackQueryHandler(
-                self.command_show_all_tokens, pattern='^addorder$|^removeorder$|^buysell$|^sellall$|^address$'
+                self.command_show_all_tokens, pattern='^addorder$|^removeorder$|^buysell$|^sellall$|^approve$|^address$'
             )
         )
         self.dispatcher.add_handler(CallbackQueryHandler(self.cancel_command, pattern='^canceltokenchoice$'))
@@ -102,10 +105,11 @@ class TradeBot:
             ('sellall', 'sell all balance for a token now'),
             ('addorder', 'add order to one of the tokens'),
             ('removeorder', 'delete order for one of the tokens'),
-            ('order', 'display order information, pass the order ID as argument'),
             ('addtoken', 'add a token that you want to trade'),
             ('removetoken', 'remove a token that you added'),
             ('edittoken', 'edit token emoji and slippage'),
+            ('approve', 'approve token for selling on PancakeSwap'),
+            ('order', 'display order information, pass the order ID as argument'),
             ('address', 'get the contract address for a token'),
             ('cancel', 'cancel current operation'),
         ]
@@ -184,6 +188,48 @@ class TradeBot:
             chat_message(update, context, text='⛔️ Could not find order with this ID.', edit=False)
             return
         chat_message(update, context, text=order.long_str(), edit=False)
+
+    @check_chat_id
+    def command_approve(self, update: Update, context: CallbackContext):
+        assert update.callback_query
+        query = update.callback_query
+        assert query.data
+        token_address = query.data.split(':')[1]
+        if not Web3.isChecksumAddress(token_address):
+            chat_message(update, context, text='⛔️ Invalid token address.', edit=self.config.update_messages)
+            return
+        token = self.watchers[token_address]
+        _, v2 = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
+        version = 'v2' if v2 else 'v1'
+        if token.net.is_approved(token.address, v2=v2):
+            chat_message(
+                update,
+                context,
+                text=f'{token.symbol} is already approved on PancakeSwap {version}',
+                edit=self.config.update_messages,
+            )
+            return
+        chat_message(
+            update,
+            context,
+            text=f'Approving {token.symbol} for trading on PancakeSwap {version}...',
+            edit=self.config.update_messages,
+        )
+        approved = token.approve(v2=v2)
+        if approved:
+            chat_message(
+                update,
+                context,
+                text=f'✅ Approval successful on PancakeSwap {version}!',
+                edit=self.config.update_messages,
+            )
+        else:
+            chat_message(
+                update,
+                context,
+                text='⛔ Approval failed',
+                edit=self.config.update_messages,
+            )
 
     @check_chat_id
     def command_address(self, update: Update, context: CallbackContext):

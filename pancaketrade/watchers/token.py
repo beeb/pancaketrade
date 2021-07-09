@@ -105,3 +105,6 @@ class TokenWatcher:
         self.effective_buy_price = (
             Decimal(self.token_record.effective_buy_price) if self.token_record.effective_buy_price else None
         )
+
+    def approve(self, v2: bool = False) -> bool:
+        return self.net.approve(self.address, v2=v2)

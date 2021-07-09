@@ -112,7 +112,8 @@ class Network:
             balance = self.get_token_balance(token_address=token_address)
         if token_price is None:
             token_price, _ = self.get_token_price(token_address=token_address)
-        return token_price * balance
+        bal_bnb = token_price * balance  # artifact when balance is zero -> 0e-35
+        return Decimal(0) if bal_bnb < 1e-30 else bal_bnb
 
     def get_token_balance(self, token_address: ChecksumAddress) -> Decimal:
         token_contract = self.get_token_contract(token_address)
@@ -307,7 +308,7 @@ class Network:
             logger.error(f'Approval call failed at tx {Web3.toHex(primitive=receipt["transactionHash"])}')
             return False
         self.approved.add((str(token_address), v2))
-        time.sleep(10)  # let tx propagate
+        time.sleep(3)  # let tx propagate
         logger.success('Approved wallet for trading.')
         return True
 
@@ -489,11 +490,12 @@ class Network:
 
     def get_tx_params(self, value: Wei = Wei(0), gas: Wei = Wei(100000), gas_price: Optional[Wei] = None) -> TxParams:
         # 100000 gas is OK for approval tx, so it's the default
+        nonce = max(self.last_nonce, self.w3.eth.get_transaction_count(self.wallet))
         params: TxParams = {
             'from': self.wallet,
             'value': value,
             'gas': gas,
-            'nonce': self.last_nonce,
+            'nonce': nonce,
         }
         if gas_price:
             params['gasPrice'] = gas_price
