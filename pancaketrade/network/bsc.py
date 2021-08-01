@@ -301,7 +301,10 @@ class Network:
             gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.5)))
         except Exception:
             gas_limit = Wei(100000)
-        tx_params = self.get_tx_params(gas=gas_limit)
+        tx_params = self.get_tx_params(
+            gas=gas_limit,
+            gas_price=Wei(self.w3.eth.gas_price + Web3.toWei(Decimal('0.1') * Decimal(10 ** 9), unit='wei')),
+        )
         tx = self.build_and_send_tx(func, tx_params=tx_params)
         receipt = self.w3.eth.wait_for_transaction_receipt(tx, timeout=6000)
         if receipt['status'] == 0:  # fail
