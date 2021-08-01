@@ -376,14 +376,14 @@ class Network:
         v2: bool,
     ) -> Optional[TxReceipt]:
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
-        func = router_contract.functions.swapExactETHForTokens(
+        func = router_contract.functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
             min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
         )
         try:
             gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': amount_bnb})) * Decimal(1.5)))
         except Exception as e:
             logger.warning(f'Error estimating gas limit, trying again with alternative method: {e}')
-            func = router_contract.functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
+            func = router_contract.functions.swapExactETHForTokens(
                 min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
             )
             try:
@@ -460,14 +460,14 @@ class Network:
         v2: bool,
     ) -> Optional[TxReceipt]:
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
-        func = router_contract.functions.swapExactTokensForETH(
+        func = router_contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
             amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
         )
         try:
             gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.5)))
         except Exception as e:
             logger.warning(f'Error estimating gas limit, trying again with alternative method: {e}')
-            func = router_contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
+            func = router_contract.functions.swapExactTokensForETH(
                 amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
             )
             try:
