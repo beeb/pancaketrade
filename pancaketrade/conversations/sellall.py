@@ -96,7 +96,7 @@ class SellAllConversation:
             token.address,
             amount_tokens=balance_tokens,
             slippage_percent=token.default_slippage,
-            gas_price='+1',
+            gas_price='+20.1',
             v2=v2,
         )
         if not res:

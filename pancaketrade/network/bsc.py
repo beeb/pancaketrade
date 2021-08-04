@@ -298,10 +298,13 @@ class Network:
         func = token_contract.functions.approve(router_address, max_approval)
         logger.info(f'Approving {self.get_token_symbol(token_address=token_address)} - {token_address}...')
         try:
-            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.5)))
+            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.2)))
         except Exception:
             gas_limit = Wei(100000)
-        tx_params = self.get_tx_params(gas=gas_limit)
+        tx_params = self.get_tx_params(
+            gas=gas_limit,
+            gas_price=Wei(self.w3.eth.gas_price + Web3.toWei(Decimal('0.1') * Decimal(10 ** 9), unit='wei')),
+        )
         tx = self.build_and_send_tx(func, tx_params=tx_params)
         receipt = self.w3.eth.wait_for_transaction_receipt(tx, timeout=6000)
         if receipt['status'] == 0:  # fail
@@ -373,23 +376,14 @@ class Network:
         v2: bool,
     ) -> Optional[TxReceipt]:
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
-        func = router_contract.functions.swapExactETHForTokens(
+        func = router_contract.functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
             min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
         )
         try:
-            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': amount_bnb})) * Decimal(1.5)))
+            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': amount_bnb})) * Decimal(1.2)))
         except Exception as e:
-            logger.warning(f'Error estimating gas limit, trying again with alternative method: {e}')
-            func = router_contract.functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
-                min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
-            )
-            try:
-                gas_limit = Wei(
-                    int(Decimal(func.estimateGas({'from': self.wallet, 'value': amount_bnb})) * Decimal(1.5))
-                )
-            except Exception:
-                logger.error('Can\'t get gas estimate, cancelling transaction.')
-                return None
+            logger.error(f'Can\'t get gas estimate, cancelling transaction: {e}')
+            return None
         if gas_limit > GAS_LIMIT_FAILSAFE:
             gas_limit = GAS_LIMIT_FAILSAFE
         params = self.get_tx_params(value=amount_bnb, gas=gas_limit, gas_price=gas_price)
@@ -457,21 +451,14 @@ class Network:
         v2: bool,
     ) -> Optional[TxReceipt]:
         router_contract = self.contracts.router_v2 if v2 else self.contracts.router_v1
-        func = router_contract.functions.swapExactTokensForETH(
+        func = router_contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
             amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
         )
         try:
-            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.5)))
+            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.2)))
         except Exception as e:
-            logger.warning(f'Error estimating gas limit, trying again with alternative method: {e}')
-            func = router_contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
-                amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
-            )
-            try:
-                gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.5)))
-            except Exception:
-                logger.error('Can\'t get gas estimate, cancelling transaction.')
-                return None
+            logger.error(f'Can\'t get gas estimate, cancelling transaction: {e}')
+            return None
         if gas_limit > GAS_LIMIT_FAILSAFE:
             gas_limit = GAS_LIMIT_FAILSAFE
         params = self.get_tx_params(value=Wei(0), gas=gas_limit, gas_price=gas_price)
