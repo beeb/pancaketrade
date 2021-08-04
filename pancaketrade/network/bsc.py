@@ -298,7 +298,7 @@ class Network:
         func = token_contract.functions.approve(router_address, max_approval)
         logger.info(f'Approving {self.get_token_symbol(token_address=token_address)} - {token_address}...')
         try:
-            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.5)))
+            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.2)))
         except Exception:
             gas_limit = Wei(100000)
         tx_params = self.get_tx_params(
@@ -380,19 +380,10 @@ class Network:
             min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
         )
         try:
-            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': amount_bnb})) * Decimal(1.5)))
+            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': amount_bnb})) * Decimal(1.2)))
         except Exception as e:
-            logger.warning(f'Error estimating gas limit, trying again with alternative method: {e}')
-            func = router_contract.functions.swapExactETHForTokens(
-                min_output_tokens, [self.addr.wbnb, token_address], self.wallet, self.deadline(60)
-            )
-            try:
-                gas_limit = Wei(
-                    int(Decimal(func.estimateGas({'from': self.wallet, 'value': amount_bnb})) * Decimal(1.5))
-                )
-            except Exception:
-                logger.error('Can\'t get gas estimate, cancelling transaction.')
-                return None
+            logger.error(f'Can\'t get gas estimate, cancelling transaction: {e}')
+            return None
         if gas_limit > GAS_LIMIT_FAILSAFE:
             gas_limit = GAS_LIMIT_FAILSAFE
         params = self.get_tx_params(value=amount_bnb, gas=gas_limit, gas_price=gas_price)
@@ -464,17 +455,10 @@ class Network:
             amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
         )
         try:
-            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.5)))
+            gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.2)))
         except Exception as e:
-            logger.warning(f'Error estimating gas limit, trying again with alternative method: {e}')
-            func = router_contract.functions.swapExactTokensForETH(
-                amount_tokens, min_output_bnb, [token_address, self.addr.wbnb], self.wallet, self.deadline(60)
-            )
-            try:
-                gas_limit = Wei(int(Decimal(func.estimateGas({'from': self.wallet, 'value': Wei(0)})) * Decimal(1.5)))
-            except Exception:
-                logger.error('Can\'t get gas estimate, cancelling transaction.')
-                return None
+            logger.error(f'Can\'t get gas estimate, cancelling transaction: {e}')
+            return None
         if gas_limit > GAS_LIMIT_FAILSAFE:
             gas_limit = GAS_LIMIT_FAILSAFE
         params = self.get_tx_params(value=Wei(0), gas=gas_limit, gas_price=gas_price)
