@@ -368,10 +368,10 @@ class TradeBot:
         total_positions = sum(token_balances)
         grand_total = balance_bnb + total_positions
         msg = (
-            f'<b>BNB balance</b>: <code>{balance_bnb:.4f}</code> BNB (${balance_bnb * price_bnb:.2f}) '
-            + f'<a href="https://bscscan.com/address/{self.net.wallet}">BSCScan</a>\n'
+            f'<b>BNB balance</b>: <code>{balance_bnb:.4f}</code> BNB (${balance_bnb * price_bnb:.2f})\n'
             + f'<b>Tokens balance</b>: <code>{total_positions:.4f}</code> BNB (${total_positions * price_bnb:.2f})\n'
-            + f'<b>Total</b>: <code>{grand_total:.4f}</code> BNB (${grand_total * price_bnb:.2f})\n'
+            + f'<b>Total</b>: <code>{grand_total:.4f}</code> BNB (${grand_total * price_bnb:.2f}) '
+            + f'<a href="https://bscscan.com/address/{self.net.wallet}">BSCScan</a>\n'
             + f'<b>BNB price</b>: ${price_bnb:.2f}\n'
             + 'Which action do you want to perform next?'
         )
