@@ -110,10 +110,11 @@ class SellAllConversation:
             )
             return ConversationHandler.END
         logger.success(f'Sell transaction succeeded. Received {bnb_out:.3g} BNB')
+        usd_out = self.net.get_bnb_price() * bnb_out
         chat_message(
             update,
             context,
-            text=f'✅ Got {bnb_out:.3g} BNB at '
+            text=f'✅ Got {bnb_out:.3g} BNB (${usd_out:.2f}) at '
             + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>',
             edit=self.config.update_messages,
         )

@@ -273,9 +273,10 @@ class OrderWatcher:
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_str()
         )
+        usd_out = self.net.get_bnb_price() * bnb_out
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id,
-            text=f'✅ Got {bnb_out:.3g} BNB at '
+            text=f'✅ Got {bnb_out:.3g} BNB (${usd_out:.2f}) at '
             + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>\n'
             + f'Effective price (after tax) {effective_price:.4g} BNB/token.\n'
             + f'This order sold {sold_proportion:.1%} of the token\'s balance.',
