@@ -331,6 +331,7 @@ class TradeBot:
         token_lp = self.net.find_lp_address(token_address=token.address, v2=lp_v2)
         if token_lp:
             chart_links.append(f'<a href="https://www.dextools.io/app/pancakeswap/pair-explorer/{token_lp}">Dext</a>')
+        chart_links.append(f'<a href="https://bscscan.com/token/{token.address}?a={self.net.wallet}">BSCScan</a>')
         token_price_usd = self.net.get_token_price_usd(
             token_address=token.address, token_decimals=token.decimals, sell=True, token_price=token_price
         )
