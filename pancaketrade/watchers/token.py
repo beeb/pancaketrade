@@ -31,7 +31,7 @@ class TokenWatcher:
         self.symbol = str(token_record.symbol)
         self.emoji = token_record.icon + ' ' if token_record.icon else ''
         self.name = self.emoji + self.symbol
-        self.default_slippage = token_record.default_slippage
+        self.default_slippage = Decimal(token_record.default_slippage)
         self.effective_buy_price: Optional[Decimal] = (
             Decimal(token_record.effective_buy_price) if token_record.effective_buy_price else None
         )

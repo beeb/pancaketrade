@@ -25,7 +25,7 @@ class OrderWatcher:
         self.above = order_record.above  # Above = True, below = False
         self.trailing_stop: Optional[int] = order_record.trailing_stop  # in percent
         self.amount = Wei(int(order_record.amount))  # in wei, either BNB (buy) or token (sell) depending on "type"
-        self.slippage = order_record.slippage  # in percent
+        self.slippage = Decimal(order_record.slippage)  # in percent
         # gas price in wei or offset from default in gwei (starts with +), if null then use network gas price
         self.gas_price: Optional[str] = order_record.gas_price
         self.created = order_record.created
@@ -273,9 +273,10 @@ class OrderWatcher:
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_str()
         )
+        usd_out = self.net.get_bnb_price() * bnb_out
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id,
-            text=f'✅ Got {bnb_out:.3g} BNB at '
+            text=f'✅ Got {bnb_out:.3g} BNB (${usd_out:.2f}) at '
             + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>\n'
             + f'Effective price (after tax) {effective_price:.4g} BNB/token.\n'
             + f'This order sold {sold_proportion:.1%} of the token\'s balance.',

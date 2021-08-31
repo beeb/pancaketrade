@@ -113,7 +113,7 @@ class EditTokenConversation:
             return self.next.EMOJI
         elif query.data == 'slippage':
             buttons = [
-                InlineKeyboardButton(f'Keep {token.default_slippage}%', callback_data=token.default_slippage),
+                InlineKeyboardButton(f'Keep {token.default_slippage}%', callback_data=str(token.default_slippage)),
                 InlineKeyboardButton('❌ Cancel', callback_data='cancel'),
             ]
             reply_markup = InlineKeyboardMarkup([buttons])
@@ -200,13 +200,13 @@ class EditTokenConversation:
         if update.message is not None:
             assert update.message.text
             try:
-                slippage = int(update.message.text.strip())
-            except ValueError:
+                slippage = Decimal(update.message.text.strip())
+            except Exception:
                 chat_message(
                     update,
                     context,
-                    text='⚠️ This is not a valid slippage value. Please enter an integer number for percentage '
-                    + '(without percent sign). Try again:',
+                    text='⚠️ This is not a valid slippage value. Please enter a number between 0.01 and 100 for '
+                    + 'percentage (without percent sign). Try again:',
                     edit=False,
                 )
                 return self.next.SLIPPAGE
@@ -217,20 +217,20 @@ class EditTokenConversation:
             if query.data == 'cancel':
                 return self.command_canceltoken(update, context)
             try:
-                slippage = int(query.data)
-            except ValueError:
+                slippage = Decimal(query.data)
+            except Exception:
                 self.command_error(update, context, text='Invalid default slippage.')
                 return ConversationHandler.END
-        if slippage < 1:
+        if slippage < Decimal("0.01") or slippage > 100:
             chat_message(
                 update,
                 context,
-                text='⚠️ This is not a valid slippage value. Please enter a positive integer number for percentage. '
-                + 'Try again:',
+                text='⚠️ This is not a valid slippage value. Please enter a number between 0.01 and 100 for '
+                + 'percentage. Try again:',
                 edit=False,
             )
             return self.next.SLIPPAGE
-        edit['default_slippage'] = slippage
+        edit['default_slippage'] = f'{slippage:.2f}'
 
         token_record = token.token_record
         try:
@@ -244,7 +244,7 @@ class EditTokenConversation:
         finally:
             del context.user_data['edittoken']
             db.close()
-        token.default_slippage = token_record.default_slippage
+        token.default_slippage = Decimal(token_record.default_slippage)
         chat_message(
             update,
             context,

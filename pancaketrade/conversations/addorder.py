@@ -327,13 +327,13 @@ class AddOrderConversation:
                     InlineKeyboardButton(
                         f'{token.default_slippage}% (default)', callback_data=str(token.default_slippage)
                     ),
+                    InlineKeyboardButton('0.5%', callback_data='0.5'),
                     InlineKeyboardButton('1%', callback_data='1'),
                     InlineKeyboardButton('2%', callback_data='2'),
-                    InlineKeyboardButton('5%', callback_data='5'),
                 ],
                 [
+                    InlineKeyboardButton('5%', callback_data='5'),
                     InlineKeyboardButton('10%', callback_data='10'),
-                    InlineKeyboardButton('12%', callback_data='12'),
                     InlineKeyboardButton('15%', callback_data='15'),
                     InlineKeyboardButton('20%', callback_data='20'),
                 ],
@@ -367,18 +367,21 @@ class AddOrderConversation:
                 self.cancel_command(update, context)
                 return ConversationHandler.END
             try:
-                slippage_percent = int(query.data)
-            except ValueError:
+                slippage_percent = Decimal(query.data)
+            except Exception:
                 self.command_error(update, context, text='The slippage is not recognized.')
                 return ConversationHandler.END
         else:
             assert update.message and update.message.text
             try:
-                slippage_percent = int(update.message.text.strip())
-            except ValueError:
+                slippage_percent = Decimal(update.message.text.strip())
+            except Exception:
                 chat_message(update, context, text='⚠️ The slippage is not recognized, try again:', edit=False)
                 return self.next.SLIPPAGE
-        order['slippage'] = slippage_percent
+        if slippage_percent < Decimal("0.01") or slippage_percent > 100:
+            chat_message(update, context, text='⚠️ The slippage must be between 0.01 and 100, try again:', edit=False)
+            return self.next.SLIPPAGE
+        order['slippage'] = f'{slippage_percent:.2f}'
         network_gas_price = Decimal(self.net.w3.eth.gas_price) / Decimal(10 ** 9)
         chat_message(
             update,

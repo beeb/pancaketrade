@@ -331,6 +331,7 @@ class TradeBot:
         token_lp = self.net.find_lp_address(token_address=token.address, v2=lp_v2)
         if token_lp:
             chart_links.append(f'<a href="https://www.dextools.io/app/pancakeswap/pair-explorer/{token_lp}">Dext</a>')
+        chart_links.append(f'<a href="https://bscscan.com/token/{token.address}?a={self.net.wallet}">BscScan</a>')
         token_price_usd = self.net.get_token_price_usd(
             token_address=token.address, token_decimals=token.decimals, sell=True, token_price=token_price
         )
@@ -353,7 +354,7 @@ class TradeBot:
         orders = [str(order) for order in orders_sorted]
         message = (
             f'<b>{token.name}</b>: {format_token_amount(token_balance)}\n'
-            + f'<b>Charts</b>: {"    ".join(chart_links)}\n'
+            + f'<b>Links</b>: {"    ".join(chart_links)}\n'
             + f'<b>Value</b>: <code>{token_balance_bnb:.3g}</code> BNB (${token_balance_usd:.2f})\n'
             + f'<b>Price</b>: <code>{token_price:.3g}</code> BNB/token (${token_price_usd:.3g})\n'
             + effective_buy_price
@@ -371,7 +372,7 @@ class TradeBot:
             f'<b>BNB balance</b>: <code>{balance_bnb:.4f}</code> BNB (${balance_bnb * price_bnb:.2f})\n'
             + f'<b>Tokens balance</b>: <code>{total_positions:.4f}</code> BNB (${total_positions * price_bnb:.2f})\n'
             + f'<b>Total</b>: <code>{grand_total:.4f}</code> BNB (${grand_total * price_bnb:.2f}) '
-            + f'<a href="https://bscscan.com/address/{self.net.wallet}">BSCScan</a>\n'
+            + f'<a href="https://bscscan.com/address/{self.net.wallet}">BscScan</a>\n'
             + f'<b>BNB price</b>: ${price_bnb:.2f}\n'
             + 'Which action do you want to perform next?'
         )
