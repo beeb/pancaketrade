@@ -319,7 +319,7 @@ class Network:
         self,
         token_address: ChecksumAddress,
         amount_bnb: Wei,
-        slippage_percent: int,
+        slippage_percent: Decimal,
         gas_price: Optional[str],
         v2: bool = True,
     ) -> Tuple[bool, Decimal, str]:
@@ -327,7 +327,7 @@ class Network:
         if amount_bnb > balance_bnb - Wei(2000000000000000):  # leave 0.002 BNB for future gas fees
             logger.error('Not enough BNB balance')
             return False, Decimal(0), 'Not enough BNB balance'
-        slippage_ratio = (Decimal(100) - Decimal(slippage_percent)) / Decimal(100)
+        slippage_ratio = (Decimal(100) - slippage_percent) / Decimal(100)
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith('+'):
             offset = Web3.toWei(Decimal(gas_price) * Decimal(10 ** 9), unit='wei')
@@ -394,13 +394,13 @@ class Network:
         self,
         token_address: ChecksumAddress,
         amount_tokens: Wei,
-        slippage_percent: int,
+        slippage_percent: Decimal,
         gas_price: Optional[str],
         v2: bool = True,
     ) -> Tuple[bool, Decimal, str]:
         balance_tokens = self.get_token_balance_wei(token_address=token_address)
         amount_tokens = min(amount_tokens, balance_tokens)  # partially fill order if possible
-        slippage_ratio = (Decimal(100) - Decimal(slippage_percent)) / Decimal(100)
+        slippage_ratio = (Decimal(100) - slippage_percent) / Decimal(100)
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith('+'):
             offset = Web3.toWei(Decimal(gas_price) * Decimal(10 ** 9), unit='wei')

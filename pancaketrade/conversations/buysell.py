@@ -303,7 +303,7 @@ class BuySellConversation:
         add['limit_price'] = ''  # we provide empty string meaning we use market price (trigger now)
         add['above'] = True if add['type'] == 'sell' else False
         token: TokenWatcher = self.parent.watchers[add['token_address']]
-        add['slippage'] = token.default_slippage
+        add['slippage'] = f'{token.default_slippage:.2f}'
         add['gas_price'] = '+10.1'
         del add['token_address']  # not needed in order record creation
         try:

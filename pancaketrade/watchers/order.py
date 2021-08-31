@@ -25,7 +25,7 @@ class OrderWatcher:
         self.above = order_record.above  # Above = True, below = False
         self.trailing_stop: Optional[int] = order_record.trailing_stop  # in percent
         self.amount = Wei(int(order_record.amount))  # in wei, either BNB (buy) or token (sell) depending on "type"
-        self.slippage = order_record.slippage  # in percent
+        self.slippage = Decimal(order_record.slippage)  # in percent
         # gas price in wei or offset from default in gwei (starts with +), if null then use network gas price
         self.gas_price: Optional[str] = order_record.gas_price
         self.created = order_record.created

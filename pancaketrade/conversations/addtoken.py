@@ -1,4 +1,5 @@
 from typing import NamedTuple
+from decimal import Decimal
 
 from pancaketrade.network import Network
 from pancaketrade.persistence import Token, db
@@ -130,26 +131,26 @@ class AddTokenConversation:
     def command_addtoken_slippage(self, update: Update, context: CallbackContext):
         assert update.message and update.message.text and context.user_data is not None
         try:
-            slippage = int(update.message.text.strip())
-        except ValueError:
+            slippage = Decimal(update.message.text.strip())
+        except Exception:
             chat_message(
                 update,
                 context,
-                text='⚠️ This is not a valid slippage value. Please enter an integer number for percentage. Try again:',
+                text='⚠️ This is not a valid slippage value. Please enter a decimal number for percentage. Try again:',
                 edit=False,
             )
             return self.next.SLIPPAGE
-        if slippage < 1:
+        if slippage < Decimal("0.01") or slippage > 100:
             chat_message(
                 update,
                 context,
-                text='⚠️ This is not a valid slippage value. Please enter a positive integer number for percentage. '
-                + 'Try again:',
+                text='⚠️ This is not a valid slippage value. Please enter a number between 0.01 and 100 for '
+                + 'percentage. Try again:',
                 edit=False,
             )
             return self.next.SLIPPAGE
         add = context.user_data['addtoken']
-        add['default_slippage'] = slippage
+        add['default_slippage'] = f'{slippage:.2f}'
         emoji = add['icon'] + ' ' if add['icon'] else ''
 
         chat_message(

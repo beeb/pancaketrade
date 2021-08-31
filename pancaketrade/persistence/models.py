@@ -17,7 +17,7 @@ class Token(Model):
     symbol = CharField()
     icon = CharField(null=True)  # emoji
     decimals = SmallIntegerField()
-    default_slippage = SmallIntegerField()
+    default_slippage = FixedCharField(max_length=7)
     effective_buy_price = CharField(null=True)
 
     class Meta:
@@ -31,7 +31,7 @@ class Order(Model):
     above = BooleanField()  # Above = True, below = False
     trailing_stop = SmallIntegerField(null=True)  # in percent
     amount = CharField()  # in wei, either BNB or token depending on "type"
-    slippage = SmallIntegerField()
+    slippage = FixedCharField(max_length=7)
     # gas price in wei, if null then use network gas price.
     # If starts with "+", then we add this amount of gwei to default network price
     gas_price = CharField(null=True)
