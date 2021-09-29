@@ -199,28 +199,26 @@ class TradeBot:
             chat_message(update, context, text='⛔️ Invalid token address.', edit=self.config.update_messages)
             return
         token = self.watchers[token_address]
-        _, v2 = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
-        version = 'v2' if v2 else 'v1'
-        if token.net.is_approved(token.address, v2=v2):
+        if token.net.is_approved(token.address):
             chat_message(
                 update,
                 context,
-                text=f'{token.symbol} is already approved on PancakeSwap {version}',
+                text=f'{token.symbol} is already approved on PancakeSwap',
                 edit=self.config.update_messages,
             )
             return
         chat_message(
             update,
             context,
-            text=f'Approving {token.symbol} for trading on PancakeSwap {version}...',
+            text=f'Approving {token.symbol} for trading on PancakeSwap...',
             edit=self.config.update_messages,
         )
-        approved = token.approve(v2=v2)
+        approved = token.approve()
         if approved:
             chat_message(
                 update,
                 context,
-                text=f'✅ Approval successful on PancakeSwap {version}!',
+                text='✅ Approval successful on PancakeSwap!',
                 edit=self.config.update_messages,
             )
         else:
@@ -320,21 +318,17 @@ class TradeBot:
                 )
 
     def get_token_status(self, token: TokenWatcher) -> Tuple[str, Decimal]:
-        token_price, lp_v2 = self.net.get_token_price(
-            token_address=token.address, token_decimals=token.decimals, sell=True
-        )
+        token_price, base_token_address = self.net.get_token_price(token_address=token.address)
         chart_links = [
             f'<a href="https://poocoin.app/tokens/{token.address}">Poocoin</a>',
             f'<a href="https://charts.bogged.finance/?token={token.address}">Bogged</a>',
             f'<a href="https://dex.guru/token/{token.address}-bsc">Dex.Guru</a>',
         ]
-        token_lp = self.net.find_lp_address(token_address=token.address, v2=lp_v2)
+        token_lp = self.net.find_lp_address(token_address=token.address, base_token_address=base_token_address)
         if token_lp:
             chart_links.append(f'<a href="https://www.dextools.io/app/pancakeswap/pair-explorer/{token_lp}">Dext</a>')
         chart_links.append(f'<a href="https://bscscan.com/token/{token.address}?a={self.net.wallet}">BscScan</a>')
-        token_price_usd = self.net.get_token_price_usd(
-            token_address=token.address, token_decimals=token.decimals, sell=True, token_price=token_price
-        )
+        token_price_usd = self.net.get_token_price_usd(token_address=token.address, token_price=token_price)
         token_balance = self.net.get_token_balance(token_address=token.address)
         token_balance_bnb = self.net.get_token_balance_bnb(
             token_address=token.address, balance=token_balance, token_price=token_price

@@ -181,8 +181,7 @@ class AddTokenConversation:
                 InlineKeyboardButton('💰 Buy/Sell now', callback_data=f'buysell:{token.address}'),
             ]
         ]
-        _, v2 = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
-        if not self.net.is_approved(token_address=token.address, v2=v2):
+        if not self.net.is_approved(token_address=token.address):
             buttons.append([InlineKeyboardButton('☑️ Approve for selling', callback_data=f'approve:{token.address}')])
         reply_markup = InlineKeyboardMarkup(buttons)
         chat_message(
