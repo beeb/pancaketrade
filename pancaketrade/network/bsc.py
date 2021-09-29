@@ -230,7 +230,9 @@ class Network:
         return bnb_per_token
 
     @cached(cache=TTLCache(maxsize=1, ttl=30))
-    def get_base_token_price(self, token: Contract):
+    def get_base_token_price(self, token: Contract) -> Decimal:
+        if token.address == self.addr.wbnb:
+            return Decimal(1)
         lp = self.find_lp_address(token.address, self.addr.wbnb)
         if not lp:
             return Decimal(0)
