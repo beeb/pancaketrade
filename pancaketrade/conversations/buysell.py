@@ -241,9 +241,7 @@ class BuySellConversation:
                     return self.next.AMOUNT
         decimals = 18 if order['type'] == 'buy' else token.decimals
         bnb_price = self.net.get_bnb_price()
-        current_price, _ = self.net.get_token_price(
-            token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
-        )
+        current_price, _ = self.net.get_token_price(token_address=token.address)
         usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * current_price * amount
         unit = f'BNB worth of {token.symbol}' if order['type'] == 'buy' else token.symbol
         order['amount'] = str(int(amount * Decimal(10 ** decimals)))
@@ -265,9 +263,7 @@ class BuySellConversation:
         trailing = (
             f'Trailing stop loss {order["trailing_stop"]}% callback\n' if order["trailing_stop"] is not None else ''
         )
-        current_price, _ = self.net.get_token_price(
-            token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
-        )
+        current_price, _ = self.net.get_token_price(token_address=token.address)
         bnb_price = self.net.get_bnb_price()
         usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * current_price * amount
         message = (

@@ -126,9 +126,7 @@ class EditTokenConversation:
             )
             return self.next.SLIPPAGE
         elif query.data == 'buyprice':
-            current_price, _ = self.net.get_token_price(
-                token_address=token.address, token_decimals=token.decimals, sell=True
-            )
+            current_price, _ = self.net.get_token_price(token_address=token.address)
             current_price_fixed = format_price_fixed(current_price)
             buttons2 = [
                 [InlineKeyboardButton('No price (disable profit calc)', callback_data='None')],

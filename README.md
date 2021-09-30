@@ -22,7 +22,7 @@ The bot provides a lot of convenience trading features including:
 - Tokens balance and price shown in status messages
 - Price tracking relative to buy transaction
 - Ability to make buy and sell limit orders including trailing stop loss
-- Automatic smart price selection in case PancakeSwap v1 and v2 LPs are available
+- Automatic smart price selection in case liquidity is available in BNB and BUSD (list could be extended in the future)
 - Automatic approval for selling
 - Assign emoji to each token to differentiate them easily
 - Default slippage set on a token basis for faster order creation
@@ -84,12 +84,12 @@ The other most useful command is the `/status` command that will display all you
 The script looks for a file named `config.yml` located inside the `user_data`folder by default.
 You can pass another file path to the `trade` command as a positional argument.
 
-The only parameter that is not self-explanatory is `min_pool_size_bnb`. Since PancakeSwap migrated to version 2, some
-tokens have Liquidity Pairs (LP) on both v1 and v2. As a result, the price might be better for buying or selling on
-one version versus the other.
-However, sometimes the LP on a given version has very little liquidity, which means that the price is very volatile.
-In order to avoid swapping on the version that has little liquidity, the bot checks that at least `min_pool_size_bnb`
-is staked in the LP. If that's not the case, the bot will use the other version even if the price is worse.
+The only parameter that is not self-explanatory is `min_pool_size_bnb`. Some tokens have multiple liquidity pools with
+different pairs, like BNB and BUSD.
+However, sometimes the LP with a given base token has very little liquidity, which means that the price is very volatile
+and price impact is large.
+In order to avoid swapping on the pair that has little liquidity, the bot checks that at least `min_pool_size_bnb`
+is staked in the LP. If that's not the case, the bot will use another LP when possible.
 
 The `update_messages` parameter will update the status messages every 30 seconds if set to `true`.
 If you have trouble with the inline buttons not working, this means this bot token is not able to update messages anymore.
