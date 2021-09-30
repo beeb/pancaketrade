@@ -220,15 +220,16 @@ class Network:
         if token_address == self.addr.wbnb:  # special case for wbnb
             return Decimal(1), self.addr.wbnb
         token = self.get_token_contract(token_address)
-        all_lps = [
+        supported_lps = [
             self.find_lp_address(token_address=token_address, base_token_address=base_token_address)
             for base_token_address in self.supported_base_tokens
         ]
-        supported_lps = [lp for lp in all_lps if lp is not None]  # filter out non-existent LPs
-        if not supported_lps:  # token is not trading yet
+        if not [lp for lp in supported_lps if lp is not None]:  # token is not trading yet
             return Decimal(0), self.addr.wbnb
-        _, lp_index = self.find_biggest_lp(token, lps=supported_lps)
+        biggest_lp, lp_index = self.find_biggest_lp(token, lps=supported_lps)
         base_token_address = self.supported_base_tokens[lp_index]
+        if biggest_lp is None:
+            return Decimal(0), base_token_address
         base_token = self.get_token_contract(base_token_address)
         return self.get_token_price_for_lp(token, base_token, ignore_poolsize=True), base_token_address
 
@@ -310,19 +311,21 @@ class Network:
         busd_amount = Decimal(self.contracts.busd.functions.balanceOf(lp).call())
         return busd_amount / bnb_amount
 
-    def find_biggest_lp(self, token: Contract, lps: List[ChecksumAddress]) -> Tuple[ChecksumAddress, int]:
+    def find_biggest_lp(
+        self, token: Contract, lps: List[Optional[ChecksumAddress]]
+    ) -> Tuple[Optional[ChecksumAddress], int]:
         """Find the largest LP in a list of LP addresses, measured by the amount of tokens staked in it.
 
         Args:
             token (Contract): token contract instance
-            lps (List[ChecksumAddress]): list of LP addresses for this token
+            lps (List[Optional[ChecksumAddress]]): list of LP addresses for this token
 
         Returns:
             Tuple[ChecksumAddress, int]: a tuple containing:
                 - ChecksumAddress: the address of the largest LP
                 - int: the index of the largest LP in the list provided as input
         """
-        lp_balances = [Decimal(token.functions.balanceOf(lp).call()) for lp in lps]
+        lp_balances = [Decimal(token.functions.balanceOf(lp).call()) if lp is not None else Decimal(0) for lp in lps]
         argmax = max(range(len(lp_balances)), key=lambda i: lp_balances[i])
         return lps[argmax], argmax
 
