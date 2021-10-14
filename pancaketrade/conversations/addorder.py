@@ -113,9 +113,7 @@ class AddOrderConversation:
             order['trailing_stop'] = None
             # we don't use trailing stop loss here
             token = self.parent.watchers[order['token_address']]
-            current_price, _ = self.net.get_token_price(
-                token_address=token.address, token_decimals=token.decimals, sell=True
-            )
+            current_price, _ = self.net.get_token_price(token_address=token.address)
             chat_message(
                 update,
                 context,
@@ -165,9 +163,7 @@ class AddOrderConversation:
         assert context.user_data is not None
         order = context.user_data['addorder']
         token = self.parent.watchers[order['token_address']]
-        current_price, _ = self.net.get_token_price(
-            token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
-        )
+        current_price, _ = self.net.get_token_price(token_address=token.address)
         next_message = self.get_price_message(current_price=current_price, token_symbol=token.symbol)
         if update.message is None:
             assert update.callback_query
@@ -224,9 +220,7 @@ class AddOrderConversation:
             except Exception:
                 chat_message(update, context, text='⚠️ The factor you inserted is not valid. Try again:', edit=False)
                 return self.next.PRICE
-            current_price, _ = self.net.get_token_price(
-                token_address=token.address, token_decimals=token.decimals, sell=order['type'] == 'sell'
-            )
+            current_price, _ = self.net.get_token_price(token_address=token.address)
             price = factor * current_price
         else:
             try:

@@ -67,18 +67,16 @@ class SellAllConversation:
             chat_message(update, context, text='⛔️ Invalid token address.', edit=self.config.update_messages)
             return ConversationHandler.END
         token: TokenWatcher = self.parent.watchers[query.data]
-        _, v2 = self.net.get_token_price(token_address=token.address, token_decimals=token.decimals, sell=True)
-        if not self.net.is_approved(token_address=token.address, v2=v2):
+        if not self.net.is_approved(token_address=token.address):
             # when selling we require that the token is approved on pcs beforehand
-            version = 'v2' if v2 else 'v1'
-            logger.info(f'Need to approve {token.symbol} for trading on PancakeSwap {version}.')
+            logger.info(f'Need to approve {token.symbol} for trading on PancakeSwap.')
             chat_message(
                 update,
                 context,
-                text=f'Approving {token.symbol} for trading on PancakeSwap {version}...',
+                text=f'Approving {token.symbol} for trading on PancakeSwap...',
                 edit=self.config.update_messages,
             )
-            res = self.net.approve(token_address=token.address, v2=v2)
+            res = self.net.approve(token_address=token.address)
             if res:
                 chat_message(update, context, text='✅ Approval successful!', edit=self.config.update_messages)
             else:
@@ -97,7 +95,6 @@ class SellAllConversation:
             amount_tokens=balance_tokens,
             slippage_percent=token.default_slippage,
             gas_price='+20.1',
-            v2=v2,
         )
         if not res:
             logger.error(f'Transaction failed: {txhash_or_error}')
