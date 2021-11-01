@@ -2,8 +2,8 @@
 
 [![Docker Image CI](https://github.com/beeb/pancaketrade/actions/workflows/docker.yml/badge.svg?branch=develop)](https://github.com/beeb/pancaketrade/actions/workflows/docker.yml) [![Linting](https://github.com/beeb/pancaketrade/actions/workflows/lint.yml/badge.svg?branch=develop)](https://github.com/beeb/pancaketrade/actions/workflows/lint.yml)
 
-PancakeTrade helps you create limit orders and more for your BEP-20 tokens that swap against BNB and BUSD on PancakeSwap.
-The bot is controlled by Telegram so you can interact from anywhere.
+PancakeTrade helps you create limit orders and more for your BEP-20 tokens that swap against BNB, BUSD and USDT on
+PancakeSwap. The bot is controlled by Telegram so you can interact from anywhere.
 
 ![screenshot](screenshot.jpg)
 
@@ -22,7 +22,8 @@ The bot provides a lot of convenience trading features including:
 - Tokens balance and price shown in status messages
 - Price tracking relative to buy transaction
 - Ability to make buy and sell limit orders including trailing stop loss
-- Automatic smart price selection in case liquidity is available in BNB and BUSD (list could be extended in the future)
+- Automatic smart price selection in case liquidity is available in BNB, BUSD and USDT (list could be extended in the
+  future)
 - Automatic approval for selling
 - Assign emoji to each token to differentiate them easily
 - Default slippage set on a token basis for faster order creation
