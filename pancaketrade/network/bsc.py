@@ -22,6 +22,7 @@ GAS_LIMIT_FAILSAFE = Wei(2000000)  # if the estimated limit is above this one, d
 class NetworkAddresses(NamedTuple):
     wbnb: ChecksumAddress = Web3.toChecksumAddress('0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c')
     busd: ChecksumAddress = Web3.toChecksumAddress('0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56')
+    usdt: ChecksumAddress = Web3.toChecksumAddress('0x55d398326f99059ff775485246999027b3197955')
     factory_v1: ChecksumAddress = Web3.toChecksumAddress('0xBCfCcbde45cE874adCB698cC183deBcF17952812')
     factory_v2: ChecksumAddress = Web3.toChecksumAddress('0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73')
     router_v1: ChecksumAddress = Web3.toChecksumAddress('0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F')
@@ -31,6 +32,7 @@ class NetworkAddresses(NamedTuple):
 class NetworkContracts:
     wbnb: Contract
     busd: Contract
+    usdt: Contract
     factory_v1: Contract
     factory_v2: Contract
     router_v1: Contract
@@ -77,7 +79,7 @@ class Network:
         self.last_nonce = self.w3.eth.get_transaction_count(self.wallet)
         self.approved: Set[str] = set()  # token that were already approved
         self.lp_cache: Dict[Tuple[str, str], ChecksumAddress] = {}  # token and base tuples as the key
-        self.supported_base_tokens: List[ChecksumAddress] = [self.addr.wbnb, self.addr.busd]
+        self.supported_base_tokens: List[ChecksumAddress] = [self.addr.wbnb, self.addr.busd, self.addr.usdt]
         self.nonce_scheduler = BackgroundScheduler(
             job_defaults={
                 'coalesce': True,
