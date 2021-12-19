@@ -453,7 +453,8 @@ class Network:
             return (
                 False,
                 Decimal(0),
-                f'Can\'t get gas estimate, or gas estimate too high, check if slippage is set correctly (currently {slippage_percent}%)',
+                'Can\'t get gas estimate, or gas estimate too high, check if slippage is set correctly (currently'
+                + f' {slippage_percent}%)',
             )
         txhash = Web3.toHex(primitive=receipt["transactionHash"])
         if receipt['status'] == 0:  # fail
@@ -552,7 +553,8 @@ class Network:
             return (
                 False,
                 Decimal(0),
-                f'Can\'t get gas estimate, or gas estimate too high, check if slippage is set correctly (currently {slippage_percent}%)',
+                'Can\'t get gas estimate, or gas estimate too high, check if slippage is set correctly (currently'
+                + f' {slippage_percent}%)',
             )
         txhash = Web3.toHex(primitive=receipt["transactionHash"])
         if receipt['status'] == 0:  # fail
