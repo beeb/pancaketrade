@@ -9,6 +9,7 @@ from typing import Optional
 import questionary
 import yamale
 import yaml
+from dotenv import load_dotenv
 from eth_account import Account
 from loguru import logger
 from questionary import ValidationError, Validator
@@ -74,6 +75,7 @@ def parse_config_file(path: Path) -> Config:
 
 
 def read_config(config_file: str) -> Config:
+    load_dotenv()  # load any .env file present
     config_file_path = Path(config_file)
     if not config_file_path.is_file():
         logger.error(f'Config file does not exist at {config_file_path.resolve()}')
