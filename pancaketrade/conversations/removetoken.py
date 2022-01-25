@@ -68,6 +68,9 @@ class RemoveTokenConversation:
         token = self.parent.watchers[query.data]
         token.stop_monitoring()
         token_name = token.name
+        self.parent.pause_status_update(
+            True
+        )  # temporarily stop updating existing messages, other we might try to update the one we're now deleting
         if token.last_status_message_id is not None:
             context.bot.delete_message(chat_id=update.effective_chat.id, message_id=token.last_status_message_id)
         remove_token(self.parent.watchers[query.data].token_record)
@@ -78,6 +81,7 @@ class RemoveTokenConversation:
             text=f'✅ Alright, the token <b>"{token_name}"</b> was removed.',
             edit=self.config.update_messages,
         )
+        self.parent.pause_status_update(False)  # resume status message updating
         return ConversationHandler.END
 
     @check_chat_id

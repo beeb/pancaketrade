@@ -16,7 +16,7 @@ from web3.exceptions import ABIFunctionNotFound, ContractLogicError
 from web3.middleware import geth_poa_middleware
 from web3.types import ChecksumAddress, HexBytes, Nonce, TxParams, TxReceipt, Wei
 
-GAS_LIMIT_FAILSAFE = Wei(2000000)  # if the estimated limit is above this one, don't use the estimated price
+GAS_LIMIT_FAILSAFE = Wei(2500000)  # if the estimated limit is above this one, cancel transaction
 
 
 class NetworkAddresses(NamedTuple):
@@ -453,7 +453,8 @@ class Network:
             return (
                 False,
                 Decimal(0),
-                f'Can\'t get gas estimate, check if slippage is set correctly (currently {slippage_percent}%)',
+                'Can\'t get gas estimate, or gas estimate too high, check if slippage is set correctly (currently'
+                + f' {slippage_percent}%)',
             )
         txhash = Web3.toHex(primitive=receipt["transactionHash"])
         if receipt['status'] == 0:  # fail
@@ -500,7 +501,8 @@ class Network:
             logger.error(f'Can\'t get gas estimate, cancelling transaction: {e}')
             return None
         if gas_limit > GAS_LIMIT_FAILSAFE:
-            gas_limit = GAS_LIMIT_FAILSAFE
+            logger.error('Gas estimate above threshold, cancelling transaction.')
+            return None
         params = self.get_tx_params(value=amount_bnb, gas=gas_limit, gas_price=gas_price)
         tx = self.build_and_send_tx(func=func, tx_params=params)
         return self.w3.eth.wait_for_transaction_receipt(tx, timeout=60)
@@ -551,7 +553,8 @@ class Network:
             return (
                 False,
                 Decimal(0),
-                f'Can\'t get gas estimate, check if slippage is set correctly (currently {slippage_percent}%)',
+                'Can\'t get gas estimate, or gas estimate too high, check if slippage is set correctly (currently'
+                + f' {slippage_percent}%)',
             )
         txhash = Web3.toHex(primitive=receipt["transactionHash"])
         if receipt['status'] == 0:  # fail
@@ -598,7 +601,8 @@ class Network:
             logger.error(f'Can\'t get gas estimate, cancelling transaction: {e}')
             return None
         if gas_limit > GAS_LIMIT_FAILSAFE:
-            gas_limit = GAS_LIMIT_FAILSAFE
+            logger.error('Gas estimate above threshold, cancelling transaction.')
+            return None
         params = self.get_tx_params(value=Wei(0), gas=gas_limit, gas_price=gas_price)
         tx = self.build_and_send_tx(func=func, tx_params=params)
         return self.w3.eth.wait_for_transaction_receipt(tx, timeout=60)
