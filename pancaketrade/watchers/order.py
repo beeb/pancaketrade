@@ -5,18 +5,21 @@ from typing import Optional
 from loguru import logger
 from pancaketrade.network import Network
 from pancaketrade.persistence import Order, Token, db
-from pancaketrade.utils.generic import format_token_amount, start_in_thread
+from pancaketrade.utils.generic import format_amount_smart, format_token_amount, start_in_thread
 from telegram.ext import Dispatcher
 from web3.types import Wei
 
 
 class OrderWatcher:
-    def __init__(self, order_record: Order, net: Network, dispatcher: Dispatcher, chat_id: int):
+    def __init__(self, order_record: Order, net: Network, dispatcher: Dispatcher, chat_id: int, price_in_usd: bool):
         self.order_record = order_record
         self.token_record: Token = order_record.token
         self.net = net
         self.dispatcher = dispatcher
         self.chat_id = chat_id
+        self.price_in_usd = price_in_usd
+        self.symbol_usd = '$' if self.price_in_usd else ''
+        self.symbol_bnb = 'BNB' if not self.price_in_usd else ''
 
         self.type = order_record.type  # buy (tokens for BNB) or sell (tokens for BNB)
         self.limit_price: Optional[Decimal] = (
@@ -41,7 +44,11 @@ class OrderWatcher:
         unit = self.get_amount_unit()
         trailing = f' tsl {self.trailing_stop}%' if self.trailing_stop is not None else ''
         order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
-        limit_price = f'<code>{self.limit_price:.3g}</code> BNB' if self.limit_price is not None else 'market price'
+        limit_price = (
+            f'{self.symbol_usd}<code>{format_amount_smart(self.limit_price)}</code> {self.symbol_bnb}'
+            if self.limit_price is not None
+            else 'market price'
+        )
         type_icon = self.get_type_icon()
         return (
             f'{type_icon} {order_id}: {self.token_record.symbol} {comparison} {limit_price} - '
@@ -64,7 +71,11 @@ class OrderWatcher:
         )
         order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
         type_icon = self.get_type_icon()
-        limit_price = f'<code>{self.limit_price:.3g}</code> BNB' if self.limit_price is not None else 'market price'
+        limit_price = (
+            f'{self.symbol_usd}<code>{format_amount_smart(self.limit_price)}</code> {self.symbol_bnb}'
+            if self.limit_price is not None
+            else 'market price'
+        )
         return (
             f'{icon}{self.token_record.symbol} - ({order_id}) <b>{type_name}</b> {type_icon}\n'
             + f'<b>Amount</b>: <code>{format_token_amount(amount)}</code> {unit}\n'
@@ -92,12 +103,12 @@ class OrderWatcher:
             self.limit_price if self.limit_price is not None else price
         )  # fulfill condition immediately if we have no limit price
         if self.trailing_stop is None and not self.above and price <= limit_price:
-            logger.success(f'Limit buy triggered at price {price:.3e} BNB')  # buy
+            logger.success(f'Limit buy triggered at price {self.symbol_usd}{price:.3e} {self.symbol_bnb}')  # buy
             self.close()
             return
         elif self.trailing_stop and not self.above and (price <= limit_price or self.min_price is not None):
             if self.min_price is None:
-                logger.info(f'Limit condition reached at price {price:.3e} BNB')
+                logger.info(f'Limit condition reached at price {self.symbol_usd}{price:.3e} {self.symbol_bnb}')
                 self.dispatcher.bot.send_message(
                     chat_id=self.chat_id, text=f'🔹 Order #{self.order_record.id} activated trailing stop loss.'
                 )
@@ -107,7 +118,9 @@ class OrderWatcher:
                 self.min_price = price
                 return
             elif rise > self.trailing_stop:
-                logger.success(f'Trailing stop loss triggered at price {price:.3e} BNB')  # buy
+                logger.success(
+                    f'Trailing stop loss triggered at price {self.symbol_usd}{price:.3e} {self.symbol_bnb}'
+                )  # buy
                 self.close()
                 return
 
@@ -119,16 +132,16 @@ class OrderWatcher:
             self.limit_price if self.limit_price is not None else price
         )  # fulfill condition immediately if we have no limit price
         if self.trailing_stop is None and not self.above and price <= limit_price:
-            logger.warning(f'Stop loss triggered at price {price:.3e} BNB')
+            logger.warning(f'Stop loss triggered at price {self.symbol_usd}{price:.3e} {self.symbol_bnb}')
             self.close()
             return
         elif self.trailing_stop is None and self.above and price >= limit_price:
-            logger.success(f'Take profit triggered at price {price:.3e} BNB')
+            logger.success(f'Take profit triggered at price {self.symbol_usd}{price:.3e} {self.symbol_bnb}')
             self.close()
             return
         elif self.trailing_stop and self.above and (price >= limit_price or self.max_price is not None):
             if self.max_price is None:
-                logger.info(f'Limit condition reached at price {price:.3e} BNB')
+                logger.info(f'Limit condition reached at price {self.symbol_usd}{price:.3e} {self.symbol_bnb}')
                 self.dispatcher.bot.send_message(
                     chat_id=self.chat_id, text=f'🔹 Order #{self.order_record.id} activated trailing stop loss.'
                 )
@@ -138,7 +151,7 @@ class OrderWatcher:
                 self.max_price = price
                 return
             elif drop > self.trailing_stop:
-                logger.success(f'Trailing stop loss triggered at price {price:.3e} BNB')
+                logger.success(f'Trailing stop loss triggered at price {self.symbol_usd}{price:.3e} {self.symbol_bnb}')
                 self.close()
                 return
 
@@ -164,12 +177,12 @@ class OrderWatcher:
 
     def buy(self):
         balance_before = self.net.get_token_balance(token_address=self.token_record.address)
-        buy_price_before = self.token_record.effective_buy_price
+        buy_price_before = self.token_record.effective_buy_price  # USD or BNB
         res, tokens_out, txhash_or_error = self.net.buy_tokens(
             self.token_record.address, amount_bnb=self.amount, slippage_percent=self.slippage, gas_price=self.gas_price
         )
         if not res:
-            if len(txhash_or_error) == 66:
+            if txhash_or_error[:2] == "0x" and len(txhash_or_error) == 66:
                 reason_or_link = f'<a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>'
             else:
                 reason_or_link = txhash_or_error
@@ -181,8 +194,9 @@ class OrderWatcher:
             self.remove_order()
             self.finished = True  # will trigger deletion of the object
             return
-        effective_price = self.get_human_amount() / tokens_out
-        db.connect()
+        effective_price = self.get_human_amount() / tokens_out  # in BNB per token
+        if self.price_in_usd:  # we need to convert to USD according to settings
+            effective_price = effective_price * self.net.get_bnb_price()
         try:
             with db.atomic():
                 if buy_price_before is not None:
@@ -199,11 +213,9 @@ class OrderWatcher:
                 chat_id=self.chat_id,
                 text=f'⛔️ Effective buy price update failed: {e}',
             )
-        finally:
-            db.close()
         logger.success(
             f'Buy transaction succeeded. Received {format_token_amount(tokens_out)} {self.token_record.symbol}. '
-            + f'Effective price (after tax) {effective_price:.4g} BNB/token'
+            + f'Effective price (after tax) {self.symbol_usd}{effective_price:.4g} {self.symbol_bnb} / token'
         )
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_str()
@@ -212,7 +224,7 @@ class OrderWatcher:
             chat_id=self.chat_id,
             text=f'✅ Got {format_token_amount(tokens_out)} {self.token_record.symbol} at '
             + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>\n'
-            + f'Effective price (after tax) {effective_price:.4g} BNB/token',
+            + f'Effective price (after tax) {self.symbol_usd}{effective_price:.4g} {self.symbol_bnb} / token',
         )
         if not self.net.is_approved(token_address=self.token_record.address):
             # pre-approve for later sell
@@ -245,7 +257,7 @@ class OrderWatcher:
         )
         if not res:
             logger.error(f'Transaction failed: {txhash_or_error}')
-            if len(txhash_or_error) == 66:
+            if txhash_or_error[:2] == "0x" and len(txhash_or_error) == 66:
                 reason_or_link = f'<a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>'
             else:
                 reason_or_link = txhash_or_error
@@ -256,11 +268,13 @@ class OrderWatcher:
             self.remove_order()
             self.finished = True  # will trigger deletion of the object
             return
-        effective_price = bnb_out / self.get_human_amount()
+        effective_price = bnb_out / self.get_human_amount()  # in BNB
+        if self.price_in_usd:  # we need to convert to USD according to settings
+            effective_price = effective_price * self.net.get_bnb_price()
         sold_proportion = self.amount / balance_before
         logger.success(
             f'Sell transaction succeeded. Received {bnb_out:.3g} BNB. '
-            + f'Effective price (after tax) {effective_price:.4g} BNB/token'
+            + f'Effective price (after tax) {self.symbol_usd}{effective_price:.4g} {self.symbol_bnb} / token'
         )
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_str()
@@ -270,7 +284,7 @@ class OrderWatcher:
             chat_id=self.chat_id,
             text=f'✅ Got {bnb_out:.3g} BNB (${usd_out:.2f}) at '
             + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>\n'
-            + f'Effective price (after tax) {effective_price:.4g} BNB/token.\n'
+            + f'Effective price (after tax) {self.symbol_usd}{effective_price:.4g} {self.symbol_bnb} / token.\n'
             + f'This order sold {sold_proportion:.1%} of the token\'s balance.',
         )
         self.remove_order()
@@ -309,7 +323,7 @@ class OrderWatcher:
         return self.token_record.symbol if self.type == 'sell' else 'BNB'
 
     def remove_order(self):
-        db.connect()
+        db.connect(reuse_if_open=True)
         try:
             self.order_record.delete_instance()
         except Exception as e:

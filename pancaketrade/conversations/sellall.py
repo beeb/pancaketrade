@@ -98,7 +98,7 @@ class SellAllConversation:
         )
         if not res:
             logger.error(f'Transaction failed: {txhash_or_error}')
-            if len(txhash_or_error) == 66:
+            if txhash_or_error[:2] == "0x" and len(txhash_or_error) == 66:
                 reason_or_link = f'<a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>'
             else:
                 reason_or_link = txhash_or_error

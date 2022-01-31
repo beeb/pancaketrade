@@ -22,8 +22,14 @@ from pancaketrade.conversations import (
 from pancaketrade.network import Network
 from pancaketrade.persistence import db
 from pancaketrade.utils.config import Config
-from pancaketrade.utils.db import get_token_watchers, init_db
-from pancaketrade.utils.generic import chat_message, check_chat_id, format_token_amount, get_tokens_keyboard_layout
+from pancaketrade.utils.db import get_token_watchers, init_db, update_db_prices
+from pancaketrade.utils.generic import (
+    chat_message,
+    check_chat_id,
+    format_token_amount,
+    format_amount_smart,
+    get_tokens_keyboard_layout,
+)
 from pancaketrade.watchers import OrderWatcher, TokenWatcher
 
 
@@ -38,12 +44,19 @@ class TradeBot:
             rpc=self.config.bsc_rpc,
             wallet=self.config.wallet,
             min_pool_size_bnb=self.config.min_pool_size_bnb,
+            price_in_usd=self.config.price_in_usd,
             secrets=self.config.secrets,
         )
         defaults = Defaults(parse_mode=ParseMode.HTML, disable_web_page_preview=True, timeout=120)
         # persistence = PicklePersistence(filename='botpersistence')
         self.updater = Updater(token=config.secrets.telegram_token, persistence=None, defaults=defaults)
         self.dispatcher = self.updater.dispatcher
+        update_db_prices(
+            new_price_in_usd=self.config.price_in_usd,
+            dispatcher=self.dispatcher,
+            chat_id=self.config.secrets.admin_chat_id,
+            net=self.net,
+        )  # convert prices from bnb to usd or vice-versa
         self.convos = {
             'addtoken': AddTokenConversation(parent=self, config=self.config),
             'edittoken': EditTokenConversation(parent=self, config=self.config),
@@ -148,8 +161,8 @@ class TradeBot:
         sorted_tokens = sorted(self.watchers.values(), key=lambda token: token.symbol.lower())
         balances: List[Decimal] = []
         for token in sorted_tokens:
-            status, balance_bnb = self.get_token_status(token)
-            balances.append(balance_bnb)
+            status, balance_value = self.get_token_status(token)
+            balances.append(balance_value)
             msg = chat_message(update, context, text=status, edit=False)
             if msg is not None:
                 self.watchers[token.address].last_status_message_id = msg.message_id
@@ -287,8 +300,8 @@ class TradeBot:
         for token in sorted_tokens:
             if token.last_status_message_id is None:
                 continue
-            status, balance_bnb = self.get_token_status(token)
-            balances.append(balance_bnb)
+            status, balance_value = self.get_token_status(token)
+            balances.append(balance_value)
             try:
                 self.dispatcher.bot.edit_message_text(
                     status,
@@ -318,6 +331,8 @@ class TradeBot:
                 )
 
     def get_token_status(self, token: TokenWatcher) -> Tuple[str, Decimal]:
+        symbol_usd = '$' if self.config.price_in_usd else ''
+        symbol_bnb = 'BNB' if not self.config.price_in_usd else ''
         token_price, base_token_address = self.net.get_token_price(token_address=token.address)
         chart_links = [
             f'<a href="https://poocoin.app/tokens/{token.address}">Poocoin</a>',
@@ -329,19 +344,22 @@ class TradeBot:
             chart_links.append(f'<a href="https://www.dextools.io/app/pancakeswap/pair-explorer/{token_lp}">Dext</a>')
             chart_links.append(f'<a href="https://dexscreener.com/bsc/{token_lp}">DexScr</a>')
         chart_links.append(f'<a href="https://bscscan.com/token/{token.address}?a={self.net.wallet}">BscScan</a>')
-        token_price_usd = self.net.get_token_price_usd(token_address=token.address, token_price=token_price)
         token_balance = self.net.get_token_balance(token_address=token.address)
-        token_balance_bnb = self.net.get_token_balance_bnb(
+        token_balance_value = self.net.get_token_balance_value(
             token_address=token.address, balance=token_balance, token_price=token_price
         )
-        token_balance_usd = self.net.get_token_balance_usd(token_address=token.address, balance_bnb=token_balance_bnb)
+        token_price_usd = token_price
+        token_balance_usd = token_balance_value
+        if not self.config.price_in_usd:
+            token_price_usd = self.net.get_token_price_usd(token_address=token.address, token_price=token_price)
+            token_balance_usd = self.net.get_token_balance_usd(token_address=token.address, value=token_balance_value)
         effective_buy_price = ''
         if token.effective_buy_price:
             price_diff_percent = ((token_price / token.effective_buy_price) - Decimal(1)) * Decimal(100)
             diff_icon = '🆙' if price_diff_percent >= 0 else '🔽'
             effective_buy_price = (
-                f'<b>At buy (after tax)</b>: <code>{token.effective_buy_price:.3g}</code> BNB/token '
-                + f'(now {price_diff_percent:+.1f}% {diff_icon})\n'
+                f'<b>At buy (after tax)</b>: {symbol_usd}<code>{format_amount_smart(token.effective_buy_price)}</code>'
+                + f' {symbol_bnb} / token (now {price_diff_percent:+.1f}% {diff_icon})\n'
             )
         orders_sorted = sorted(
             token.orders, key=lambda o: o.limit_price if o.limit_price else Decimal(1e12), reverse=True
@@ -350,22 +368,34 @@ class TradeBot:
         message = (
             f'<b>{token.name}</b>: {format_token_amount(token_balance)}\n'
             + f'<b>Links</b>: {"    ".join(chart_links)}\n'
-            + f'<b>Value</b>: <code>{token_balance_bnb:.3g}</code> BNB (${token_balance_usd:.2f})\n'
-            + f'<b>Price</b>: <code>{token_price:.3g}</code> BNB/token (${token_price_usd:.3g})\n'
+            + f'<b>Value</b>: {symbol_usd}<code>{format_amount_smart(token_balance_value)}</code> {symbol_bnb}'
+            + (f' (${token_balance_usd:.2f})' if not self.config.price_in_usd else '')
+            + '\n'
+            + f'<b>Price</b>: {symbol_usd}'
+            + f'<code>{format_amount_smart(token_price)}</code>'
+            + f' {symbol_bnb} / token'
+            + (f' (${format_amount_smart(token_price_usd)})' if not self.config.price_in_usd else '')
+            + '\n'
             + effective_buy_price
             + '<b>Orders</b>: (underlined = tracking trailing stop loss)\n'
             + '\n'.join(orders)
         )
-        return message, token_balance_bnb
+        return message, token_balance_value
 
     def get_summary_message(self, token_balances: List[Decimal]) -> Tuple[str, List[List[InlineKeyboardButton]]]:
         balance_bnb = self.net.get_bnb_balance()
         price_bnb = self.net.get_bnb_price()
-        total_positions = sum(token_balances)
-        grand_total = balance_bnb + total_positions
+        total_positions = sum(token_balances)  # can be either USD or BNB
+        total_positions_bnb = total_positions
+        total_positions_usd = total_positions
+        if self.config.price_in_usd:
+            total_positions_bnb = total_positions / price_bnb
+        else:
+            total_positions_usd = total_positions * price_bnb
+        grand_total = balance_bnb + total_positions_bnb
         msg = (
             f'<b>BNB balance</b>: <code>{balance_bnb:.4f}</code> BNB (${balance_bnb * price_bnb:.2f})\n'
-            + f'<b>Tokens balance</b>: <code>{total_positions:.4f}</code> BNB (${total_positions * price_bnb:.2f})\n'
+            + f'<b>Tokens balance</b>: <code>{total_positions_bnb:.4f}</code> BNB (${total_positions_usd:.2f})\n'
             + f'<b>Total</b>: <code>{grand_total:.4f}</code> BNB (${grand_total * price_bnb:.2f}) '
             + f'<a href="https://bscscan.com/address/{self.net.wallet}">BscScan</a>\n'
             + f'<b>BNB price</b>: ${price_bnb:.2f}\n'

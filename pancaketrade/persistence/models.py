@@ -39,3 +39,13 @@ class Order(Model):
 
     class Meta:
         database = db
+
+
+class Preferences(Model):
+    """Simple key-value store for checking if some preferences have changed value between restarts."""
+
+    key = CharField(unique=True)
+    value = CharField(null=True)
+
+    class Meta:
+        database = db

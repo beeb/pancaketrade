@@ -5,7 +5,13 @@ from typing import Mapping, NamedTuple
 from pancaketrade.network import Network
 from pancaketrade.persistence import Order, db
 from pancaketrade.utils.config import Config
-from pancaketrade.utils.generic import chat_message, check_chat_id, format_price_fixed, format_token_amount
+from pancaketrade.utils.generic import (
+    chat_message,
+    check_chat_id,
+    format_amount_smart,
+    format_price_fixed,
+    format_token_amount,
+)
 from pancaketrade.watchers import OrderWatcher, TokenWatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -66,6 +72,8 @@ class AddOrderConversation:
             fallbacks=[CommandHandler('cancel', self.command_cancelorder)],
             name='addorder_conversation',
         )
+        self.symbol_usd = '$' if self.config.price_in_usd else ''
+        self.symbol_bnb = 'BNB' if not self.config.price_in_usd else ''
 
     @check_chat_id
     def command_addorder(self, update: Update, context: CallbackContext):
@@ -256,7 +264,8 @@ class AddOrderConversation:
         chat_message(
             update,
             context,
-            text=f'OK, I will {order["type"]} when the price of {token.symbol} reaches {price:.4g} BNB per token.\n'
+            text=f'OK, I will {order["type"]} when the price of {token.symbol} reaches {self.symbol_usd}{price:.4g} '
+            + f'{self.symbol_bnb} per token.\n'
             + f'Next, <u>how much {unit}</u> do you want me to use for {order["type"]}ing?\n'
             + f'You can also use scientific notation like <code>{balance:.1e}</code> or a percentage like '
             + '<code>63%</code>.\n'
@@ -310,9 +319,14 @@ class AddOrderConversation:
                     )
                     return self.next.AMOUNT
         decimals = 18 if order['type'] == 'buy' else token.decimals
-        bnb_price = self.net.get_bnb_price()
         limit_price = Decimal(order["limit_price"])
-        usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * limit_price * amount
+        if order['type'] == 'buy':
+            usd_amount = self.net.get_bnb_price() * amount
+        elif self.config.price_in_usd:  # sell and price in USD
+            usd_amount = limit_price * amount
+        else:  # sell and price in BNB
+            usd_amount = self.net.get_bnb_price() * limit_price * amount
+
         unit = f'BNB worth of {token.symbol}' if order['type'] == 'buy' else token.symbol
         order['amount'] = str(int(amount * Decimal(10 ** decimals)))
         reply_markup = InlineKeyboardMarkup(
@@ -474,14 +488,18 @@ class AddOrderConversation:
             else f'network default {order["gas_price"]} Gwei'
         )
         limit_price = Decimal(order["limit_price"])
-        bnb_price = self.net.get_bnb_price()
-        usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * limit_price * amount
+        if order['type'] == 'buy':
+            usd_amount = self.net.get_bnb_price() * amount
+        elif self.config.price_in_usd:  # sell and price in USD
+            usd_amount = limit_price * amount
+        else:  # sell and price in BNB
+            usd_amount = self.net.get_bnb_price() * limit_price * amount
         message = (
             '<u>Preview:</u>\n'
             + f'{token.name} - {type_name}\n'
             + trailing
             + f'Amount: {format_token_amount(amount)} {unit} (${usd_amount:.2f})\n'
-            + f'Price {comparision} {limit_price:.3g} BNB per token\n'
+            + f'Price {comparision} {self.symbol_usd}{format_amount_smart(limit_price)} {self.symbol_bnb} per token\n'
             + f'Slippage: {order["slippage"]}%\n'
             + f'Gas: {gas_price}'
         )
@@ -512,7 +530,6 @@ class AddOrderConversation:
         token: TokenWatcher = self.parent.watchers[add['token_address']]
         del add['token_address']  # not needed in order record creation
         try:
-            db.connect()
             with db.atomic():
                 order_record = Order.create(token=token.token_record, created=datetime.now(), **add)
         except Exception as e:
@@ -520,9 +537,12 @@ class AddOrderConversation:
             return ConversationHandler.END
         finally:
             del context.user_data['addorder']
-            db.close()
         order = OrderWatcher(
-            order_record=order_record, net=self.net, dispatcher=context.dispatcher, chat_id=update.effective_chat.id
+            order_record=order_record,
+            net=self.net,
+            dispatcher=context.dispatcher,
+            chat_id=update.effective_chat.id,
+            price_in_usd=self.config.price_in_usd,
         )
         token.orders.append(order)
         chat_message(
@@ -564,13 +584,14 @@ class AddOrderConversation:
     def get_price_message(self, current_price: Decimal, token_symbol: str) -> str:
         current_price_fixed = format_price_fixed(current_price)
         next_message = (
-            f'Next, please indicate the <u>price in <b>BNB per {token_symbol}</b></u> '
+            f'Next, please indicate the <u>price in <b>{self.symbol_usd}{self.symbol_bnb} per {token_symbol}</b></u> '
             + 'at which the order will activate.\n'
             + 'You have 3 options for this:\n'
             + f' ・ Standard notation like "<code>{current_price_fixed}</code>"\n'
             + f' ・ Scientific notation like "<code>{current_price:.1e}</code>"\n'
             + ' ・ Multiplier for the current price like "<code>1.5x</code>" (include the "x" at the end)\n'
-            + f'<b>Current price</b>: <code>{current_price:.4g}</code> BNB per {token_symbol}.'
+            + f'<b>Current price</b>: {self.symbol_usd}<code>{current_price:.4g}</code> {self.symbol_bnb} '
+            + f'per {token_symbol}.'
         )
         return next_message
 

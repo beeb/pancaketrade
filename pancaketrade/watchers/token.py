@@ -41,6 +41,7 @@ class TokenWatcher:
                 net=self.net,
                 dispatcher=self.dispatcher,
                 chat_id=self.config.secrets.admin_chat_id,
+                price_in_usd=self.config.price_in_usd,
             )
             for order_record in orders
         ]
@@ -63,7 +64,7 @@ class TokenWatcher:
         self.update_effective_buy_price()
         if not self.orders:
             return
-        price, _ = self.net.get_token_price(token_address=self.address)
+        price, _ = self.net.get_token_price(token_address=self.address)  # either USD or BNB depending on config
         indices_to_remove: List[int] = []
         for i, order in enumerate(self.orders):
             if order.finished:

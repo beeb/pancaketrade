@@ -240,9 +240,13 @@ class BuySellConversation:
                     )
                     return self.next.AMOUNT
         decimals = 18 if order['type'] == 'buy' else token.decimals
-        bnb_price = self.net.get_bnb_price()
         current_price, _ = self.net.get_token_price(token_address=token.address)
-        usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * current_price * amount
+        if order['type'] == 'buy':
+            usd_amount = self.net.get_bnb_price() * amount
+        elif self.config.price_in_usd:  # sell and price in USD
+            usd_amount = current_price * amount
+        else:  # sell and price in BNB
+            usd_amount = self.net.get_bnb_price() * current_price * amount
         unit = f'BNB worth of {token.symbol}' if order['type'] == 'buy' else token.symbol
         order['amount'] = str(int(amount * Decimal(10 ** decimals)))
         chat_message(
@@ -264,8 +268,12 @@ class BuySellConversation:
             f'Trailing stop loss {order["trailing_stop"]}% callback\n' if order["trailing_stop"] is not None else ''
         )
         current_price, _ = self.net.get_token_price(token_address=token.address)
-        bnb_price = self.net.get_bnb_price()
-        usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * current_price * amount
+        if order['type'] == 'buy':
+            usd_amount = self.net.get_bnb_price() * amount
+        elif self.config.price_in_usd:  # sell and price in USD
+            usd_amount = current_price * amount
+        else:  # sell and price in BNB
+            usd_amount = self.net.get_bnb_price() * current_price * amount
         message = (
             '<u>Preview:</u>\n'
             + f'{token.name}\n'
@@ -303,7 +311,6 @@ class BuySellConversation:
         add['gas_price'] = '+10.1'
         del add['token_address']  # not needed in order record creation
         try:
-            db.connect()
             with db.atomic():
                 order_record = Order.create(token=token.token_record, created=datetime.now(), **add)
         except Exception as e:
@@ -311,9 +318,12 @@ class BuySellConversation:
             return ConversationHandler.END
         finally:
             del context.user_data['buysell']
-            db.close()
         order = OrderWatcher(
-            order_record=order_record, net=self.net, dispatcher=context.dispatcher, chat_id=update.effective_chat.id
+            order_record=order_record,
+            net=self.net,
+            dispatcher=context.dispatcher,
+            chat_id=update.effective_chat.id,
+            price_in_usd=self.config.price_in_usd,
         )
         token.orders.append(order)
         chat_message(
