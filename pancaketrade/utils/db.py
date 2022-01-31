@@ -55,7 +55,7 @@ def get_token_watchers(net, dispatcher: Dispatcher, config: Config) -> Dict[str,
 
 
 def remove_token(token_record: Token):
-    db.connect()
+    db.connect(reuse_if_open=True)
     try:
         token_record.delete_instance(recursive=True)
     except Exception as e:
@@ -65,7 +65,7 @@ def remove_token(token_record: Token):
 
 
 def remove_order(order_record: Order):
-    db.connect()
+    db.connect(reuse_if_open=True)
     try:
         order_record.delete_instance()
     except Exception as e:

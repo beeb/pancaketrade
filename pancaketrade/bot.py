@@ -353,7 +353,7 @@ class TradeBot:
             diff_icon = '🆙' if price_diff_percent >= 0 else '🔽'
             effective_buy_price = (
                 f'<b>At buy (after tax)</b>: {symbol_usd}<code>{token.effective_buy_price:.3g}</code> {symbol_bnb}'
-                + f'/token (now {price_diff_percent:+.1f}% {diff_icon})\n'
+                + f' / token (now {price_diff_percent:+.1f}% {diff_icon})\n'
             )
         orders_sorted = sorted(
             token.orders, key=lambda o: o.limit_price if o.limit_price else Decimal(1e12), reverse=True
@@ -365,7 +365,7 @@ class TradeBot:
             + f'<b>Value</b>: {symbol_usd}<code>{token_balance_value:.3g}</code> {symbol_bnb}'
             + (f' (${token_balance_usd:.2f})' if not self.config.price_in_usd else '')
             + '\n'
-            + f'<b>Price</b>: {symbol_usd}<code>{token_price:.3g}</code> {symbol_bnb}/token'
+            + f'<b>Price</b>: {symbol_usd}<code>{token_price:.3g}</code> {symbol_bnb} / token'
             + (f' (${token_price_usd:.3g})' if not self.config.price_in_usd else '')
             + '\n'
             + effective_buy_price
@@ -379,12 +379,15 @@ class TradeBot:
         price_bnb = self.net.get_bnb_price()
         total_positions = sum(token_balances)  # can be either USD or BNB
         total_positions_bnb = total_positions
+        total_positions_usd = total_positions
         if self.config.price_in_usd:
             total_positions_bnb = total_positions / price_bnb
+        else:
+            total_positions_usd = total_positions * price_bnb
         grand_total = balance_bnb + total_positions_bnb
         msg = (
             f'<b>BNB balance</b>: <code>{balance_bnb:.4f}</code> BNB (${balance_bnb * price_bnb:.2f})\n'
-            + f'<b>Tokens balance</b>: <code>{total_positions:.4f}</code> BNB (${total_positions * price_bnb:.2f})\n'
+            + f'<b>Tokens balance</b>: <code>{total_positions_bnb:.4f}</code> BNB (${total_positions_usd:.2f})\n'
             + f'<b>Total</b>: <code>{grand_total:.4f}</code> BNB (${grand_total * price_bnb:.2f}) '
             + f'<a href="https://bscscan.com/address/{self.net.wallet}">BscScan</a>\n'
             + f'<b>BNB price</b>: ${price_bnb:.2f}\n'

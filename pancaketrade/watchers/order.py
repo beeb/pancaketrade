@@ -215,7 +215,7 @@ class OrderWatcher:
             )
         logger.success(
             f'Buy transaction succeeded. Received {format_token_amount(tokens_out)} {self.token_record.symbol}. '
-            + f'Effective price (after tax) {self.symbol_usd}{effective_price:.4g} {self.symbol_bnb}/token'
+            + f'Effective price (after tax) {self.symbol_usd}{effective_price:.4g} {self.symbol_bnb} / token'
         )
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_str()
@@ -224,7 +224,7 @@ class OrderWatcher:
             chat_id=self.chat_id,
             text=f'✅ Got {format_token_amount(tokens_out)} {self.token_record.symbol} at '
             + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>\n'
-            + f'Effective price (after tax) {self.symbol_usd}{effective_price:.4g} {self.symbol_bnb}/token',
+            + f'Effective price (after tax) {self.symbol_usd}{effective_price:.4g} {self.symbol_bnb} / token',
         )
         if not self.net.is_approved(token_address=self.token_record.address):
             # pre-approve for later sell
@@ -274,7 +274,7 @@ class OrderWatcher:
         sold_proportion = self.amount / balance_before
         logger.success(
             f'Sell transaction succeeded. Received {bnb_out:.3g} BNB. '
-            + f'Effective price (after tax) {self.symbol_usd}{effective_price:.4g} {self.symbol_bnb}/token'
+            + f'Effective price (after tax) {self.symbol_usd}{effective_price:.4g} {self.symbol_bnb} / token'
         )
         self.dispatcher.bot.send_message(
             chat_id=self.chat_id, text='<u>Closing the following order:</u>\n' + self.long_str()
@@ -284,7 +284,7 @@ class OrderWatcher:
             chat_id=self.chat_id,
             text=f'✅ Got {bnb_out:.3g} BNB (${usd_out:.2f}) at '
             + f'tx <a href="https://bscscan.com/tx/{txhash_or_error}">{txhash_or_error[:8]}...</a>\n'
-            + f'Effective price (after tax) {self.symbol_usd}{effective_price:.4g} {self.symbol_bnb}/token.\n'
+            + f'Effective price (after tax) {self.symbol_usd}{effective_price:.4g} {self.symbol_bnb} / token.\n'
             + f'This order sold {sold_proportion:.1%} of the token\'s balance.',
         )
         self.remove_order()
@@ -323,7 +323,7 @@ class OrderWatcher:
         return self.token_record.symbol if self.type == 'sell' else 'BNB'
 
     def remove_order(self):
-        db.connect()
+        db.connect(reuse_if_open=True)
         try:
             self.order_record.delete_instance()
         except Exception as e:

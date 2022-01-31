@@ -278,7 +278,7 @@ class Network:
             10 ** (18 - base_decimals)
         )  # e.g. balance of LP for base token, normalized to 18 decimals
         if (
-            base_token == self.addr.wbnb
+            base_token.address == self.addr.wbnb
             and base_amount / Decimal(10 ** 18) < self.min_pool_size_bnb
             and not ignore_poolsize
         ):
@@ -298,12 +298,12 @@ class Network:
         except Exception:
             base_per_token = Decimal(0)
         if self.price_in_usd:  # we need USD output
-            if base_token != self.addr.wbnb:  # base is USD
+            if base_token.address != self.addr.wbnb:  # base is USD
                 return base_per_token  # no change needed
             else:
                 return base_per_token * self.get_bnb_price()  # we convert to USD
         else:  # we need BNB output
-            if base_token == self.addr.wbnb:  # base is BNB
+            if base_token.address == self.addr.wbnb:  # base is BNB
                 return base_per_token
             else:
                 return base_per_token / self.get_bnb_price()  # we convert to BNB
