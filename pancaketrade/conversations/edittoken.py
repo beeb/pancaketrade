@@ -55,6 +55,8 @@ class EditTokenConversation:
             fallbacks=[CommandHandler('cancel', self.command_canceltoken)],
             name='edittoken_conversation',
         )
+        self.symbol_usd = '$' if self.config.price_in_usd else ''
+        self.symbol_bnb = 'BNB' if not self.config.price_in_usd else ''
 
     @check_chat_id
     def command_edittoken(self, update: Update, context: CallbackContext):
@@ -136,7 +138,8 @@ class EditTokenConversation:
             chat_message(
                 update,
                 context,
-                text=f'What was the effective buy price (after tax) for {token.name} when you invested? '
+                text=f'What was the effective buy price (after tax) <u>price in <b>{self.symbol_usd}{self.symbol_bnb}'
+                + f' per {token.symbol}</b></u> when you invested? '
                 + 'You have 3 options for this:\n'
                 + f' ・ Standard notation like "<code>{current_price_fixed}</code>"\n'
                 + f' ・ Scientific notation like "<code>{current_price:.1e}</code>"\n'
@@ -332,7 +335,7 @@ class EditTokenConversation:
                 update,
                 context,
                 text=f'✅ Alright, the token {token.name} '
-                + f'was bought at {token.effective_buy_price:.4g} BNB per token.',
+                + f'was bought at {self.symbol_usd}{token.effective_buy_price:.4g} {self.symbol_bnb} per token.',
                 edit=self.config.update_messages,
             )
         return ConversationHandler.END
