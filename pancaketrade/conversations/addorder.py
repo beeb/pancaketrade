@@ -5,7 +5,13 @@ from typing import Mapping, NamedTuple
 from pancaketrade.network import Network
 from pancaketrade.persistence import Order, db
 from pancaketrade.utils.config import Config
-from pancaketrade.utils.generic import chat_message, check_chat_id, format_price_fixed, format_token_amount
+from pancaketrade.utils.generic import (
+    chat_message,
+    check_chat_id,
+    format_amount_smart,
+    format_price_fixed,
+    format_token_amount,
+)
 from pancaketrade.watchers import OrderWatcher, TokenWatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -493,7 +499,7 @@ class AddOrderConversation:
             + f'{token.name} - {type_name}\n'
             + trailing
             + f'Amount: {format_token_amount(amount)} {unit} (${usd_amount:.2f})\n'
-            + f'Price {comparision} {self.symbol_usd}{limit_price:.3g} {self.symbol_bnb} per token\n'
+            + f'Price {comparision} {self.symbol_usd}{format_amount_smart(limit_price)} {self.symbol_bnb} per token\n'
             + f'Slippage: {order["slippage"]}%\n'
             + f'Gas: {gas_price}'
         )

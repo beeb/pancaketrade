@@ -5,7 +5,7 @@ from typing import Optional
 from loguru import logger
 from pancaketrade.network import Network
 from pancaketrade.persistence import Order, Token, db
-from pancaketrade.utils.generic import format_token_amount, start_in_thread
+from pancaketrade.utils.generic import format_amount_smart, format_token_amount, start_in_thread
 from telegram.ext import Dispatcher
 from web3.types import Wei
 
@@ -45,7 +45,7 @@ class OrderWatcher:
         trailing = f' tsl {self.trailing_stop}%' if self.trailing_stop is not None else ''
         order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
         limit_price = (
-            f'{self.symbol_usd}<code>{self.limit_price:.3g}</code> {self.symbol_bnb}'
+            f'{self.symbol_usd}<code>{format_amount_smart(self.limit_price)}</code> {self.symbol_bnb}'
             if self.limit_price is not None
             else 'market price'
         )
@@ -72,7 +72,7 @@ class OrderWatcher:
         order_id = f'<u>#{self.order_record.id}</u>' if self.min_price or self.max_price else f'#{self.order_record.id}'
         type_icon = self.get_type_icon()
         limit_price = (
-            f'{self.symbol_usd}<code>{self.limit_price:.3g}</code> {self.symbol_bnb}'
+            f'{self.symbol_usd}<code>{format_amount_smart(self.limit_price)}</code> {self.symbol_bnb}'
             if self.limit_price is not None
             else 'market price'
         )

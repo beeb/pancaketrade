@@ -106,5 +106,22 @@ def format_token_amount(amount: Decimal) -> str:
 
 
 def format_price_fixed(price: Decimal) -> str:
-    price_fixed = f'{price:.{-price.adjusted()+2}f}' if price < 100 else f'{price:.1f}'
+    price_fixed = f'{price:.{-price.adjusted()+2}f}' if price < 100 else f'{price:.2f}'
     return price_fixed
+
+
+def format_amount_smart(amount: Decimal) -> str:
+    """Format amounts and prices with scientific notation for very small numbers, but fixed notation for large ones.
+
+    Below 10, the numbers are displayed with 3 significant figures, and scientific notation below 1e-6.
+    Above 10, 2 fixed decimals are used (good for dollar amounts).
+
+    Args:
+        amount (Decimal): price or amount
+
+    Returns:
+        str: formatted amount as a string
+    """
+    if amount < 10:
+        return f'{amount:.3g}'
+    return f'{amount:.2f}'

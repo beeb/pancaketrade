@@ -23,7 +23,13 @@ from pancaketrade.network import Network
 from pancaketrade.persistence import db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.db import get_token_watchers, init_db, update_prices
-from pancaketrade.utils.generic import chat_message, check_chat_id, format_token_amount, get_tokens_keyboard_layout
+from pancaketrade.utils.generic import (
+    chat_message,
+    check_chat_id,
+    format_token_amount,
+    format_amount_smart,
+    get_tokens_keyboard_layout,
+)
 from pancaketrade.watchers import OrderWatcher, TokenWatcher
 
 
@@ -352,8 +358,8 @@ class TradeBot:
             price_diff_percent = ((token_price / token.effective_buy_price) - Decimal(1)) * Decimal(100)
             diff_icon = '🆙' if price_diff_percent >= 0 else '🔽'
             effective_buy_price = (
-                f'<b>At buy (after tax)</b>: {symbol_usd}<code>{token.effective_buy_price:.3g}</code> {symbol_bnb}'
-                + f' / token (now {price_diff_percent:+.1f}% {diff_icon})\n'
+                f'<b>At buy (after tax)</b>: {symbol_usd}<code>{format_amount_smart(token.effective_buy_price)}</code>'
+                + f' {symbol_bnb} / token (now {price_diff_percent:+.1f}% {diff_icon})\n'
             )
         orders_sorted = sorted(
             token.orders, key=lambda o: o.limit_price if o.limit_price else Decimal(1e12), reverse=True
@@ -362,11 +368,13 @@ class TradeBot:
         message = (
             f'<b>{token.name}</b>: {format_token_amount(token_balance)}\n'
             + f'<b>Links</b>: {"    ".join(chart_links)}\n'
-            + f'<b>Value</b>: {symbol_usd}<code>{token_balance_value:.3g}</code> {symbol_bnb}'
+            + f'<b>Value</b>: {symbol_usd}<code>{format_amount_smart(token_balance_value)}</code> {symbol_bnb}'
             + (f' (${token_balance_usd:.2f})' if not self.config.price_in_usd else '')
             + '\n'
-            + f'<b>Price</b>: {symbol_usd}<code>{token_price:.3g}</code> {symbol_bnb} / token'
-            + (f' (${token_price_usd:.3g})' if not self.config.price_in_usd else '')
+            + f'<b>Price</b>: {symbol_usd}'
+            + f'<code>{format_amount_smart(token_price)}</code>'
+            + f' {symbol_bnb} / token'
+            + (f' (${format_amount_smart(token_price_usd)})' if not self.config.price_in_usd else '')
             + '\n'
             + effective_buy_price
             + '<b>Orders</b>: (underlined = tracking trailing stop loss)\n'
