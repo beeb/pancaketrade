@@ -319,7 +319,7 @@ class TradeBot:
                 )
 
     def get_token_status(self, token: TokenWatcher) -> Tuple[str, Decimal]:
-        symbol_usd, price_base_symbol = ('$', '$') if self.config.price_in_usd else ('', 'BNB')
+        symbol_usd = '$' if self.config.price_in_usd else ''
         symbol_bnb = 'BNB' if not self.config.price_in_usd else ''
         token_price, base_token_address = self.net.get_token_price(token_address=token.address)
         chart_links = [

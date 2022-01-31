@@ -522,7 +522,11 @@ class AddOrderConversation:
             del context.user_data['addorder']
             db.close()
         order = OrderWatcher(
-            order_record=order_record, net=self.net, dispatcher=context.dispatcher, chat_id=update.effective_chat.id
+            order_record=order_record,
+            net=self.net,
+            dispatcher=context.dispatcher,
+            chat_id=update.effective_chat.id,
+            price_in_usd=self.config.price_in_usd,
         )
         token.orders.append(order)
         chat_message(
