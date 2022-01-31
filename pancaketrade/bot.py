@@ -22,7 +22,7 @@ from pancaketrade.conversations import (
 from pancaketrade.network import Network
 from pancaketrade.persistence import db
 from pancaketrade.utils.config import Config
-from pancaketrade.utils.db import get_token_watchers, init_db
+from pancaketrade.utils.db import get_token_watchers, init_db, update_prices
 from pancaketrade.utils.generic import chat_message, check_chat_id, format_token_amount, get_tokens_keyboard_layout
 from pancaketrade.watchers import OrderWatcher, TokenWatcher
 
@@ -45,6 +45,12 @@ class TradeBot:
         # persistence = PicklePersistence(filename='botpersistence')
         self.updater = Updater(token=config.secrets.telegram_token, persistence=None, defaults=defaults)
         self.dispatcher = self.updater.dispatcher
+        update_prices(
+            new_price_in_usd=self.config.price_in_usd,
+            dispatcher=self.dispatcher,
+            chat_id=self.config.secrets.admin_chat_id,
+            net=self.net,
+        )  # convert prices from bnb to usd or vice-versa
         self.convos = {
             'addtoken': AddTokenConversation(parent=self, config=self.config),
             'edittoken': EditTokenConversation(parent=self, config=self.config),

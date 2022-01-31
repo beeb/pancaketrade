@@ -311,7 +311,6 @@ class BuySellConversation:
         add['gas_price'] = '+10.1'
         del add['token_address']  # not needed in order record creation
         try:
-            db.connect()
             with db.atomic():
                 order_record = Order.create(token=token.token_record, created=datetime.now(), **add)
         except Exception as e:
@@ -319,7 +318,6 @@ class BuySellConversation:
             return ConversationHandler.END
         finally:
             del context.user_data['buysell']
-            db.close()
         order = OrderWatcher(
             order_record=order_record,
             net=self.net,

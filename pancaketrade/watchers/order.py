@@ -197,7 +197,6 @@ class OrderWatcher:
         effective_price = self.get_human_amount() / tokens_out  # in BNB per token
         if self.price_in_usd:  # we need to convert to USD according to settings
             effective_price = effective_price * self.net.get_bnb_price()
-        db.connect()
         try:
             with db.atomic():
                 if buy_price_before is not None:
@@ -214,8 +213,6 @@ class OrderWatcher:
                 chat_id=self.chat_id,
                 text=f'⛔️ Effective buy price update failed: {e}',
             )
-        finally:
-            db.close()
         logger.success(
             f'Buy transaction succeeded. Received {format_token_amount(tokens_out)} {self.token_record.symbol}. '
             + f'Effective price (after tax) {self.symbol_usd}{effective_price:.4g} {self.symbol_bnb}/token'

@@ -524,7 +524,6 @@ class AddOrderConversation:
         token: TokenWatcher = self.parent.watchers[add['token_address']]
         del add['token_address']  # not needed in order record creation
         try:
-            db.connect()
             with db.atomic():
                 order_record = Order.create(token=token.token_record, created=datetime.now(), **add)
         except Exception as e:
@@ -532,7 +531,6 @@ class AddOrderConversation:
             return ConversationHandler.END
         finally:
             del context.user_data['addorder']
-            db.close()
         order = OrderWatcher(
             order_record=order_record,
             net=self.net,
