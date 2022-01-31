@@ -54,9 +54,12 @@ class NetworkContracts:
 
 
 class Network:
-    def __init__(self, rpc: str, wallet: ChecksumAddress, min_pool_size_bnb: float, secrets: ConfigSecrets):
+    def __init__(
+        self, rpc: str, wallet: ChecksumAddress, min_pool_size_bnb: float, price_in_usd: bool, secrets: ConfigSecrets
+    ):
         self.wallet = wallet
         self.min_pool_size_bnb = min_pool_size_bnb
+        self.price_in_usd = price_in_usd
         self.secrets = secrets
         adapter = requests.adapters.HTTPAdapter(pool_connections=20, pool_maxsize=20, max_retries=1)
         session = requests.Session()
@@ -72,10 +75,10 @@ class Network:
         self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
         self.addr = NetworkAddresses()
         self.contracts = NetworkContracts(addr=self.addr, w3=self.w3)
-        self.max_approval_hex = f"0x{64 * 'f'}"
-        self.max_approval_int = int(self.max_approval_hex, 16)
-        self.max_approval_check_hex = f"0x{15 * '0'}{49 * 'f'}"
-        self.max_approval_check_int = int(self.max_approval_check_hex, 16)
+        max_approval_hex = f"0x{64 * 'f'}"
+        self.max_approval_int = int(max_approval_hex, 16)
+        max_approval_check_hex = f"0x{15 * '0'}{49 * 'f'}"
+        self.max_approval_check_int = int(max_approval_check_hex, 16)
         self.last_nonce = self.w3.eth.get_transaction_count(self.wallet)
         self.approved: Set[str] = set()  # token that were already approved
         self.lp_cache: Dict[Tuple[str, str], ChecksumAddress] = {}  # token and base tuples as the key
@@ -108,46 +111,53 @@ class Network:
         return Decimal(self.w3.eth.get_balance(self.wallet)) / Decimal(10 ** 18)
 
     def get_token_balance_usd(
-        self, token_address: ChecksumAddress, balance: Optional[Decimal] = None, balance_bnb: Optional[Decimal] = None
+        self, token_address: ChecksumAddress, balance: Optional[Decimal] = None, value: Optional[Decimal] = None
     ) -> Decimal:
         """Get the equivalent value of a token's position in USD.
+
+        If self.price_in_usd is True, then this is equivalent to calling `get_token_balance_value`.
 
         Args:
             token_address (ChecksumAddress): the address of the token contract
             balance (Optional[Decimal], optional): the wallet's balance for a given token if available. An additional
                 request will be made if not available. Defaults to None.
-            balance_bnb (Optional[Decimal], optional): the equivalent value of a token's position in BNB, if available.
+            value (Optional[Decimal], optional): the equivalent value of a token's position in BNB or USD, if available.
                 An additional request will be made if not available. Defaults to None.
 
         Returns:
             Decimal: the value of a token's position in USD
         """
-        if balance_bnb is None:
-            balance_bnb = self.get_token_balance_bnb(token_address, balance=balance)
+        if value is None:
+            value = self.get_token_balance_value(token_address, balance=balance)
+        if self.price_in_usd:
+            return value
+        # value is in BNB, we convert
         bnb_price = self.get_bnb_price()
-        return bnb_price * balance_bnb
+        return bnb_price * value
 
-    def get_token_balance_bnb(
+    def get_token_balance_value(
         self, token_address: ChecksumAddress, balance: Optional[Decimal] = None, token_price: Optional[Decimal] = None
     ) -> Decimal:
-        """Get the equivalent value of a token's position in BNB.
+        """Get the value of a token's position in BNB or USD.
+
+        If the token price is given in BNB/token, the result is in BNB. Otherwise it's in USD.
 
         Args:
             token_address (ChecksumAddress): the address of the token contract
             balance (Optional[Decimal], optional): the wallet's balance for a given token if available. An additional
                 request will be made if not available. Defaults to None.
-            token_price (Optional[Decimal], optional): the price of the token in BNB/token if available. An additional
+            token_price (Optional[Decimal], optional): the price of the token if available. An additional
                 request will be made if not available. Defaults to None.
 
         Returns:
-            Decimal: the value of a token's position in BNB
+            Decimal: the value of a token's position in USD or BNB
         """
         if balance is None:
             balance = self.get_token_balance(token_address=token_address)
         if token_price is None:
             token_price, _ = self.get_token_price(token_address=token_address)
-        bal_bnb = token_price * balance  # artifact when balance is zero -> 0e-35
-        return Decimal(0) if bal_bnb < 1e-30 else bal_bnb
+        value = token_price * balance  # artifact when balance is zero -> 0e-35
+        return Decimal(0) if value < 1e-30 else value
 
     def get_token_balance(self, token_address: ChecksumAddress) -> Decimal:
         """The size of the user's position for a given token contract.
@@ -190,33 +200,37 @@ class Network:
         token_address: ChecksumAddress,
         token_price: Optional[Decimal] = None,
     ) -> Decimal:
-        """Get the price in USD for a given token, in USD/token.
+        """Get the price for a given token, in USD/token.
+
+        This call is equivalent to `get_token_price` if self.price_in_usd is True.
 
         Args:
             token_address (ChecksumAddress): address of the token contract
-            token_price (Optional[Decimal], optional): the price of the token in BNB/token if available. An additional
+            token_price (Optional[Decimal], optional): the price of the token if available. An additional
                 request will be made if not available. Defaults to None.
 
         Returns:
             Decimal: the token price in USD/token.
         """
         if token_price is None:
-            token_price, _ = self.get_token_price(token_address=token_address)
+            token_price, _ = self.get_token_price(token_address=token_address)  # in USD or BNB depending on config
+        if self.price_in_usd:
+            return token_price
         usd_per_bnb = self.get_bnb_price()
         return token_price * usd_per_bnb
 
     @cached(cache=TTLCache(maxsize=256, ttl=1))
     def get_token_price(self, token_address: ChecksumAddress) -> Tuple[Decimal, ChecksumAddress]:
-        """Return price of the token in BNB/token.
+        """Return price of the token in BNB/token or USD/token.
 
-        [extended_summary]
+        If self.price_in_usd is True, then price is in USD/token.
 
         Args:
             token_address (ChecksumAddress): the address of the token
 
         Returns:
             Tuple[Decimal, ChecksumAddress]: a tuple containing:
-                - Decimal: price of the token in BNB
+                - Decimal: price of the token in BNB or USD
                 - ChecksumAddress: the base token of the biggest LP
         """
         if token_address == self.addr.wbnb:  # special case for wbnb
@@ -241,9 +255,9 @@ class Network:
         base_token: Contract,
         ignore_poolsize: bool = False,
     ) -> Decimal:
-        """Return price of the token in BNB/token for a given LP defined by its base token.
+        """Return price of the token in BNB/token or USD/token for a given LP defined by its base token.
 
-        The price is always in BNB per token, regardless of the base token of the LP.
+        The price is given in USD/token if self.price_in_usd is True
 
         Args:
             token (Contract): token contract instance
@@ -253,7 +267,8 @@ class Network:
                 zero price. Defaults to False.
 
         Returns:
-            Decimal: the price of the token in BNB per token, as calculated from a given pair with the given base token.
+            Decimal: the price of the token in BNB or USD per token, as calculated from a given pair with the given
+            base token.
         """
         lp = self.find_lp_address(token_address=token.address, base_token_address=base_token.address)
         if lp is None:
@@ -261,26 +276,43 @@ class Network:
         base_decimals = self.get_token_decimals(base_token.address)
         base_amount = Decimal(base_token.functions.balanceOf(lp).call()) * Decimal(
             10 ** (18 - base_decimals)
-        )  # e.g. balance of LP in BUSD, normalized to 18 decimals
-        base_per_bnb = self.get_base_token_price(base_token)  # e.g. price of BUSD in BNB/BUSD
-        base_amount_in_bnb = base_amount * base_per_bnb
+        )  # e.g. balance of LP for base token, normalized to 18 decimals
         if (
-            base_amount_in_bnb / Decimal(10 ** 18) < self.min_pool_size_bnb and not ignore_poolsize
-        ):  # not enough liquidity
+            base_token == self.addr.wbnb
+            and base_amount / Decimal(10 ** 18) < self.min_pool_size_bnb
+            and not ignore_poolsize
+        ):
+            # Not enough liquidity
             return Decimal(0)
+        # If base is not BNB, then base must be dollar-pegged and we divide by the BNB price to find equivalent
+        # value in BNB.
+        elif (base_amount / self.get_bnb_price()) / Decimal(10 ** 18) < self.min_pool_size_bnb and not ignore_poolsize:
+            # Not enough liquidity
+            return Decimal(0)
+
         token_decimals = self.get_token_decimals(token.address)
         token_amount = Decimal(token.functions.balanceOf(lp).call()) * Decimal(10 ** (18 - token_decimals))
-        # normalize decimals
+        # normalize to 18 decimals
         try:
-            bnb_per_token = base_amount_in_bnb / token_amount
+            base_per_token = base_amount / token_amount
         except Exception:
-            bnb_per_token = Decimal(0)
-        return bnb_per_token
+            base_per_token = Decimal(0)
+        if self.price_in_usd:  # we need USD output
+            if base_token != self.addr.wbnb:  # base is USD
+                return base_per_token  # no change needed
+            else:
+                return base_per_token * self.get_bnb_price()  # we convert to USD
+        else:  # we need BNB output
+            if base_token == self.addr.wbnb:  # base is BNB
+                return base_per_token
+            else:
+                return base_per_token / self.get_bnb_price()  # we convert to BNB
 
     @cached(cache=TTLCache(maxsize=1, ttl=5))
-    def get_base_token_price(self, token: Contract) -> Decimal:
-        """Get the price in BNB per token for a given base token of some LP.
+    def _get_base_token_price(self, token: Contract) -> Decimal:
+        """Deprecated.
 
+        Get the price in BNB per token for a given base token of some LP.
         This is a simplified version of the token price function that doesn't support non-BNB pairs.
 
         Args:
@@ -303,12 +335,15 @@ class Network:
     def get_bnb_price(self) -> Decimal:
         """Get the price of the native token in USD/BNB.
 
+        Raises:
+            ValueError: if the BNB/BUSD LP can't be found
+
         Returns:
             Decimal: the price of the chain's native token in USD per BNB.
         """
         lp = self.find_lp_address(token_address=self.addr.busd, base_token_address=self.addr.wbnb)
         if not lp:
-            return Decimal(0)
+            raise ValueError('No LP found for BNB/BUSD')
         bnb_amount = Decimal(self.contracts.wbnb.functions.balanceOf(lp).call())
         busd_amount = Decimal(self.contracts.busd.functions.balanceOf(lp).call())
         return busd_amount / bnb_amount
