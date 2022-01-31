@@ -313,9 +313,14 @@ class AddOrderConversation:
                     )
                     return self.next.AMOUNT
         decimals = 18 if order['type'] == 'buy' else token.decimals
-        bnb_price = self.net.get_bnb_price()
         limit_price = Decimal(order["limit_price"])
-        usd_amount = bnb_price * amount if order['type'] == 'buy' else bnb_price * limit_price * amount
+        if order['type'] == 'buy':
+            usd_amount = self.net.get_bnb_price() * amount
+        elif self.config.price_in_usd:  # sell and price in USD
+            usd_amount = limit_price * amount
+        else:  # sell and price in BNB
+            usd_amount = self.net.get_bnb_price() * limit_price * amount
+
         unit = f'BNB worth of {token.symbol}' if order['type'] == 'buy' else token.symbol
         order['amount'] = str(int(amount * Decimal(10 ** decimals)))
         reply_markup = InlineKeyboardMarkup(
