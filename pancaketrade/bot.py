@@ -22,7 +22,7 @@ from pancaketrade.conversations import (
 from pancaketrade.network import Network
 from pancaketrade.persistence import db
 from pancaketrade.utils.config import Config
-from pancaketrade.utils.db import get_token_watchers, init_db, update_prices
+from pancaketrade.utils.db import get_token_watchers, init_db, update_db_prices
 from pancaketrade.utils.generic import (
     chat_message,
     check_chat_id,
@@ -51,7 +51,7 @@ class TradeBot:
         # persistence = PicklePersistence(filename='botpersistence')
         self.updater = Updater(token=config.secrets.telegram_token, persistence=None, defaults=defaults)
         self.dispatcher = self.updater.dispatcher
-        update_prices(
+        update_db_prices(
             new_price_in_usd=self.config.price_in_usd,
             dispatcher=self.dispatcher,
             chat_id=self.config.secrets.admin_chat_id,

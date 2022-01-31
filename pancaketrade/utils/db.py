@@ -74,7 +74,7 @@ def remove_order(order_record: Order):
         db.close()
 
 
-def update_prices(new_price_in_usd: bool, dispatcher: Dispatcher, chat_id: int, net):
+def update_db_prices(new_price_in_usd: bool, dispatcher: Dispatcher, chat_id: int, net):
     with db:
         old_price_in_usd_pref = Preferences.select().where(Preferences.key == 'price_in_usd').get()
     old_price_in_usd = old_price_in_usd_pref.value == 'true'
