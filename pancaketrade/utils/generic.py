@@ -9,6 +9,10 @@ from loguru import logger
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update
 from telegram.ext import CallbackContext
 
+from pancaketrade.network.bsc import NetworkAddresses
+
+addr = NetworkAddresses()
+
 
 class InterceptHandler(logging.Handler):
     def emit(self, record):
@@ -92,6 +96,8 @@ def get_tokens_keyboard_layout(
 ) -> List[List[InlineKeyboardButton]]:
     buttons: List[InlineKeyboardButton] = []
     for token in sorted(watchers.values(), key=lambda token: token.symbol.lower()):
+        if token.address == addr.wbnb:
+            continue
         callback = f'{callback_prefix}:{token.address}' if callback_prefix else token.address
         buttons.append(InlineKeyboardButton(token.name, callback_data=callback))
     buttons.append(InlineKeyboardButton('❌ Cancel', callback_data='canceltokenchoice'))

@@ -233,7 +233,9 @@ class Network:
                 - Decimal: price of the token in BNB or USD
                 - ChecksumAddress: the base token of the biggest LP
         """
-        if token_address == self.addr.wbnb:  # special case for wbnb
+        if token_address == self.addr.wbnb and self.price_in_usd:  # special case for wbnb
+            return self.get_bnb_price(), self.addr.wbnb
+        elif token_address == self.addr.wbnb:
             return Decimal(1), self.addr.wbnb
         token = self.get_token_contract(token_address)
         supported_lps = [
