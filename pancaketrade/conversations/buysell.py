@@ -258,6 +258,7 @@ class BuySellConversation:
         )
         return self.print_summary(update, context)
 
+    @check_chat_id
     def print_summary(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
         order = context.user_data['buysell']
@@ -348,6 +349,7 @@ class BuySellConversation:
     def get_amount_unit(self, order: Mapping, token) -> str:
         return token.symbol if order['type'] == 'sell' else 'BNB'
 
+    @check_chat_id
     def cancel_command(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
         del context.user_data['buysell']

@@ -109,6 +109,7 @@ class TradeBot:
                 self.command_show_all_tokens, pattern='^addorder$|^removeorder$|^buysell$|^sellall$|^approve$|^address$'
             )
         )
+        self.dispatcher.add_handler(CallbackQueryHandler(self.command_status, pattern='^status$'))
         self.dispatcher.add_handler(CallbackQueryHandler(self.cancel_command, pattern='^canceltokenchoice$'))
         for convo in self.convos.values():
             self.dispatcher.add_handler(convo.handler)
@@ -415,6 +416,7 @@ class TradeBot:
             ],
             [
                 InlineKeyboardButton('📇 Get address', callback_data='address'),
+                InlineKeyboardButton('💲 Tokens status', callback_data='status'),
             ],
         ]
         return buttons

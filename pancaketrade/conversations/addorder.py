@@ -469,6 +469,7 @@ class AddOrderConversation:
         )
         return self.print_summary(update, context)
 
+    @check_chat_id
     def print_summary(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
         order = context.user_data['addorder']
@@ -595,6 +596,7 @@ class AddOrderConversation:
         )
         return next_message
 
+    @check_chat_id
     def cancel_command(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
         del context.user_data['addorder']

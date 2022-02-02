@@ -131,6 +131,7 @@ class RemoveOrderConversation:
     def get_type_icon(self, order: OrderWatcher) -> str:
         return order.get_type_icon()
 
+    @check_chat_id
     def cancel_command(self, update: Update, context: CallbackContext):
         assert context.user_data is not None
         del context.user_data['removeorder']
