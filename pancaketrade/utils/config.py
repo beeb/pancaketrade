@@ -4,7 +4,7 @@ import string
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import questionary
 import yamale
@@ -39,6 +39,7 @@ class Config:
     monitor_interval: float = 5
     update_messages: bool = False
     price_in_usd: bool = False
+    charts: List[str] = field(default_factory=lambda: ['poocoin', 'bogged', 'dexguru', 'dextools', 'dexscreener'])
     config_file: str = 'config.yml'
     _pk: str = field(repr=False, default='')
 

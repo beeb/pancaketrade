@@ -8,6 +8,7 @@ from typing import Any, Callable, Iterable, List, Mapping, Optional
 from loguru import logger
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, Update
 from telegram.ext import CallbackContext
+from web3.types import ChecksumAddress
 
 from pancaketrade.network.bsc import NetworkAddresses
 
@@ -131,3 +132,17 @@ def format_amount_smart(amount: Decimal) -> str:
     if amount < 10:
         return f'{amount:.3g}'
     return f'{amount:.2f}'
+
+
+def get_chart_link(chart: str, token: ChecksumAddress, lp: Optional[ChecksumAddress]) -> Optional[str]:
+    if chart == 'poocoin':
+        return f'<a href="https://poocoin.app/tokens/{token}">Poocoin</a>'
+    elif chart == 'bogged':
+        return f'<a href="https://charts.bogged.finance/?token={token}">Bogged</a>'
+    elif chart == 'dexguru':
+        return f'<a href="https://dex.guru/token/{token}-bsc">Dex.Guru</a>'
+    elif chart == 'dextools':
+        return None if lp is None else f'<a href="https://www.dextools.io/app/pancakeswap/pair-explorer/{lp}">Dext</a>'
+    elif chart == 'dexscreener':
+        return None if lp is None else f'<a href="https://dexscreener.com/bsc/{lp}">DexScr</a>'
+    return None

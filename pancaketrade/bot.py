@@ -28,6 +28,7 @@ from pancaketrade.utils.generic import (
     check_chat_id,
     format_token_amount,
     format_amount_smart,
+    get_chart_link,
     get_tokens_keyboard_layout,
 )
 from pancaketrade.watchers import OrderWatcher, TokenWatcher
@@ -335,15 +336,12 @@ class TradeBot:
         symbol_usd = '$' if self.config.price_in_usd else ''
         symbol_bnb = 'BNB' if not self.config.price_in_usd else ''
         token_price, base_token_address = self.net.get_token_price(token_address=token.address)
-        chart_links = [
-            f'<a href="https://poocoin.app/tokens/{token.address}">Poocoin</a>',
-            f'<a href="https://charts.bogged.finance/?token={token.address}">Bogged</a>',
-            f'<a href="https://dex.guru/token/{token.address}-bsc">Dex.Guru</a>',
-        ]
         token_lp = self.net.find_lp_address(token_address=token.address, base_token_address=base_token_address)
-        if token_lp:
-            chart_links.append(f'<a href="https://www.dextools.io/app/pancakeswap/pair-explorer/{token_lp}">Dext</a>')
-            chart_links.append(f'<a href="https://dexscreener.com/bsc/{token_lp}">DexScr</a>')
+        chart_links = []
+        for chart in self.config.charts:
+            chart_link = get_chart_link(chart, token.address, token_lp)
+            if chart_link:
+                chart_links.append(chart_link)
         chart_links.append(f'<a href="https://bscscan.com/token/{token.address}?a={self.net.wallet}">BscScan</a>')
         token_balance = self.net.get_token_balance(token_address=token.address)
         token_balance_value = self.net.get_token_balance_value(
