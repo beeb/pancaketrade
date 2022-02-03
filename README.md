@@ -62,17 +62,19 @@ cp user_data/config.example.yml user_data/config.yml
 
 Next, open the `config.yml` file inside the `user_data` folder with a text editor and populate the `secrets` section.
 
-The bot needs your wallet's private key in order to sign and execute orders on your behalf. You can either run the
-command below and enter your private key in the prompt that will be shown, or you can provide an environment variable
-named `WALLET_PK` that will be used by the bot.
+The bot needs your wallet's private key in order to sign and execute orders on your behalf. You have multiple options
+to do so:
+
+- You can run the `poetry run trade` command as-is and enter your private key in the prompt that will be shown each time
+  the bot is started (only stored in memory)
+- You can provide an environment variable named `WALLET_PK`. For this multiple options:
+  - You can create a `.env` file in the root of the project (same folder as `pyproject.toml`) and enter your private key
+    in that file (which is excluded from git): `WALLET_PK=123abcd...`
+  - You can prepend the command with the environment variable (not recommended as this will be stored in your shell
+    history): `WALLET_PK=123abcd... poetry run trade`
+  - You can use a service to run the bot, see the [relevant section below](#run-as-a-service)
+
 The private key is **not** the same as the seed words/mnemonic. You need the 64-characters hexadecimal private key.
-
-To provide the environment variable, you can also create a `.env` file in the root of the project (same folder as
-`pyproject.toml`) and enter your private key in that file (which is excluded from git):
-
-```programming
-WALLET_PK=123abcd...
-```
 
 Your wallet address will be inferred from the private key and doesn't need to be provided.
 
