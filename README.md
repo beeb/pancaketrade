@@ -67,6 +67,13 @@ command below and enter your private key in the prompt that will be shown, or yo
 named `WALLET_PK` that will be used by the bot.
 The private key is **not** the same as the seed words/mnemonic. You need the 64-characters hexadecimal private key.
 
+To provide the environment variable, you can also create a `.env` file in the root of the project (same folder as
+`pyproject.toml`) and enter your private key in that file (which is excluded from git):
+
+```programming
+WALLET_PK=123abcd...
+```
+
 Your wallet address will be inferred from the private key and doesn't need to be provided.
 
 Run the bot:
@@ -134,7 +141,7 @@ Steps to use docker:
 2. Create a file named `.env` next to your docker-compose file and insert your private key: `WALLET_PK=123abc...`
 3. Create a `user_data` folder if it doesn't already exist, and create your `config.yml` file inside
    (see [previous section](#configuration-file)).
-4. Run the service with `docker-compose up -d` or `docker compose up -d` depending on your docker version.
+4. Run the service with `docker-compose up -d`.
 
 Note: the bot will create a file for the database named `pancaketrade.db` inside the `user_data` folder on your local machine.
 Do not delete or move that file because it holds all your token configurations and orders data. This is the file to back
