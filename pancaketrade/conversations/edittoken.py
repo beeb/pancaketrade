@@ -278,7 +278,12 @@ class EditTokenConversation:
                         update, context, text='⚠️ The BNB amount you inserted is not valid. Try again:', edit=False
                     )
                     return self.next.BUYPRICE
-                effective_buy_price = buy_amount / balance
+                effective_buy_price_bnb = buy_amount / balance
+                effective_buy_price = (
+                    effective_buy_price_bnb * self.net.get_bnb_price()
+                    if self.config.price_in_usd
+                    else effective_buy_price_bnb
+                )
             else:
                 try:
                     effective_buy_price = Decimal(user_input)
