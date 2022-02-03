@@ -27,7 +27,7 @@ The bot provides a lot of convenience trading features including:
 - Automatic approval for selling
 - Assign emoji to each token to differentiate them easily
 - Default slippage set on a token basis for faster order creation
-- Chart link for each token
+- Charts links for each token
 
 ## Requirements
 
