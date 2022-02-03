@@ -299,16 +299,18 @@ class Network:
             base_per_token = base_amount / token_amount
         except Exception:
             base_per_token = Decimal(0)
+        value = base_per_token
         if self.price_in_usd:  # we need USD output
             if base_token.address != self.addr.wbnb:  # base is USD
-                return base_per_token  # no change needed
+                value = base_per_token  # no change needed
             else:
-                return base_per_token * self.get_bnb_price()  # we convert to USD
+                value = base_per_token * self.get_bnb_price()  # we convert to USD
         else:  # we need BNB output
             if base_token.address == self.addr.wbnb:  # base is BNB
-                return base_per_token
+                value = base_per_token
             else:
-                return base_per_token / self.get_bnb_price()  # we convert to BNB
+                value = base_per_token / self.get_bnb_price()  # we convert to BNB
+        return Decimal(0) if value < 1e-30 else value  # artifact with small numbers
 
     @cached(cache=TTLCache(maxsize=1, ttl=5))
     def _get_base_token_price(self, token: Contract) -> Decimal:
