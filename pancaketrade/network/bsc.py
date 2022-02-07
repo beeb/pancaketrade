@@ -8,13 +8,15 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from cachetools import LRUCache, TTLCache, cached
 from loguru import logger
-from pancaketrade.utils.config import ConfigSecrets
 from requests.auth import HTTPBasicAuth
 from web3 import Web3
 from web3.contract import Contract, ContractFunction
 from web3.exceptions import ABIFunctionNotFound, ContractLogicError
+from web3.logs import DISCARD
 from web3.middleware import geth_poa_middleware
 from web3.types import ChecksumAddress, HexBytes, Nonce, TxParams, TxReceipt, Wei
+
+from pancaketrade.utils.config import ConfigSecrets
 
 GAS_LIMIT_FAILSAFE = Wei(2500000)  # if the estimated limit is above this one, cancel transaction
 
@@ -500,7 +502,11 @@ class Network:
             logger.error(f'Buy transaction failed at tx {txhash}')
             return False, Decimal(0), txhash
         amount_out = Decimal(0)
-        logs = self.get_token_contract(token_address=token_address).events.Transfer().processReceipt(receipt)
+        logs = (
+            self.get_token_contract(token_address=token_address)
+            .events.Transfer()
+            .processReceipt(receipt, errors=DISCARD)
+        )
         for log in reversed(logs):  # only get last withdrawal call
             if log['address'] != token_address:
                 continue
@@ -600,7 +606,7 @@ class Network:
             logger.error(f'Sell transaction failed at tx {txhash}')
             return False, Decimal(0), txhash
         amount_out = Decimal(0)
-        logs = self.contracts.wbnb.events.Withdrawal().processReceipt(receipt)
+        logs = self.contracts.wbnb.events.Withdrawal().processReceipt(receipt, errors=DISCARD)
         for log in reversed(logs):  # only get last withdrawal call
             if log['address'] != self.addr.wbnb:
                 continue
