@@ -1,5 +1,6 @@
 import logging
 import sys
+import warnings
 
 import click
 from loguru import logger
@@ -7,6 +8,13 @@ from loguru import logger
 from pancaketrade.bot import TradeBot
 from pancaketrade.utils.config import read_config
 from pancaketrade.utils.generic import InterceptHandler
+
+warnings.filterwarnings(
+    'ignore', message='The normalize method is no longer necessary, as this time zone supports the fold attribute'
+)
+warnings.filterwarnings(
+    'ignore', message='If \'per_message=False\', \'CallbackQueryHandler\' will not be tracked for every message'
+)
 
 logger.remove()
 logger.add(
