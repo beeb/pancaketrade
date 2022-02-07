@@ -20,7 +20,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 # install poetry
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
+RUN curl -sSL https://install.python-poetry.org | python -
 
 # copy source and install deps
 COPY . ./
