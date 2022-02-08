@@ -140,10 +140,11 @@ class EditTokenConversation:
                 context,
                 text=f'What was the effective buy price (after tax) <u>price in <b>{self.symbol_usd}{self.symbol_bnb}'
                 + f' per {token.symbol}</b></u> when you invested? '
-                + 'You have 3 options for this:\n'
+                + 'You have 4 options for this:\n'
                 + f' ・ Standard notation like "<code>{current_price_fixed}</code>"\n'
                 + f' ・ Scientific notation like "<code>{current_price:.1e}</code>"\n'
-                + ' ・ Amount you bought in BNB like "<code>0.5BNB</code>" (include "BNB" at the end)\n',
+                + ' ・ Total amount you bought in USD like "<code>200USD</code>" (include "USD" at the end)\n'
+                + ' ・ Total amount you bought in BNB like "<code>0.5BNB</code>" (include "BNB" at the end)\n',
                 reply_markup=reply_markup,
                 edit=self.config.update_messages,
             )
@@ -283,6 +284,30 @@ class EditTokenConversation:
                     effective_buy_price_bnb * self.net.get_bnb_price()
                     if self.config.price_in_usd
                     else effective_buy_price_bnb
+                )
+            elif 'usd' in user_input:
+                balance = self.net.get_token_balance(token_address=token.address)
+                if balance == 0:  # would lead to division by zero
+                    chat_message(
+                        update,
+                        context,
+                        text='⚠️ The token balance is zero, can\'t use calculation from USD amount. '
+                        + 'Try again with a price instead:',
+                        edit=False,
+                    )
+                    return self.next.BUYPRICE
+                try:
+                    buy_amount = Decimal(user_input[:-3])
+                except Exception:
+                    chat_message(
+                        update, context, text='⚠️ The USD amount you inserted is not valid. Try again:', edit=False
+                    )
+                    return self.next.BUYPRICE
+                effective_buy_price_usd = buy_amount / balance
+                effective_buy_price = (
+                    effective_buy_price_usd
+                    if self.config.price_in_usd
+                    else effective_buy_price_usd / self.net.get_bnb_price()
                 )
             else:
                 try:
