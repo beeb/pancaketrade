@@ -35,7 +35,3 @@ repos:
           - types-PyYAML
           - types-requests
           - types-cachetools
-  - repo: https://github.com/pre-commit/pre-commit
-    rev: v2.17.0
-    hooks:
-      - id: validate_manifest
