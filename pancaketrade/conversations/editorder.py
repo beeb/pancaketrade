@@ -183,9 +183,7 @@ class EditOrderConversation:
                             InlineKeyboardButton("75%", callback_data="0.75"),
                             InlineKeyboardButton("100%", callback_data="1.0"),
                         ],
-                        [
-                            InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
-                        ],
+                        [InlineKeyboardButton("❌ Cancel", callback_data="cancel")],
                     ]
                 )
                 if order.type == "sell"
@@ -219,9 +217,7 @@ class EditOrderConversation:
                         InlineKeyboardButton("15%", callback_data="15"),
                         InlineKeyboardButton("20%", callback_data="20"),
                     ],
-                    [
-                        InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
-                    ],
+                    [InlineKeyboardButton("❌ Cancel", callback_data="cancel")],
                 ]
             )
             chat_message(

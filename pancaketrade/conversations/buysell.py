@@ -45,9 +45,7 @@ class BuySellConversation:
                     CallbackQueryHandler(self.command_buysell_amount, pattern="^[^:]*$"),
                     MessageHandler(Filters.text & ~Filters.command, self.command_buysell_amount),
                 ],
-                self.next.SUMMARY: [
-                    CallbackQueryHandler(self.command_buysell_summary, pattern="^[^:]*$"),
-                ],
+                self.next.SUMMARY: [CallbackQueryHandler(self.command_buysell_summary, pattern="^[^:]*$")],
             },
             fallbacks=[CommandHandler("cancel", self.command_cancelbuysell)],
             name="buysell_conversation",
@@ -70,9 +68,7 @@ class BuySellConversation:
                     InlineKeyboardButton("🟢 Buy", callback_data="buy"),
                     InlineKeyboardButton("🔴 Sell", callback_data="sell"),
                 ],
-                [
-                    InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
-                ],
+                [InlineKeyboardButton("❌ Cancel", callback_data="cancel")],
             ]
         )
         chat_message(
@@ -142,9 +138,7 @@ class BuySellConversation:
                         InlineKeyboardButton("75%", callback_data="0.75"),
                         InlineKeyboardButton("100%", callback_data="1.0"),
                     ],
-                    [
-                        InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
-                    ],
+                    [InlineKeyboardButton("❌ Cancel", callback_data="cancel")],
                 ]
             )
             if order["type"] == "sell"

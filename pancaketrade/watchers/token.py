@@ -16,12 +16,7 @@ from pancaketrade.watchers.order import OrderWatcher
 
 class TokenWatcher:
     def __init__(
-        self,
-        token_record: Token,
-        net: Network,
-        dispatcher: Dispatcher,
-        config: Config,
-        orders: List = list(),
+        self, token_record: Token, net: Network, dispatcher: Dispatcher, config: Config, orders: List = list()
     ):
         self.net = net
         self.dispatcher = dispatcher
@@ -81,13 +76,11 @@ class TokenWatcher:
                 res = self.net.approve(token_address=self.address)
                 if res:
                     self.dispatcher.bot.send_message(
-                        chat_id=self.config.secrets.admin_chat_id,
-                        text="✅ Approval successful!",
+                        chat_id=self.config.secrets.admin_chat_id, text="✅ Approval successful!"
                     )
                 else:
                     self.dispatcher.bot.send_message(
-                        chat_id=self.config.secrets.admin_chat_id,
-                        text="⛔ Approval failed",
+                        chat_id=self.config.secrets.admin_chat_id, text="⛔ Approval failed"
                     )
             order.price_update(price=price)
         self.orders = [o for i, o in enumerate(self.orders) if i not in indices_to_remove]

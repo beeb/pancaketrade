@@ -24,9 +24,7 @@ class SellAllConversation:
         self.next = SellAllResponses()
         self.handler = ConversationHandler(
             entry_points=[CallbackQueryHandler(self.command_sellall, pattern="^sellall:0x[a-fA-F0-9]{40}$")],
-            states={
-                self.next.CONFIRM: [CallbackQueryHandler(self.command_sellall_confirm, pattern="^[^:]*$")],
-            },
+            states={self.next.CONFIRM: [CallbackQueryHandler(self.command_sellall_confirm, pattern="^[^:]*$")]},
             fallbacks=[CommandHandler("cancel", self.command_cancelsell)],
             name="sellall_conversation",
         )
@@ -92,10 +90,7 @@ class SellAllConversation:
             edit=self.config.update_messages,
         )
         res, bnb_out, txhash_or_error = self.net.sell_tokens(
-            token.address,
-            amount_tokens=balance_tokens,
-            slippage_percent=token.default_slippage,
-            gas_price="+20.1",
+            token.address, amount_tokens=balance_tokens, slippage_percent=token.default_slippage, gas_price="+20.1"
         )
         if not res:
             logger.error(f"Transaction failed: {txhash_or_error}")

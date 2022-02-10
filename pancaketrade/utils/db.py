@@ -46,11 +46,7 @@ def get_token_watchers(net, dispatcher: Dispatcher, config: Config) -> Dict[str,
     with db:
         for token_record in Token.select().order_by(fn.Lower(Token.symbol)).prefetch(Order):
             out[token_record.address] = TokenWatcher(
-                token_record=token_record,
-                net=net,
-                dispatcher=dispatcher,
-                config=config,
-                orders=token_record.orders,
+                token_record=token_record, net=net, dispatcher=dispatcher, config=config, orders=token_record.orders
             )
     return out
 

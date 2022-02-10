@@ -66,9 +66,7 @@ class AddOrderConversation:
                     CallbackQueryHandler(self.command_addorder_gas, pattern="^[^:]*$"),
                     MessageHandler(Filters.text & ~Filters.command, self.command_addorder_gas),
                 ],
-                self.next.SUMMARY: [
-                    CallbackQueryHandler(self.command_addorder_summary, pattern="^[^:]*$"),
-                ],
+                self.next.SUMMARY: [CallbackQueryHandler(self.command_addorder_summary, pattern="^[^:]*$")],
             },
             fallbacks=[CommandHandler("cancel", self.command_cancelorder)],
             name="addorder_conversation",
@@ -254,9 +252,7 @@ class AddOrderConversation:
                         InlineKeyboardButton("75%", callback_data="0.75"),
                         InlineKeyboardButton("100%", callback_data="1.0"),
                     ],
-                    [
-                        InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
-                    ],
+                    [InlineKeyboardButton("❌ Cancel", callback_data="cancel")],
                 ]
             )
             if order["type"] == "sell"
@@ -346,9 +342,7 @@ class AddOrderConversation:
                     InlineKeyboardButton("15%", callback_data="15"),
                     InlineKeyboardButton("20%", callback_data="20"),
                 ],
-                [
-                    InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
-                ],
+                [InlineKeyboardButton("❌ Cancel", callback_data="cancel")],
             ]
         )
 

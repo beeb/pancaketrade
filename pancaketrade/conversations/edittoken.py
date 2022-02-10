@@ -314,12 +314,7 @@ class EditTokenConversation:
                 try:
                     effective_buy_price = Decimal(user_input)
                 except ValueError:
-                    chat_message(
-                        update,
-                        context,
-                        text="⚠️ This is not a valid price value. Try again:",
-                        edit=False,
-                    )
+                    chat_message(update, context, text="⚠️ This is not a valid price value. Try again:", edit=False)
                     return self.next.BUYPRICE
         else:
             assert update.callback_query

@@ -86,11 +86,7 @@ class Network:
         self.lp_cache: Dict[Tuple[str, str], ChecksumAddress] = {}  # token and base tuples as the key
         self.supported_base_tokens: List[ChecksumAddress] = [self.addr.wbnb, self.addr.busd, self.addr.usdt]
         self.nonce_scheduler = BackgroundScheduler(
-            job_defaults={
-                "coalesce": True,
-                "max_instances": 1,
-                "misfire_grace_time": 8,
-            }
+            job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 8}
         )
         self.start_nonce_update()
 
@@ -197,11 +193,7 @@ class Network:
             logger.error(f'Contract {token_address} does not have function "balanceOf"')
         return Wei(0)
 
-    def get_token_price_usd(
-        self,
-        token_address: ChecksumAddress,
-        token_price: Optional[Decimal] = None,
-    ) -> Decimal:
+    def get_token_price_usd(self, token_address: ChecksumAddress, token_price: Optional[Decimal] = None) -> Decimal:
         """Get the price for a given token, in USD/token.
 
         This call is equivalent to `get_token_price` if self.price_in_usd is True.
@@ -253,12 +245,7 @@ class Network:
         base_token = self.get_token_contract(base_token_address)
         return self.get_token_price_for_lp(token, base_token, ignore_poolsize=True), base_token_address
 
-    def get_token_price_for_lp(
-        self,
-        token: Contract,
-        base_token: Contract,
-        ignore_poolsize: bool = False,
-    ) -> Decimal:
+    def get_token_price_for_lp(self, token: Contract, base_token: Contract, ignore_poolsize: bool = False) -> Decimal:
         """Return price of the token in BNB/token or USD/token for a given LP defined by its base token.
 
         The price is given in USD/token if self.price_in_usd is True
@@ -443,11 +430,7 @@ class Network:
         return checksum_pair
 
     def buy_tokens(
-        self,
-        token_address: ChecksumAddress,
-        amount_bnb: Wei,
-        slippage_percent: Decimal,
-        gas_price: Optional[str],
+        self, token_address: ChecksumAddress, amount_bnb: Wei, slippage_percent: Decimal, gas_price: Optional[str]
     ) -> Tuple[bool, Decimal, str]:
         """Buy tokens with a given amount of BNB, enforcing a maximum slippage, and using the best swap path.
 
@@ -480,11 +463,7 @@ class Network:
             )
         except ValueError as e:
             logger.error(e)
-            return (
-                False,
-                Decimal(0),
-                "No compatible LP was found",
-            )
+            return (False, Decimal(0), "No compatible LP was found")
         min_output_tokens = Web3.toWei(slippage_ratio * predicted_out, unit="wei")
         receipt = self.buy_tokens_with_params(
             path=best_path, amount_bnb=amount_bnb, min_output_tokens=min_output_tokens, gas_price=final_gas_price
@@ -518,11 +497,7 @@ class Network:
         return True, amount_out, txhash
 
     def buy_tokens_with_params(
-        self,
-        path: List[ChecksumAddress],
-        amount_bnb: Wei,
-        min_output_tokens: Wei,
-        gas_price: Wei,
+        self, path: List[ChecksumAddress], amount_bnb: Wei, min_output_tokens: Wei, gas_price: Wei
     ) -> Optional[TxReceipt]:
         """Craft and submit a transaction to buy tokens through a given swapping path, enforcing a minimum output.
 
@@ -584,11 +559,7 @@ class Network:
             )
         except ValueError as e:
             logger.error(e)
-            return (
-                False,
-                Decimal(0),
-                "No compatible LP was found",
-            )
+            return (False, Decimal(0), "No compatible LP was found")
         min_output_bnb = Web3.toWei(slippage_ratio * predicted_out, unit="wei")
         receipt = self.sell_tokens_with_params(
             path=best_path, amount_tokens=amount_tokens, min_output_bnb=min_output_bnb, gas_price=final_gas_price
@@ -618,11 +589,7 @@ class Network:
         return True, amount_out, txhash
 
     def sell_tokens_with_params(
-        self,
-        path: List[ChecksumAddress],
-        amount_tokens: Wei,
-        min_output_bnb: Wei,
-        gas_price: Wei,
+        self, path: List[ChecksumAddress], amount_tokens: Wei, min_output_bnb: Wei, gas_price: Wei
     ) -> Optional[TxReceipt]:
         """Craft and submit a transaction to sell tokens through a given swapping path, enforcing a minimum output.
 
@@ -787,12 +754,7 @@ class Network:
             TxParams: a transaction parameters dictionary
         """
         nonce = max(self.last_nonce, self.w3.eth.get_transaction_count(self.wallet))
-        params: TxParams = {
-            "from": self.wallet,
-            "value": value,
-            "gas": gas,
-            "nonce": nonce,
-        }
+        params: TxParams = {"from": self.wallet, "value": value, "gas": gas, "nonce": nonce}
         if gas_price:
             params["gasPrice"] = gas_price
         return params

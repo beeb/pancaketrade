@@ -80,10 +80,7 @@ def chat_message(
     if update.callback_query is not None and edit:
         query = update.callback_query
         try:
-            query.edit_message_text(
-                text=text,
-                reply_markup=reply_markup,
-            )
+            query.edit_message_text(text=text, reply_markup=reply_markup)
         except Exception as e:  # if the message did not change, we can get an exception, we ignore it
             if not str(e).startswith("Message is not modified"):
                 logger.error(f"Exception during message update: {e}")

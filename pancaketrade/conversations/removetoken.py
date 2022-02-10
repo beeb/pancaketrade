@@ -22,9 +22,7 @@ class RemoveTokenConversation:
         self.next = RemoveTokenResponses()
         self.handler = ConversationHandler(
             entry_points=[CallbackQueryHandler(self.command_removetoken, pattern="^removetoken:0x[a-fA-F0-9]{40}$")],
-            states={
-                self.next.CONFIRM: [CallbackQueryHandler(self.command_removetoken_confirm)],
-            },
+            states={self.next.CONFIRM: [CallbackQueryHandler(self.command_removetoken_confirm)]},
             fallbacks=[CommandHandler("cancel", self.command_cancelremovetoken)],
             name="removetoken_conversation",
         )

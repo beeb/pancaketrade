@@ -72,11 +72,7 @@ class TradeBot:
             net=self.net, dispatcher=self.dispatcher, config=self.config
         )
         self.status_scheduler = BackgroundScheduler(
-            job_defaults={
-                "coalesce": True,
-                "max_instances": 1,
-                "misfire_grace_time": 20,
-            }
+            job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 20}
         )
         self.start_status_update()
         self.last_status_message_id: Optional[int] = None
@@ -170,13 +166,7 @@ class TradeBot:
                 self.watchers[token.address].last_status_message_id = msg.message_id
         message, buttons = self.get_summary_message(balances)
         reply_markup = InlineKeyboardMarkup(buttons)
-        stat_msg = chat_message(
-            update,
-            context,
-            text=message,
-            reply_markup=reply_markup,
-            edit=False,
-        )
+        stat_msg = chat_message(update, context, text=message, reply_markup=reply_markup, edit=False)
         if stat_msg is not None:
             self.last_status_message_id = stat_msg.message_id
         time.sleep(1)  # make sure the message go received by the telegram API
@@ -231,18 +221,10 @@ class TradeBot:
         approved = token.approve()
         if approved:
             chat_message(
-                update,
-                context,
-                text="✅ Approval successful on PancakeSwap!",
-                edit=self.config.update_messages,
+                update, context, text="✅ Approval successful on PancakeSwap!", edit=self.config.update_messages
             )
         else:
-            chat_message(
-                update,
-                context,
-                text="⛔ Approval failed",
-                edit=self.config.update_messages,
-            )
+            chat_message(update, context, text="⛔ Approval failed", edit=self.config.update_messages)
 
     @check_chat_id
     def command_address(self, update: Update, context: CallbackContext):
@@ -280,13 +262,7 @@ class TradeBot:
                 return
             buttons_layout = get_tokens_keyboard_layout(self.watchers, callback_prefix=query.data)
         reply_markup = InlineKeyboardMarkup(buttons_layout)
-        chat_message(
-            update,
-            context,
-            text=msg,
-            reply_markup=reply_markup,
-            edit=False,
-        )
+        chat_message(update, context, text=msg, reply_markup=reply_markup, edit=False)
 
     @check_chat_id
     def cancel_command(self, update: Update, _: CallbackContext):
@@ -306,9 +282,7 @@ class TradeBot:
             balances.append(balance_value)
             try:
                 self.dispatcher.bot.edit_message_text(
-                    status,
-                    chat_id=self.config.secrets.admin_chat_id,
-                    message_id=token.last_status_message_id,
+                    status, chat_id=self.config.secrets.admin_chat_id, message_id=token.last_status_message_id
                 )
             except Exception as e:  # for example message content was not changed
                 if not str(e).startswith("Message is not modified"):

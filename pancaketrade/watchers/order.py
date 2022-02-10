@@ -210,10 +210,7 @@ class OrderWatcher:
                 self.token_record.save()
         except Exception as e:
             logger.error(f"Effective buy price update failed: {e}")
-            self.dispatcher.bot.send_message(
-                chat_id=self.chat_id,
-                text=f"⛔️ Effective buy price update failed: {e}",
-            )
+            self.dispatcher.bot.send_message(chat_id=self.chat_id, text=f"⛔️ Effective buy price update failed: {e}")
         logger.success(
             f"Buy transaction succeeded. Received {format_token_amount(tokens_out)} {self.token_record.symbol}. "
             + f"Effective price (after tax) {self.symbol_usd}{effective_price:.4g} {self.symbol_bnb} / token"
@@ -231,20 +228,13 @@ class OrderWatcher:
             # pre-approve for later sell
             logger.info(f"Approving {self.token_record.symbol} for trading on PancakeSwap.")
             self.dispatcher.bot.send_message(
-                chat_id=self.chat_id,
-                text=f"Approving {self.token_record.symbol} for trading on PancakeSwap...",
+                chat_id=self.chat_id, text=f"Approving {self.token_record.symbol} for trading on PancakeSwap..."
             )
             res = self.net.approve(token_address=self.token_record.address)
             if res:
-                self.dispatcher.bot.send_message(
-                    chat_id=self.chat_id,
-                    text="✅ Approval successful!",
-                )
+                self.dispatcher.bot.send_message(chat_id=self.chat_id, text="✅ Approval successful!")
             else:
-                self.dispatcher.bot.send_message(
-                    chat_id=self.chat_id,
-                    text="⛔ Approval failed",
-                )
+                self.dispatcher.bot.send_message(chat_id=self.chat_id, text="⛔ Approval failed")
         self.remove_order()
         self.finished = True  # will trigger deletion of the object
 
