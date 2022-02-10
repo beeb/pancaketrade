@@ -8,15 +8,14 @@ repos:
       - id: check-case-conflict
       - id: check-toml
       - id: check-yaml
-        args: [--autofix, --no-ensure-ascii, --no-sort-keys]
       - id: check-ast
       - id: debug-statements
       - id: check-docstring-first
   - repo: https://github.com/psf/black
-    rev: stable
+    rev: 21.12b0
     hooks:
       - id: black
-      - args: [--line-length=120, --skip-string-normalization]
+        args: [--line-length=120, --skip-string-normalization]
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.9.1
     hooks:
@@ -25,6 +24,7 @@ repos:
     rev: v0.931
     hooks:
       - id: mypy
+        args: [--ignore-missing-imports, pancaketrade]
         pass_filenames: false
         additional_dependencies:
           - types-PyYAML
