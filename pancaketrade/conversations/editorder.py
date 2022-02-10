@@ -118,7 +118,7 @@ class EditOrderConversation:
         return self.next.ACTION_CHOICE
 
     @check_chat_id
-    def command_edittoken_action(self, update: Update, context: CallbackContext):
+    def command_editorder_action(self, update: Update, context: CallbackContext):
         assert update.callback_query and context.user_data is not None
         query = update.callback_query
         if query.data == 'cancel':
