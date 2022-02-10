@@ -24,14 +24,16 @@ apscheduler = "<4.0.0"
 python-dotenv = "^0.19.2"
 
 [tool.poetry.dev-dependencies]
+pre-commit = "^2.17.0"
 flake8 = "^4.0.1"
+flake8-bugbear = "^22.1.11"
+flake8-comprehensions = "^3.8.0"
 black = { version = "*", allow-prereleases = true }
 mypy = ">=0.931"
 types-PyYAML = "^6.0.4"
 types-requests = "^2.27.9"
 types-cachetools = "^4.2.9"
-pre-commit = "^2.17.0"
-flake8-bugbear = "^22.1.11"
+
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
