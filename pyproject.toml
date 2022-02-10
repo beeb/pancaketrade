@@ -24,7 +24,7 @@ apscheduler = "<4.0.0"
 python-dotenv = "^0.19.2"
 
 [tool.poetry.dev-dependencies]
-flake8 = "^3.9.1"
+flake8 = "^4.0.1"
 black = { version = "*", allow-prereleases = true }
 mypy = ">=0.931"
 types-PyYAML = "^6.0.4"
