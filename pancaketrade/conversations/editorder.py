@@ -168,10 +168,10 @@ class EditOrderConversation:
             )
             return self.next.TRAILING
         elif query.data == 'amount':
-            unit = 'BNB' if order['type'] == 'buy' else token.symbol
+            unit = 'BNB' if order.type == 'buy' else token.symbol
             balance = (
                 self.net.get_bnb_balance()
-                if order['type'] == 'buy'
+                if order.type == 'buy'
                 else self.net.get_token_balance(token_address=token.address)
             )
             reply_markup = (
@@ -188,13 +188,13 @@ class EditOrderConversation:
                         ],
                     ]
                 )
-                if order['type'] == 'sell'
+                if order.type == 'sell'
                 else InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancel', callback_data='cancel')]])
             )
             chat_message(
                 update,
                 context,
-                text=f'<u>How much {unit}</u> do you want me to use for {order["type"]}ing?\n'
+                text=f'<u>How much {unit}</u> do you want me to use for {order.type}ing?\n'
                 + f'You can also use scientific notation like <code>{balance:.1e}</code> or a percentage like '
                 + '<code>63%</code>.\n'
                 + f'<b>Current balance</b>: <code>{format_token_amount(balance)}</code> {unit}',
