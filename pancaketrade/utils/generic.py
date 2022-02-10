@@ -102,7 +102,7 @@ def get_tokens_keyboard_layout(
         callback = f"{callback_prefix}:{token.address}" if callback_prefix else token.address
         buttons.append(InlineKeyboardButton(token.name, callback_data=callback))
     buttons.append(InlineKeyboardButton("❌ Cancel", callback_data="canceltokenchoice"))
-    buttons_layout = [buttons[i : i + per_row] for i in range(0, len(buttons), per_row)]  # noqa: E203
+    buttons_layout = [buttons[i : i + per_row] for i in range(0, len(buttons), per_row)]
     return buttons_layout
 
 

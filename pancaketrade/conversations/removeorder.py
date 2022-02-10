@@ -54,7 +54,7 @@ class RemoveOrderConversation:
             )
             for o in orders
         ]
-        buttons_layout = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]  # noqa: E203
+        buttons_layout = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
         buttons_layout.append([InlineKeyboardButton("❌ Cancel", callback_data="cancel")])
         reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons_layout)
         chat_message(
