@@ -16,8 +16,10 @@ from pancaketrade.watchers.order import OrderWatcher
 
 class TokenWatcher:
     def __init__(
-        self, token_record: Token, net: Network, dispatcher: Dispatcher, config: Config, orders: List = list()
+        self, token_record: Token, net: Network, dispatcher: Dispatcher, config: Config, orders: Optional[List] = None
     ):
+        if orders is None:
+            orders = []
         self.net = net
         self.dispatcher = dispatcher
         self.config = config

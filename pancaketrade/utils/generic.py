@@ -32,7 +32,9 @@ class InterceptHandler(logging.Handler):
         logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
-def start_in_thread(func: Callable, args: Iterable[Any] = []) -> None:
+def start_in_thread(func: Callable, args: Optional[Iterable[Any]] = None) -> None:
+    if args is None:
+        args = ()
     t = threading.Thread(target=func, args=args)
     t.daemon = True
     t.start()

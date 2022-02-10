@@ -739,20 +739,26 @@ class Network:
         finally:
             self.last_nonce = Nonce(tx_params["nonce"] + 1)
 
-    def get_tx_params(self, value: Wei = Wei(0), gas: Wei = Wei(100000), gas_price: Optional[Wei] = None) -> TxParams:
+    def get_tx_params(
+        self, value: Optional[Wei] = None, gas: Optional[Wei] = None, gas_price: Optional[Wei] = None
+    ) -> TxParams:
         """Build a transaction parameters dictionary from the provied parameters.
 
         The default gas limit of 100k is enough for a normal approval transaction.
 
         Args:
-            value (Wei, optional): value (BNB) of the transaction, in Wei. Defaults to Wei(0).
-            gas (Wei, optional): gas limit to use, in Wei. Defaults to Wei(100000).
+            value (Optional[Wei], optional): value (BNB) of the transaction, in Wei. Defaults to None which is zero.
+            gas (Optional[Wei], optional): gas limit to use, in Wei. Defaults to None which is 100000.
             gas_price (Optional[Wei], optional): gas price to use, in Wei, or None for network default. Defaults to
                 None.
 
         Returns:
             TxParams: a transaction parameters dictionary
         """
+        if value is None:
+            value = Wei(0)
+        if gas is None:
+            gas = Wei(100000)
         nonce = max(self.last_nonce, self.w3.eth.get_transaction_count(self.wallet))
         params: TxParams = {"from": self.wallet, "value": value, "gas": gas, "nonce": nonce}
         if gas_price:
