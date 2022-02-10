@@ -26,7 +26,10 @@ python-dotenv = "^0.19.2"
 [tool.poetry.dev-dependencies]
 flake8 = "^3.9.1"
 black = { version = "*", allow-prereleases = true }
-mypy = "<0.900"
+mypy = ">=0.931"
+types-PyYAML = "^6.0.4"
+types-requests = "^2.27.9"
+types-cachetools = "^4.2.9"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
