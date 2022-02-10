@@ -26,8 +26,8 @@ from pancaketrade.utils.db import get_token_watchers, init_db, update_db_prices
 from pancaketrade.utils.generic import (
     chat_message,
     check_chat_id,
-    format_token_amount,
     format_amount_smart,
+    format_token_amount,
     get_chart_link,
     get_tokens_keyboard_layout,
 )

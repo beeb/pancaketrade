@@ -1,12 +1,6 @@
-from typing import NamedTuple
 from decimal import Decimal
+from typing import NamedTuple
 
-from pancaketrade.network import Network
-from pancaketrade.persistence import Token, db
-from pancaketrade.utils.config import Config
-from pancaketrade.utils.db import token_exists
-from pancaketrade.utils.generic import chat_message, check_chat_id, format_token_amount
-from pancaketrade.watchers import TokenWatcher
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     CallbackContext,
@@ -18,6 +12,13 @@ from telegram.ext import (
 )
 from web3 import Web3
 from web3.exceptions import ABIFunctionNotFound, ContractLogicError
+
+from pancaketrade.network import Network
+from pancaketrade.persistence import Token, db
+from pancaketrade.utils.config import Config
+from pancaketrade.utils.db import token_exists
+from pancaketrade.utils.generic import chat_message, check_chat_id, format_token_amount
+from pancaketrade.watchers import TokenWatcher
 
 
 class AddTokenResponses(NamedTuple):

@@ -5,12 +5,13 @@ from typing import List, Optional
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from loguru import logger
+from telegram.ext import Dispatcher
+from web3 import Web3
+
 from pancaketrade.network import Network
 from pancaketrade.persistence import Token
 from pancaketrade.utils.config import Config
 from pancaketrade.watchers.order import OrderWatcher
-from telegram.ext import Dispatcher
-from web3 import Web3
 
 
 class TokenWatcher:

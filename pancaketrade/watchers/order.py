@@ -3,11 +3,12 @@ from decimal import Decimal
 from typing import Optional
 
 from loguru import logger
+from telegram.ext import Dispatcher
+from web3.types import Wei
+
 from pancaketrade.network import Network
 from pancaketrade.persistence import Order, Token, db
 from pancaketrade.utils.generic import format_amount_smart, format_token_amount, start_in_thread
-from telegram.ext import Dispatcher
-from web3.types import Wei
 
 
 class OrderWatcher:

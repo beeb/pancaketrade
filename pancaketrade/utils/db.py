@@ -3,13 +3,14 @@ from decimal import Decimal
 from typing import Dict
 
 from loguru import logger
-from pancaketrade.persistence import Order, Preferences, Token, db
-from pancaketrade.utils.config import Config
-from pancaketrade.watchers.token import TokenWatcher
 from peewee import FixedCharField, fn
 from playhouse.migrate import SqliteMigrator, migrate
 from telegram.ext import Dispatcher
 from web3.types import ChecksumAddress
+
+from pancaketrade.persistence import Order, Preferences, Token, db
+from pancaketrade.utils.config import Config
+from pancaketrade.watchers.token import TokenWatcher
 
 
 def init_db() -> None:
