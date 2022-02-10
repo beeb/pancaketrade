@@ -1,0 +1,36 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-toml
+      - id: check-yaml
+        args: [--autofix, --no-ensure-ascii, --no-sort-keys]
+      - id: check-ast
+      - id: debug-statements
+      - id: check-docstring-first
+  - repo: https://github.com/psf/black
+    rev: stable
+    hooks:
+      - id: black
+      - args: [--line-length=120, --skip-string-normalization]
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 3.9.1
+    hooks:
+      - id: flake8
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.931
+    hooks:
+      - id: mypy
+        pass_filenames: false
+        additional_dependencies:
+          - types-PyYAML
+          - types-requests
+          - types-cachetools
+  - repo: https://github.com/pre-commit/pre-commit
+    rev: v2.17.0
+    hooks:
+      - id: validate_manifest
