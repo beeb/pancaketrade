@@ -41,7 +41,7 @@ If you choose to use the Docker image, you'll just need docker installed, see th
 
 If you choose to run the script with Python, you'll need the following:
 
-- Python version between 3.7.1 and 3.9.x
+- Python version between 3.7.2 and 3.9.x
 - [Poetry](https://github.com/python-poetry/poetry)
 - Optional: `git` to clone this repository, you can also download the source from the github website.
 
