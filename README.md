@@ -168,3 +168,11 @@ Binance Smart Chain networks at the address:
 `0x026E539B566DcFF02af980d938deCcb11255d519`
 
 Thanks for your contribution!
+
+## Contribute
+
+In order to contribute, make sure you install dev dependencies with `poetry install`. This repo is setup to use
+pre-commit hooks, please install them with `pre-commit install` before committing.
+
+To add your contribution, fork the repo, create a new branch off of `develop` and work in there, then create a pull
+request against the `develop` branch of this repo.
