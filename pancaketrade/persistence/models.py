@@ -9,7 +9,7 @@ from peewee import (
     SqliteDatabase,
 )
 
-db = SqliteDatabase('user_data/pancaketrade.db')
+db = SqliteDatabase("user_data/pancaketrade.db")
 
 
 class Token(Model):
@@ -25,7 +25,7 @@ class Token(Model):
 
 
 class Order(Model):
-    token = ForeignKeyField(Token, backref='orders')
+    token = ForeignKeyField(Token, backref="orders")
     type = FixedCharField(max_length=4)  # buy (tokens for BNB) or sell (tokens for BNB)
     limit_price = CharField()  # decimal stored as string
     above = BooleanField()  # Above = True, below = False

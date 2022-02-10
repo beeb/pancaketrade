@@ -46,25 +46,25 @@ def check_chat_id(func: Callable) -> Callable:
         if update.callback_query:
             update.callback_query.answer()
         if update.effective_chat is None:
-            logger.debug('No chat ID')
+            logger.debug("No chat ID")
             return
         if context.user_data is None:
-            logger.debug('No user data')
+            logger.debug("No user data")
             return
         if update.message is None and update.callback_query is None:
-            logger.debug('No message')
+            logger.debug("No message")
             return
         if update.message and update.message.text is None and update.callback_query is None:
-            logger.debug('No text in message')
+            logger.debug("No text in message")
             return
         chat_id = update.effective_chat.id
         if chat_id == this.config.secrets.admin_chat_id:
             return func(this, update, context, *args, **kwargs)
-        logger.warning(f'Prevented user {chat_id} to interact.')
+        logger.warning(f"Prevented user {chat_id} to interact.")
         context.bot.send_message(
-            chat_id=this.config.secrets.admin_chat_id, text=f'Prevented user {chat_id} to interact.'
+            chat_id=this.config.secrets.admin_chat_id, text=f"Prevented user {chat_id} to interact."
         )
-        context.bot.send_message(chat_id=chat_id, text='This bot is not public, you are not allowed to use it.')
+        context.bot.send_message(chat_id=chat_id, text="This bot is not public, you are not allowed to use it.")
 
     return wrapper_check_chat_id
 
@@ -85,9 +85,9 @@ def chat_message(
                 reply_markup=reply_markup,
             )
         except Exception as e:  # if the message did not change, we can get an exception, we ignore it
-            if not str(e).startswith('Message is not modified'):
-                logger.error(f'Exception during message update: {e}')
-                context.bot.send_message(chat_id=update.effective_chat.id, text=f'Exception during message update: {e}')
+            if not str(e).startswith("Message is not modified"):
+                logger.error(f"Exception during message update: {e}")
+                context.bot.send_message(chat_id=update.effective_chat.id, text=f"Exception during message update: {e}")
         return None
     return context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
 
@@ -99,21 +99,21 @@ def get_tokens_keyboard_layout(
     for token in sorted(watchers.values(), key=lambda token: token.symbol.lower()):
         if token.address == addr.wbnb:
             continue
-        callback = f'{callback_prefix}:{token.address}' if callback_prefix else token.address
+        callback = f"{callback_prefix}:{token.address}" if callback_prefix else token.address
         buttons.append(InlineKeyboardButton(token.name, callback_data=callback))
-    buttons.append(InlineKeyboardButton('❌ Cancel', callback_data='canceltokenchoice'))
+    buttons.append(InlineKeyboardButton("❌ Cancel", callback_data="canceltokenchoice"))
     buttons_layout = [buttons[i : i + per_row] for i in range(0, len(buttons), per_row)]  # noqa: E203
     return buttons_layout
 
 
 def format_token_amount(amount: Decimal) -> str:
     if amount >= 100:
-        return f'{amount:,.1f}'
-    return f'{amount:.4g}'
+        return f"{amount:,.1f}"
+    return f"{amount:.4g}"
 
 
 def format_price_fixed(price: Decimal) -> str:
-    price_fixed = f'{price:.{-price.adjusted()+2}f}' if price < 100 else f'{price:.2f}'
+    price_fixed = f"{price:.{-price.adjusted()+2}f}" if price < 100 else f"{price:.2f}"
     return price_fixed
 
 
@@ -130,19 +130,19 @@ def format_amount_smart(amount: Decimal) -> str:
         str: formatted amount as a string
     """
     if amount < 10:
-        return f'{amount:.3g}'
-    return f'{amount:.2f}'
+        return f"{amount:.3g}"
+    return f"{amount:.2f}"
 
 
 def get_chart_link(chart: str, token: ChecksumAddress, lp: Optional[ChecksumAddress]) -> Optional[str]:
-    if chart == 'poocoin':
+    if chart == "poocoin":
         return f'<a href="https://poocoin.app/tokens/{token}">Poocoin</a>'
-    elif chart == 'bogged':
+    elif chart == "bogged":
         return f'<a href="https://charts.bogged.finance/?token={token}">Bogged</a>'
-    elif chart == 'dexguru':
+    elif chart == "dexguru":
         return f'<a href="https://dex.guru/token/{token}-bsc">Dex.Guru</a>'
-    elif chart == 'dextools':
+    elif chart == "dextools":
         return None if lp is None else f'<a href="https://www.dextools.io/app/pancakeswap/pair-explorer/{lp}">Dext</a>'
-    elif chart == 'dexscreener':
+    elif chart == "dexscreener":
         return None if lp is None else f'<a href="https://dexscreener.com/bsc/{lp}">DexScr</a>'
     return None
