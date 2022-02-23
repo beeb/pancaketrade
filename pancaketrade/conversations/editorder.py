@@ -2,10 +2,18 @@ from decimal import Decimal
 from typing import List, NamedTuple
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, ConversationHandler
+from telegram.ext import (
+    CallbackContext,
+    CallbackQueryHandler,
+    CommandHandler,
+    ConversationHandler,
+    Filters,
+    MessageHandler,
+)
 from web3 import Web3
 
 from pancaketrade.network import Network
+from pancaketrade.persistence.models import db
 from pancaketrade.utils.config import Config
 from pancaketrade.utils.generic import chat_message, check_chat_id, format_price_fixed, format_token_amount
 from pancaketrade.watchers import OrderWatcher, TokenWatcher
@@ -36,6 +44,14 @@ class EditOrderConversation:
                         self.command_editorder_action,
                         pattern="^price$|^trailing_stop$|^amount$|^slippage$|^gas$|^cancel$",
                     )
+                ],
+                self.next.PRICE: [
+                    MessageHandler(Filters.text & ~Filters.command, self.command_editorder_price),
+                    CallbackQueryHandler(self.command_editorder_price, pattern="^[^:]*$"),
+                ],
+                self.next.TRAILING: [
+                    MessageHandler(Filters.text & ~Filters.command, self.command_editorder_tsl),
+                    CallbackQueryHandler(self.command_editorder_tsl, pattern="^[^:]*$"),
                 ],
             },
             fallbacks=[CommandHandler("cancel", self.command_cancelorder)],
@@ -257,6 +273,187 @@ class EditOrderConversation:
         else:
             self.command_error(update, context, text="Invalid callback")
             return ConversationHandler.END
+
+    @check_chat_id
+    def command_editorder_price(self, update: Update, context: CallbackContext):
+        assert context.user_data is not None
+        edit = context.user_data["editorder"]
+        token: TokenWatcher = self.parent.watchers[edit["token_address"]]
+        order = next(filter(lambda o: o.order_record.id == edit["order_id"], token.orders))
+        if update.message is None:
+            assert update.callback_query
+            query = update.callback_query
+            assert query.data
+            if query.data == "cancel":
+                self.cancel_command(update, context)
+                return ConversationHandler.END
+            elif query.data == "None":  # update order with None price = execute now
+                edit["limit_price"] = ""  # empty string = market price
+                order_record = order.order_record
+                try:
+                    with db.atomic():
+                        order_record.limit_price = edit["limit_price"]
+                        order_record.save()
+                except Exception as e:
+                    self.command_error(update, context, text=f"Failed to update database record: {e}")
+                    return ConversationHandler.END
+                finally:
+                    del context.user_data["editorder"]
+                order.limit_price = None
+                chat_message(
+                    update,
+                    context,
+                    text="✅ Alright, the order will execute soon at market price.",
+                    edit=self.config.update_messages,
+                )
+                return ConversationHandler.END
+            else:
+                self.command_error(update, context, text="Invalid callback.")
+                return ConversationHandler.END
+
+        assert update.message and update.message.text
+        answer = update.message.text.strip()
+        if answer.endswith("x"):
+            try:
+                factor = Decimal(answer[:-1])
+            except Exception:
+                reply_markup = InlineKeyboardMarkup(
+                    [
+                        [
+                            InlineKeyboardButton("⏱ Execute now", callback_data="None"),
+                            InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
+                        ]
+                    ]
+                )
+                chat_message(
+                    update,
+                    context,
+                    text="⚠️ The factor you inserted is not valid. Try again:",
+                    reply_markup=reply_markup,
+                    edit=False,
+                )
+                return self.next.PRICE
+            current_price, _ = self.net.get_token_price(token_address=token.address)
+            price = factor * current_price
+        else:
+            try:
+                price = Decimal(answer)
+            except Exception:
+                reply_markup = InlineKeyboardMarkup(
+                    [
+                        [
+                            InlineKeyboardButton("⏱ Execute now", callback_data="None"),
+                            InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
+                        ]
+                    ]
+                )
+                chat_message(
+                    update,
+                    context,
+                    text="⚠️ The price you inserted is not valid. Try again:",
+                    reply_markup=reply_markup,
+                    edit=False,
+                )
+                return self.next.PRICE
+        edit["limit_price"] = str(price)
+        order_record = order.order_record
+        try:
+            with db.atomic():
+                order_record.limit_price = edit["limit_price"]
+                order_record.save()
+        except Exception as e:
+            self.command_error(update, context, text=f"Failed to update database record: {e}")
+            return ConversationHandler.END
+        finally:
+            del context.user_data["editorder"]
+        order.limit_price = price
+
+        chat_message(
+            update,
+            context,
+            text="✅ Alright, the order will trigger when the condition is reach.",
+            edit=self.config.update_messages,
+        )
+        return ConversationHandler.END
+
+    @check_chat_id
+    def command_editorder_tsl(self, update: Update, context: CallbackContext):
+        assert context.user_data is not None
+        edit = context.user_data["editorder"]
+        token: TokenWatcher = self.parent.watchers[edit["token_address"]]
+        order = next(filter(lambda o: o.order_record.id == edit["order_id"], token.orders))
+        if update.message is None:
+            assert update.callback_query
+            query = update.callback_query
+            assert query.data
+            if query.data == "cancel":
+                self.cancel_command(update, context)
+                return ConversationHandler.END
+            elif query.data == "None":  # disable trailing stop loss
+                edit["trailing_stop"] = None
+                order_record = order.order_record
+                try:
+                    with db.atomic():
+                        order_record.trailing_stop = edit["trailing_stop"]
+                        order_record.save()
+                except Exception as e:
+                    self.command_error(update, context, text=f"Failed to update database record: {e}")
+                    return ConversationHandler.END
+                finally:
+                    del context.user_data["editorder"]
+                order.trailing_stop = None
+                chat_message(
+                    update,
+                    context,
+                    text="✅ Alright, trailing stop loss has been disabled.",
+                    edit=self.config.update_messages,
+                )
+                return ConversationHandler.END
+            else:
+                self.command_error(update, context, text="Invalid callback.")
+                return ConversationHandler.END
+
+        assert update.message and update.message.text
+        try:
+            callback_rate = int(update.message.text.strip())
+        except ValueError:
+            reply_markup = InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton("No trailing stop loss", callback_data="None"),
+                        InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
+                    ]
+                ]
+            )
+            chat_message(
+                update,
+                context,
+                text="⚠️ The callback rate is not recognized, try again:",
+                reply_markup=reply_markup,
+                edit=False,
+            )
+            return self.next.TRAILING
+
+        edit["trailing_stop"] = callback_rate
+        order_record = order.order_record
+        try:
+            with db.atomic():
+                order_record.trailing_stop = edit["trailing_stop"]
+                order_record.save()
+        except Exception as e:
+            self.command_error(update, context, text=f"Failed to update database record: {e}")
+            return ConversationHandler.END
+        finally:
+            del context.user_data["editorder"]
+        order.trailing_stop = edit["trailing_stop"]
+
+        chat_message(
+            update,
+            context,
+            text="✅ Alright, the callback rate has been updated.",
+            edit=self.config.update_messages,
+        )
+        return ConversationHandler.END
 
     @check_chat_id
     def command_cancelorder(self, update: Update, context: CallbackContext):
