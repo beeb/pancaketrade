@@ -121,7 +121,7 @@ class EditOrderConversation:
         token: TokenWatcher = self.parent.watchers[edit["token_address"]]
         order = next(filter(lambda o: o.order_record.id == int(str(query.data)), token.orders))
         edit["order_id"] = int(str(query.data))
-        chat_message(update, context, text=order.long_str(), edit=False)
+        chat_message(update, context, text=order.long_str(), edit=self.config.update_messages)
         buttons = [
             [
                 InlineKeyboardButton("Edit price", callback_data="price"),
@@ -142,7 +142,7 @@ class EditOrderConversation:
             context,
             text=f'What do you want to edit for order {edit["order_id"]}?',
             reply_markup=reply_markup,
-            edit=self.config.update_messages,
+            edit=False,
         )
         return self.next.ACTION_CHOICE
 
@@ -159,10 +159,12 @@ class EditOrderConversation:
         order = next(filter(lambda o: o.order_record.id == edit["order_id"], token.orders))
         if query.data == "price":
             buttons = [
-                InlineKeyboardButton("⏱ Execute now", callback_data="None"),
-                InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
+                [
+                    InlineKeyboardButton("⏱ Execute now", callback_data="None"),
+                    InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
+                ]
             ]
-            reply_markup = InlineKeyboardMarkup([buttons])
+            reply_markup = InlineKeyboardMarkup(buttons)
             current_price, _ = self.net.get_token_price(token_address=token.address)
             current_price_fixed = format_price_fixed(current_price)
             chat_message(
@@ -184,10 +186,18 @@ class EditOrderConversation:
             return self.next.PRICE
         elif query.data == "trailing_stop":
             buttons = [
-                InlineKeyboardButton("No trailing stop loss", callback_data="None"),
-                InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
+                [
+                    InlineKeyboardButton("1%", callback_data="1"),
+                    InlineKeyboardButton("2%", callback_data="2"),
+                    InlineKeyboardButton("5%", callback_data="5"),
+                    InlineKeyboardButton("10%", callback_data="10"),
+                ],
+                [
+                    InlineKeyboardButton("No trailing stop loss", callback_data="None"),
+                    InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
+                ],
             ]
-            reply_markup = InlineKeyboardMarkup([buttons])
+            reply_markup = InlineKeyboardMarkup(buttons)
             chat_message(
                 update,
                 context,
@@ -384,7 +394,8 @@ class EditOrderConversation:
         chat_message(
             update,
             context,
-            text="✅ Alright, the order will trigger when the condition is reach.",
+            text=f"✅ Alright, I will {order.type} when the price of {token.symbol} reaches "
+            + f"{self.symbol_usd}{price:.4g} {self.symbol_bnb} per token.\n",
             edit=self.config.update_messages,
         )
         return ConversationHandler.END
@@ -422,30 +433,32 @@ class EditOrderConversation:
                     edit=self.config.update_messages,
                 )
                 return ConversationHandler.END
-            else:
-                self.command_error(update, context, text="Invalid callback.")
+            try:
+                callback_rate = int(query.data)
+            except ValueError:
+                self.command_error(update, context, text="The callback rate is not recognized.")
                 return ConversationHandler.END
-
-        assert update.message and update.message.text
-        try:
-            callback_rate = int(update.message.text.strip())
-        except ValueError:
-            reply_markup = InlineKeyboardMarkup(
-                [
+        else:
+            assert update.message and update.message.text
+            try:
+                callback_rate = int(update.message.text.strip())
+            except ValueError:
+                reply_markup = InlineKeyboardMarkup(
                     [
-                        InlineKeyboardButton("No trailing stop loss", callback_data="None"),
-                        InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
+                        [
+                            InlineKeyboardButton("No trailing stop loss", callback_data="None"),
+                            InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
+                        ]
                     ]
-                ]
-            )
-            chat_message(
-                update,
-                context,
-                text="⚠️ The callback rate is not recognized, try again:",
-                reply_markup=reply_markup,
-                edit=False,
-            )
-            return self.next.TRAILING
+                )
+                chat_message(
+                    update,
+                    context,
+                    text="⚠️ The callback rate is not recognized, try again:",
+                    reply_markup=reply_markup,
+                    edit=False,
+                )
+                return self.next.TRAILING
 
         edit["trailing_stop"] = callback_rate
         order_record = order.order_record
@@ -463,7 +476,7 @@ class EditOrderConversation:
         chat_message(
             update,
             context,
-            text="✅ Alright, the callback rate has been updated.",
+            text=f"✅ Alright, the order will use trailing stop loss with {callback_rate}% callback.",
             edit=self.config.update_messages,
         )
         return ConversationHandler.END
