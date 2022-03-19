@@ -573,6 +573,59 @@ class EditOrderConversation:
         return ConversationHandler.END
 
     @check_chat_id
+    def command_editorder_gas(self, update: Update, context: CallbackContext):
+        assert context.user_data is not None
+        edit = context.user_data["editorder"]
+        token: TokenWatcher = self.parent.watchers[edit["token_address"]]
+        order = next(filter(lambda o: o.order_record.id == edit["order_id"], token.orders))
+        message = ""
+        if update.message is None:
+            assert update.callback_query
+            query = update.callback_query
+            assert query.data
+            if query.data == "cancel":
+                self.cancel_command(update, context)
+                return ConversationHandler.END
+            elif query.data == "None":
+                edit["gas_price"] = None
+                message = "✅ Alright, the order will use default network gas price."
+            elif query.data.startswith("+"):
+                try:
+                    Decimal(query.data)
+                except Exception:
+                    self.command_error(update, context, text="Invalid gas price.")
+                    return ConversationHandler.END
+                edit["gas_price"] = query.data
+                message = f"✅ Alright, the order will use default network gas price {query.data} Gwei."
+            else:
+                self.command_error(update, context, text="Invalid gas price.")
+                return ConversationHandler.END
+        else:
+            assert update.message and update.message.text
+            try:
+                gas_price_gwei = Decimal(update.message.text.strip())
+            except ValueError:
+                chat_message(update, context, text="⚠️ The gas price is not recognized, try again:", edit=False)
+                return self.next.GAS
+            message = f"✅ Alright, the order will use {gas_price_gwei:.4g} Gwei for gas price."
+            edit["gas_price"] = str(Web3.toWei(gas_price_gwei, unit="gwei"))
+
+        order_record = order.order_record
+        try:
+            with db.atomic():
+                order_record.gas_price = edit["gas_price"]
+                order_record.save()
+        except Exception as e:
+            self.command_error(update, context, text=f"Failed to update database record: {e}")
+            return ConversationHandler.END
+        finally:
+            del context.user_data["editorder"]
+        order.gas_price = edit["gas_price"]
+
+        chat_message(update, context, text=message, edit=self.config.update_messages)
+        return ConversationHandler.END
+
+    @check_chat_id
     def command_cancelorder(self, update: Update, context: CallbackContext):
         self.cancel_command(update, context)
         return ConversationHandler.END
