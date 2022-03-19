@@ -69,15 +69,6 @@ class TradeBot:
             "sellall": SellAllConversation(parent=self, config=self.config),
             "buysell": BuySellConversation(parent=self, config=self.config),
         }
-        self.setup_telegram()
-        self.watchers: Dict[str, TokenWatcher] = get_token_watchers(
-            net=self.net, dispatcher=self.dispatcher, config=self.config
-        )
-        self.status_scheduler = BackgroundScheduler(
-            job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 20}
-        )
-        self.start_status_update()
-        self.last_status_message_id: Optional[int] = None
         self.prompts_select_token = {
             "sellall": "Sell full blance now for which token?",
             "addorder": "Add order to which token?",
@@ -89,6 +80,15 @@ class TradeBot:
             "editorder": "Edit order for which token?",
             "removetoken": "Which token do you want to remove?",
         }
+        self.setup_telegram()
+        self.watchers: Dict[str, TokenWatcher] = get_token_watchers(
+            net=self.net, dispatcher=self.dispatcher, config=self.config
+        )
+        self.status_scheduler = BackgroundScheduler(
+            job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 20}
+        )
+        self.start_status_update()
+        self.last_status_message_id: Optional[int] = None
 
     def setup_telegram(self):
         self.dispatcher.add_handler(CommandHandler("start", self.command_start))
