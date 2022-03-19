@@ -54,6 +54,18 @@ class EditOrderConversation:
                     MessageHandler(Filters.text & ~Filters.command, self.command_editorder_tsl),
                     CallbackQueryHandler(self.command_editorder_tsl, pattern="^[^:]*$"),
                 ],
+                self.next.AMOUNT: [
+                    MessageHandler(Filters.text & ~Filters.command, self.command_editorder_amount),
+                    CallbackQueryHandler(self.command_editorder_amount, pattern="^[^:]*$"),
+                ],
+                self.next.SLIPPAGE: [
+                    MessageHandler(Filters.text & ~Filters.command, self.command_editorder_slippage),
+                    CallbackQueryHandler(self.command_editorder_slippage, pattern="^[^:]*$"),
+                ],
+                self.next.GAS: [
+                    MessageHandler(Filters.text & ~Filters.command, self.command_editorder_gas),
+                    CallbackQueryHandler(self.command_editorder_gas, pattern="^[^:]*$"),
+                ],
             },
             fallbacks=[CommandHandler("cancel", self.command_cancelorder)],
             name="editorder_conversation",
