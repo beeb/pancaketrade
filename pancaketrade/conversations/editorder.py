@@ -11,6 +11,7 @@ from telegram.ext import (
     MessageHandler,
 )
 from web3 import Web3
+from web3.types import Wei
 
 from pancaketrade.network import Network
 from pancaketrade.persistence.models import db
@@ -451,6 +452,122 @@ class EditOrderConversation:
             update,
             context,
             text="✅ Alright, the callback rate has been updated.",
+            edit=self.config.update_messages,
+        )
+        return ConversationHandler.END
+
+    @check_chat_id
+    def command_editorder_amount(self, update: Update, context: CallbackContext):
+        assert context.user_data is not None
+        edit = context.user_data["editorder"]
+        token: TokenWatcher = self.parent.watchers[edit["token_address"]]
+        order = next(filter(lambda o: o.order_record.id == edit["order_id"], token.orders))
+        if update.message is None:  # we got a button callback, either cancel or fraction of token balance
+            assert update.callback_query
+            query = update.callback_query
+            if query.data == "cancel":
+                self.cancel_command(update, context)
+                return ConversationHandler.END
+            assert query.data is not None
+            try:
+                balance_fraction = Decimal(query.data)
+            except Exception:
+                self.command_error(update, context, text="The balance percentage is not recognized.")
+                return ConversationHandler.END
+            amount = balance_fraction * self.net.get_token_balance(token_address=token.address)
+        else:
+            assert update.message and update.message.text
+            user_input = update.message.text.strip()
+            if user_input.endswith("%"):
+                try:
+                    balance_fraction = Decimal(user_input[:-1]) / Decimal(100)
+                    balance = (
+                        self.net.get_token_balance(token_address=token.address)
+                        if order.type == "sell"
+                        else self.net.get_bnb_balance()
+                    )
+                    amount = balance_fraction * balance
+                except Exception:
+                    chat_message(
+                        update, context, text="⚠️ The balance percentage is not recognized, try again:", edit=False
+                    )
+                    return self.next.AMOUNT
+            else:
+                try:
+                    amount = Decimal(update.message.text.strip())
+                except Exception:
+                    chat_message(
+                        update, context, text="⚠️ The amount you inserted is not valid. Try again:", edit=False
+                    )
+                    return self.next.AMOUNT
+        decimals = 18 if order.type == "buy" else token.decimals
+        unit = f"BNB worth of {token.symbol}" if order.type == "buy" else token.symbol
+        edit["amount"] = int(amount * Decimal(10 ** decimals))
+        order_record = order.order_record
+        try:
+            with db.atomic():
+                order_record.amount = str(edit["amount"])
+                order_record.save()
+        except Exception as e:
+            self.command_error(update, context, text=f"Failed to update database record: {e}")
+            return ConversationHandler.END
+        finally:
+            del context.user_data["editorder"]
+        order.amount = Wei(edit["amount"])
+
+        chat_message(
+            update,
+            context,
+            text=f"✅ Alright, order will {order.type} {format_token_amount(amount)} {unit}.",
+            edit=self.config.update_messages,
+        )
+        return ConversationHandler.END
+
+    @check_chat_id
+    def command_editorder_slippage(self, update: Update, context: CallbackContext):
+        assert context.user_data is not None
+        edit = context.user_data["editorder"]
+        token: TokenWatcher = self.parent.watchers[edit["token_address"]]
+        order = next(filter(lambda o: o.order_record.id == edit["order_id"], token.orders))
+        if update.message is None:
+            assert update.callback_query
+            query = update.callback_query
+            assert query.data
+            if query.data == "cancel":
+                self.cancel_command(update, context)
+                return ConversationHandler.END
+            try:
+                slippage_percent = Decimal(query.data)
+            except Exception:
+                self.command_error(update, context, text="The slippage is not recognized.")
+                return ConversationHandler.END
+        else:
+            assert update.message and update.message.text
+            try:
+                slippage_percent = Decimal(update.message.text.strip())
+            except Exception:
+                chat_message(update, context, text="⚠️ The slippage is not recognized, try again:", edit=False)
+                return self.next.SLIPPAGE
+        if slippage_percent < Decimal("0.01") or slippage_percent > 100:
+            chat_message(update, context, text="⚠️ The slippage must be between 0.01 and 100, try again:", edit=False)
+            return self.next.SLIPPAGE
+        edit["slippage"] = f"{slippage_percent:.2f}"
+        order_record = order.order_record
+        try:
+            with db.atomic():
+                order_record.slippage = edit["slippage"]
+                order_record.save()
+        except Exception as e:
+            self.command_error(update, context, text=f"Failed to update database record: {e}")
+            return ConversationHandler.END
+        finally:
+            del context.user_data["editorder"]
+        order.slippage = slippage_percent
+
+        chat_message(
+            update,
+            context,
+            text=f"✅ Alright, the order will use slippage of {slippage_percent}%.",
             edit=self.config.update_messages,
         )
         return ConversationHandler.END
