@@ -14,6 +14,7 @@ from pancaketrade.conversations import (
     AddOrderConversation,
     AddTokenConversation,
     BuySellConversation,
+    EditOrderConversation,
     EditTokenConversation,
     RemoveOrderConversation,
     RemoveTokenConversation,
@@ -63,6 +64,7 @@ class TradeBot:
             "edittoken": EditTokenConversation(parent=self, config=self.config),
             "removetoken": RemoveTokenConversation(parent=self, config=self.config),
             "addorder": AddOrderConversation(parent=self, config=self.config),
+            "editorder": EditOrderConversation(parent=self, config=self.config),
             "removeorder": RemoveOrderConversation(parent=self, config=self.config),
             "sellall": SellAllConversation(parent=self, config=self.config),
             "buysell": BuySellConversation(parent=self, config=self.config),
@@ -83,21 +85,18 @@ class TradeBot:
             "buysell": "Buy or sell now which token?",
             "approve": "Approve which token on PancakeSwap?",
             "address": "Get address for which token?",
-            "edittoken": "Edit which token icon and slippage?",
+            "edittoken": "Edit which token settings?",
+            "editorder": "Edit order for which token?",
             "removetoken": "Which token do you want to remove?",
         }
 
     def setup_telegram(self):
         self.dispatcher.add_handler(CommandHandler("start", self.command_start))
         self.dispatcher.add_handler(CommandHandler("status", self.command_status))
-        self.dispatcher.add_handler(CommandHandler("sellall", self.command_show_all_tokens))
-        self.dispatcher.add_handler(CommandHandler("addorder", self.command_show_all_tokens))
-        self.dispatcher.add_handler(CommandHandler("removeorder", self.command_show_all_tokens))
-        self.dispatcher.add_handler(CommandHandler("buysell", self.command_show_all_tokens))
-        self.dispatcher.add_handler(CommandHandler("approve", self.command_show_all_tokens))
-        self.dispatcher.add_handler(CommandHandler("address", self.command_show_all_tokens))
-        self.dispatcher.add_handler(CommandHandler("edittoken", self.command_show_all_tokens))
-        self.dispatcher.add_handler(CommandHandler("removetoken", self.command_show_all_tokens))
+
+        for command in self.prompts_select_token:
+            self.dispatcher.add_handler(CommandHandler(command, self.command_show_all_tokens))
+
         self.dispatcher.add_handler(CommandHandler("order", self.command_order))
         self.dispatcher.add_handler(CallbackQueryHandler(self.command_approve, pattern="^approve:0x[a-fA-F0-9]{40}$"))
         self.dispatcher.add_handler(CallbackQueryHandler(self.command_address, pattern="^address:0x[a-fA-F0-9]{40}$"))
@@ -115,10 +114,11 @@ class TradeBot:
             ("buysell", "buy or sell a token now"),
             ("sellall", "sell all balance for a token now"),
             ("addorder", "add order to one of the tokens"),
+            ("editorder", "edit order for one of the tokens"),
             ("removeorder", "delete order for one of the tokens"),
             ("addtoken", "add a token that you want to trade"),
             ("removetoken", "remove a token that you added"),
-            ("edittoken", "edit token emoji and slippage"),
+            ("edittoken", "edit token settings"),
             ("approve", "approve token for selling on PancakeSwap"),
             ("order", "display order information, pass the order ID as argument"),
             ("address", "get the contract address for a token"),
