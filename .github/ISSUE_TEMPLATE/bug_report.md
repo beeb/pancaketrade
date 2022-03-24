@@ -21,8 +21,8 @@ assignees: ''
 - [ ] I have read the entire Readme and followed all installation instructions
 
 **Setup (please complete the following information):**
- - OS and version: 
- - Pancaketrade version: 
+ - OS and version:
+ - Pancaketrade version:
 
 **Describe the bug**
 A clear and concise description of what the bug is.

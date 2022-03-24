@@ -9,7 +9,7 @@ from peewee import (
     SqliteDatabase,
 )
 
-db = SqliteDatabase('user_data/pancaketrade.db')
+db = SqliteDatabase("user_data/pancaketrade.db")
 
 
 class Token(Model):
@@ -25,7 +25,7 @@ class Token(Model):
 
 
 class Order(Model):
-    token = ForeignKeyField(Token, backref='orders')
+    token = ForeignKeyField(Token, backref="orders")
     type = FixedCharField(max_length=4)  # buy (tokens for BNB) or sell (tokens for BNB)
     limit_price = CharField()  # decimal stored as string
     above = BooleanField()  # Above = True, below = False
@@ -36,6 +36,16 @@ class Order(Model):
     # If starts with "+", then we add this amount of gwei to default network price
     gas_price = CharField(null=True)
     created = DateTimeField()
+
+    class Meta:
+        database = db
+
+
+class Preferences(Model):
+    """Simple key-value store for checking if some preferences have changed value between restarts."""
+
+    key = CharField(unique=True)
+    value = CharField(null=True)
 
     class Meta:
         database = db

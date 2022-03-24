@@ -1,0 +1,5 @@
+[flake8]
+min_python_version = 3.7.1
+max-line-length = 120
+exclude = __init__.py,.git,__pycache__,dist,.venv
+extend-ignore = E203

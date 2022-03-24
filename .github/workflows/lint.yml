@@ -17,12 +17,9 @@ jobs:
         with:
           python-version: '3.9'
       - name: Install poetry
-        uses: abatilo/actions-poetry@v2.0.0
+        uses: abatilo/actions-poetry@v2.1.4
         with:
-          poetry-version: '1.1.6'
+          poetry-version: '1.1.12'
       - name: Install deps
         run: poetry install
-      - name: flake8
-        run: poetry run python -m flake8 --max-line-length=120 --exclude=__init__.py,.git,__pycache__,dist,.venv
-      - name: mypy
-        run: poetry run python -m mypy --ignore-missing-imports pancaketrade
+      - uses: pre-commit/action@v2.0.3
