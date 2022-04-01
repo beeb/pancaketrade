@@ -272,7 +272,7 @@ class BuySellConversation:
             usd_amount = self.net.get_bnb_price() * current_price * amount
         price_impact = self.net.calculate_price_impact(
             token_address=token.address,
-            amount_in=order["amount"],
+            amount_in=Web3.toWei(order["amount"], "wei"),
             sell=order["type"] == "sell",
             token_price=current_price,
         )

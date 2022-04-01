@@ -491,7 +491,7 @@ class AddOrderConversation:
         else:  # sell and price in BNB
             usd_amount = self.net.get_bnb_price() * limit_price * amount
         price_impact = self.net.calculate_price_impact(
-            token_address=token.address, amount_in=order["amount"], sell=order["type"] == "sell"
+            token_address=token.address, amount_in=Web3.toWei(order["amount"], "wei"), sell=order["type"] == "sell"
         )
         price_impact_warning = " ‼️" if price_impact > self.config.max_price_impact else ""
         message = (
