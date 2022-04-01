@@ -57,7 +57,7 @@ class OrderWatcher:
         return (
             f"{type_icon} {order_id}: {self.token_record.symbol} {comparison} {limit_price} - "
             + f"<b>{type_name}</b> <code>{format_token_amount(amount)}</code> {unit}{trailing} - "
-            + f"{price_impact:.1%}"
+            + f"{price_impact:.2%}"
         )
 
     def long_str(self) -> str:
