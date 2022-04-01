@@ -376,7 +376,7 @@ class Network:
         theoretical_amount_out = amount_in * token_price if sell else amount_in / token_price
         swap_path, amount_out = self.get_best_swap_path(token_address, amount_in, sell)
         slippage = (theoretical_amount_out - amount_out) / theoretical_amount_out
-        lpFee = Decimal("0.025") if len(swap_path) == 2 else Decimal("0.049375")  # 1 - (1-0.025)^2
+        lpFee = Decimal("0.0025") if len(swap_path) == 2 else Decimal("0.0049375")  # 1 - (1-0.25%)^2
         return slippage - lpFee
 
     def get_best_swap_path(
