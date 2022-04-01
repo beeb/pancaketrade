@@ -51,9 +51,13 @@ class OrderWatcher:
             else "market price"
         )
         type_icon = self.get_type_icon()
+        price_impact = self.net.calculate_loss_to_price_impact(
+            self.token_record.address, self.amount, self.type == "sell"
+        )
         return (
             f"{type_icon} {order_id}: {self.token_record.symbol} {comparison} {limit_price} - "
-            + f"<b>{type_name}</b> <code>{format_token_amount(amount)}</code> {unit}{trailing}"
+            + f"<b>{type_name}</b> <code>{format_token_amount(amount)}</code> {unit}{trailing} - "
+            + f"{price_impact:.1%}"
         )
 
     def long_str(self) -> str:

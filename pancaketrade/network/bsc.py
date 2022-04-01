@@ -359,6 +359,26 @@ class Network:
         argmax = max(range(len(lp_balances)), key=lambda i: lp_balances[i])
         return lps[argmax], argmax
 
+    def calculate_loss_to_price_impact(self, token_address: ChecksumAddress, amount_in: Wei, sell: bool) -> Decimal:
+        """Calculate the loss to price impact for a given token.
+
+        The returned value is a fraction of the predicted output amount that would be lost due to slippage/price impact.
+
+        Args:
+            token_address (ChecksumAddress): token address
+            amount_in (Wei): amount to buy/sell
+            sell (bool): transaction type (True for sell, False for buy)
+
+        Returns:
+            Decimal: the loss to price impact for the given token.
+        """
+        token_price, _ = self.get_token_price(token_address)
+        if self.price_in_usd:  # we need price in BNB / token
+            token_price = token_price / self.get_bnb_price()
+        theoretical_amount_out = amount_in * token_price if sell else amount_in / token_price
+        _, amount_out = self.get_best_swap_path(token_address, amount_in, sell)
+        return 1 - (amount_out / theoretical_amount_out)
+
     def get_best_swap_path(
         self, token_address: ChecksumAddress, amount_in: Wei, sell: bool
     ) -> Tuple[List[ChecksumAddress], Wei]:
