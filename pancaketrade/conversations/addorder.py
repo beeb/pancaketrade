@@ -490,6 +490,10 @@ class AddOrderConversation:
             usd_amount = limit_price * amount
         else:  # sell and price in BNB
             usd_amount = self.net.get_bnb_price() * limit_price * amount
+        price_impact = self.net.calculate_price_impact(
+            token_address=token.address, amount_in=order["amount"], sell=order["type"] == "sell"
+        )
+        price_impact_warning = " ‼️" if price_impact > self.config.max_price_impact else ""
         message = (
             "<u>Preview:</u>\n"
             + f"{token.name} - {type_name}\n"
@@ -497,6 +501,7 @@ class AddOrderConversation:
             + f"Amount: {format_token_amount(amount)} {unit} (${usd_amount:.2f})\n"
             + f"Price {comparision} {self.symbol_usd}{format_amount_smart(limit_price)} {self.symbol_bnb} per token\n"
             + f'Slippage: {order["slippage"]}%\n'
+            + f"Price impact: {price_impact:.2%}{price_impact_warning}\n"
             + f"Gas: {gas_price}"
         )
         chat_message(
