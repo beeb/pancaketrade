@@ -270,11 +270,19 @@ class BuySellConversation:
             usd_amount = current_price * amount
         else:  # sell and price in BNB
             usd_amount = self.net.get_bnb_price() * current_price * amount
+        price_impact = self.net.calculate_price_impact(
+            token_address=token.address,
+            amount_in=order["amount"],
+            sell=order["type"] == "sell",
+            token_price=current_price,
+        )
+        price_impact_warning = " ‼" if price_impact > self.config.max_price_impact else ""
         message = (
             "<u>Preview:</u>\n"
             + f"{token.name}\n"
             + trailing
-            + f"Amount: {format_token_amount(amount)} {unit} (${usd_amount:.2f})"
+            + f"Amount: {format_token_amount(amount)} {unit} (${usd_amount:.2f})\n"
+            + f"Price impact: {price_impact:.2%}{price_impact_warning}"
         )
         chat_message(
             update,
