@@ -269,7 +269,7 @@ class EditOrderConversation:
             )
             return self.next.SLIPPAGE
         elif query.data == "gas":
-            network_gas_price = Decimal(self.net.w3.eth.gas_price) / Decimal(10 ** 9)
+            network_gas_price = Decimal(self.net.w3.eth.gas_price) / Decimal(10**9)
             chat_message(
                 update,
                 context,
@@ -527,7 +527,7 @@ class EditOrderConversation:
                     return self.next.AMOUNT
         decimals = 18 if order.type == "buy" else token.decimals
         unit = f"BNB worth of {token.symbol}" if order.type == "buy" else token.symbol
-        edit["amount"] = int(amount * Decimal(10 ** decimals))
+        edit["amount"] = int(amount * Decimal(10**decimals))
         order_record = order.order_record
         try:
             with db.atomic():

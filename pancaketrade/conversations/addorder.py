@@ -325,7 +325,7 @@ class AddOrderConversation:
             usd_amount = self.net.get_bnb_price() * limit_price * amount
 
         unit = f"BNB worth of {token.symbol}" if order["type"] == "buy" else token.symbol
-        order["amount"] = str(int(amount * Decimal(10 ** decimals)))
+        order["amount"] = str(int(amount * Decimal(10**decimals)))
         reply_markup = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -385,7 +385,7 @@ class AddOrderConversation:
             chat_message(update, context, text="⚠️ The slippage must be between 0.01 and 100, try again:", edit=False)
             return self.next.SLIPPAGE
         order["slippage"] = f"{slippage_percent:.2f}"
-        network_gas_price = Decimal(self.net.w3.eth.gas_price) / Decimal(10 ** 9)
+        network_gas_price = Decimal(self.net.w3.eth.gas_price) / Decimal(10**9)
         chat_message(
             update,
             context,
@@ -578,7 +578,7 @@ class AddOrderConversation:
 
     def get_human_amount(self, order: Mapping, token) -> Decimal:
         decimals = token.decimals if order["type"] == "sell" else 18
-        return Decimal(order["amount"]) / Decimal(10 ** decimals)
+        return Decimal(order["amount"]) / Decimal(10**decimals)
 
     def get_amount_unit(self, order: Mapping, token) -> str:
         return token.symbol if order["type"] == "sell" else "BNB"

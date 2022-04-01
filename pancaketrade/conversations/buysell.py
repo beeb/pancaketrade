@@ -243,7 +243,7 @@ class BuySellConversation:
         else:  # sell and price in BNB
             usd_amount = self.net.get_bnb_price() * current_price * amount
         unit = f"BNB worth of {token.symbol}" if order["type"] == "buy" else token.symbol
-        order["amount"] = str(int(amount * Decimal(10 ** decimals)))
+        order["amount"] = str(int(amount * Decimal(10**decimals)))
         chat_message(
             update,
             context,
@@ -348,7 +348,7 @@ class BuySellConversation:
 
     def get_human_amount(self, order: Mapping, token) -> Decimal:
         decimals = token.decimals if order["type"] == "sell" else 18
-        return Decimal(order["amount"]) / Decimal(10 ** decimals)
+        return Decimal(order["amount"]) / Decimal(10**decimals)
 
     def get_amount_unit(self, order: Mapping, token) -> str:
         return token.symbol if order["type"] == "sell" else "BNB"

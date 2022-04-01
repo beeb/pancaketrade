@@ -113,7 +113,7 @@ class Network:
         Returns:
             Decimal: the balance in BNB units (=ether)
         """
-        return Decimal(self.w3.eth.get_balance(self.wallet)) / Decimal(10 ** 18)
+        return Decimal(self.w3.eth.get_balance(self.wallet)) / Decimal(10**18)
 
     def get_token_balance_usd(
         self, token_address: ChecksumAddress, balance: Optional[Decimal] = None, value: Optional[Decimal] = None
@@ -277,14 +277,14 @@ class Network:
         )  # e.g. balance of LP for base token, normalized to 18 decimals
         if (
             base_token.address == self.addr.wbnb
-            and base_amount / Decimal(10 ** 18) < self.min_pool_size_bnb
+            and base_amount / Decimal(10**18) < self.min_pool_size_bnb
             and not ignore_poolsize
         ):
             # Not enough liquidity
             return Decimal(0)
         # If base is not BNB, then base must be dollar-pegged and we divide by the BNB price to find equivalent
         # value in BNB.
-        elif (base_amount / self.get_bnb_price()) / Decimal(10 ** 18) < self.min_pool_size_bnb and not ignore_poolsize:
+        elif (base_amount / self.get_bnb_price()) / Decimal(10**18) < self.min_pool_size_bnb and not ignore_poolsize:
             # Not enough liquidity
             return Decimal(0)
 
@@ -493,7 +493,7 @@ class Network:
         slippage_ratio = (Decimal(100) - slippage_percent) / Decimal(100)
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith("+"):
-            offset = Web3.toWei(Decimal(gas_price) * Decimal(10 ** 9), unit="wei")
+            offset = Web3.toWei(Decimal(gas_price) * Decimal(10**9), unit="wei")
             final_gas_price = Wei(final_gas_price + offset)
         elif gas_price is not None:
             final_gas_price = Web3.toWei(gas_price, unit="wei")
@@ -600,7 +600,7 @@ class Network:
         slippage_ratio = (Decimal(100) - slippage_percent) / Decimal(100)
         final_gas_price = self.w3.eth.gas_price
         if gas_price is not None and gas_price.startswith("+"):
-            offset = Web3.toWei(Decimal(gas_price) * Decimal(10 ** 9), unit="wei")
+            offset = Web3.toWei(Decimal(gas_price) * Decimal(10**9), unit="wei")
             final_gas_price = Wei(final_gas_price + offset)
         elif gas_price is not None:
             final_gas_price = Web3.toWei(gas_price, unit="wei")
@@ -762,7 +762,7 @@ class Network:
             gas_limit = Wei(100000)
         tx_params = self.get_tx_params(
             gas=gas_limit,
-            gas_price=Wei(self.w3.eth.gas_price + Web3.toWei(Decimal("0.1") * Decimal(10 ** 9), unit="wei")),
+            gas_price=Wei(self.w3.eth.gas_price + Web3.toWei(Decimal("0.1") * Decimal(10**9), unit="wei")),
         )
         tx = self.build_and_send_tx(func, tx_params=tx_params)
         receipt = self.w3.eth.wait_for_transaction_receipt(tx, timeout=6000)

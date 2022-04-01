@@ -175,7 +175,7 @@ class OrderWatcher:
 
         if self.type == "buy":
             logger.info("Buying tokens")
-            amount = Decimal(self.amount) / Decimal(10 ** 18)
+            amount = Decimal(self.amount) / Decimal(10**18)
             self.dispatcher.bot.send_message(
                 chat_id=self.chat_id,
                 text=f"🔸 Trying to buy for {format_token_amount(amount)} BNB of {self.token_record.symbol}...",
@@ -183,7 +183,7 @@ class OrderWatcher:
             start_in_thread(self.buy)
         else:  # sell
             logger.info("Selling tokens")
-            amount = Decimal(self.amount) / Decimal(10 ** self.token_record.decimals)
+            amount = Decimal(self.amount) / Decimal(10**self.token_record.decimals)
             self.dispatcher.bot.send_message(
                 chat_id=self.chat_id,
                 text=f"🔸 Trying to sell {format_token_amount(amount)} {self.token_record.symbol}...",
@@ -322,7 +322,7 @@ class OrderWatcher:
 
     def get_human_amount(self) -> Decimal:
         decimals = self.token_record.decimals if self.type == "sell" else 18
-        return Decimal(self.amount) / Decimal(10 ** decimals)
+        return Decimal(self.amount) / Decimal(10**decimals)
 
     def get_amount_unit(self) -> str:
         return self.token_record.symbol if self.type == "sell" else "BNB"
