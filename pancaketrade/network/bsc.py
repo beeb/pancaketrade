@@ -57,10 +57,17 @@ class NetworkContracts:
 
 class Network:
     def __init__(
-        self, rpc: str, wallet: ChecksumAddress, min_pool_size_bnb: float, price_in_usd: bool, secrets: ConfigSecrets
+        self,
+        rpc: str,
+        wallet: ChecksumAddress,
+        min_pool_size_bnb: float,
+        max_price_impact: float,
+        price_in_usd: bool,
+        secrets: ConfigSecrets,
     ):
         self.wallet = wallet
         self.min_pool_size_bnb = min_pool_size_bnb
+        self.max_price_impact = max_price_impact
         self.price_in_usd = price_in_usd
         self.secrets = secrets
         adapter = requests.adapters.HTTPAdapter(pool_connections=20, pool_maxsize=20, max_retries=1)
@@ -359,23 +366,36 @@ class Network:
         argmax = max(range(len(lp_balances)), key=lambda i: lp_balances[i])
         return lps[argmax], argmax
 
-    def calculate_price_impact(self, token_address: ChecksumAddress, amount_in: Wei, sell: bool) -> Decimal:
+    def calculate_price_impact(
+        self,
+        token_address: ChecksumAddress,
+        amount_in: Wei,
+        sell: bool,
+        token_price: Optional[Decimal] = None,
+        swap_path: Optional[List] = None,
+        amount_out: Optional[Wei] = None,
+    ) -> Decimal:
         """Calculate the loss to price impact for a given token (slippage), ignoring the inevitable LP tax.
 
         Args:
             token_address (ChecksumAddress): token address
             amount_in (Wei): amount to buy/sell
             sell (bool): transaction type (True for sell, False for buy)
+            token_price (Optional[Decimal], optional): token price (if already available). Defaults to None.
+            swap_path (Optional[List], optional): swap path (if already available). Defaults to None.
+            amount_out (Optional[Wei], optional): predicted output amount (if already available). Defaults to None.
 
         Returns:
             Decimal: the loss to price impact for the given token.
         """
-        token_price, _ = self.get_token_price(token_address)
+        if token_price is None:
+            token_price, _ = self.get_token_price(token_address)
         if self.price_in_usd:  # we need price in BNB / token
             token_price = token_price / self.get_bnb_price()
-        theoretical_amount_out = amount_in * token_price if sell else amount_in / token_price
-        swap_path, amount_out = self.get_best_swap_path(token_address, amount_in, sell)
-        slippage = (theoretical_amount_out - amount_out) / theoretical_amount_out
+        quote_amount_out = amount_in * token_price if sell else amount_in / token_price
+        if swap_path is None or amount_out is None:
+            swap_path, amount_out = self.get_best_swap_path(token_address, amount_in, sell)
+        slippage = (quote_amount_out - amount_out) / quote_amount_out
         lpFee = Decimal("0.0025") if len(swap_path) == 2 else Decimal("0.0049375")  # 1 - (1-0.25%)^2
         return slippage - lpFee
 
@@ -483,7 +503,18 @@ class Network:
             )
         except ValueError as e:
             logger.error(e)
-            return (False, Decimal(0), "No compatible LP was found")
+            return False, Decimal(0), "No compatible LP was found"
+        price_impact = self.calculate_price_impact(
+            token_address=token_address,
+            amount_in=amount_bnb,
+            sell=False,
+            token_price=None,
+            swap_path=best_path,
+            amount_out=predicted_out,
+        )
+        if price_impact > self.max_price_impact:
+            logger.error(f"Price impact too high: {price_impact:.2%}")
+            return False, Decimal(0), f"Price impact too high at {price_impact:.2%}"
         min_output_tokens = Web3.toWei(slippage_ratio * predicted_out, unit="wei")
         receipt = self.buy_tokens_with_params(
             path=best_path, amount_bnb=amount_bnb, min_output_tokens=min_output_tokens, gas_price=final_gas_price
@@ -579,7 +610,18 @@ class Network:
             )
         except ValueError as e:
             logger.error(e)
-            return (False, Decimal(0), "No compatible LP was found")
+            return False, Decimal(0), "No compatible LP was found"
+        price_impact = self.calculate_price_impact(
+            token_address=token_address,
+            amount_in=amount_tokens,
+            sell=True,
+            token_price=None,
+            swap_path=best_path,
+            amount_out=predicted_out,
+        )
+        if price_impact > self.max_price_impact:
+            logger.error(f"Price impact too high: {price_impact:.2%}")
+            return False, Decimal(0), f"Price impact too high at {price_impact:.2%}"
         min_output_bnb = Web3.toWei(slippage_ratio * predicted_out, unit="wei")
         receipt = self.sell_tokens_with_params(
             path=best_path, amount_tokens=amount_tokens, min_output_bnb=min_output_bnb, gas_price=final_gas_price

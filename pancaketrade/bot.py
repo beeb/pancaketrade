@@ -46,6 +46,7 @@ class TradeBot:
             rpc=self.config.bsc_rpc,
             wallet=self.config.wallet,
             min_pool_size_bnb=self.config.min_pool_size_bnb,
+            max_price_impact=self.config.max_price_impact,
             price_in_usd=self.config.price_in_usd,
             secrets=self.config.secrets,
         )
