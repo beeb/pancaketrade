@@ -359,7 +359,7 @@ class Network:
         argmax = max(range(len(lp_balances)), key=lambda i: lp_balances[i])
         return lps[argmax], argmax
 
-    def calculate_loss_to_price_impact(self, token_address: ChecksumAddress, amount_in: Wei, sell: bool) -> Decimal:
+    def calculate_price_impact(self, token_address: ChecksumAddress, amount_in: Wei, sell: bool) -> Decimal:
         """Calculate the loss to price impact for a given token (slippage), ignoring the inevitable LP tax.
 
         Args:

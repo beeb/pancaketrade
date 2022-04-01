@@ -320,6 +320,7 @@ class BuySellConversation:
             dispatcher=context.dispatcher,
             chat_id=update.effective_chat.id,
             price_in_usd=self.config.price_in_usd,
+            max_price_impact=self.config.max_price_impact,
         )
         token.orders.append(order)
         chat_message(

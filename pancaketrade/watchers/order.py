@@ -12,13 +12,22 @@ from pancaketrade.utils.generic import format_amount_smart, format_token_amount,
 
 
 class OrderWatcher:
-    def __init__(self, order_record: Order, net: Network, dispatcher: Dispatcher, chat_id: int, price_in_usd: bool):
+    def __init__(
+        self,
+        order_record: Order,
+        net: Network,
+        dispatcher: Dispatcher,
+        chat_id: int,
+        price_in_usd: bool,
+        max_price_impact: float,
+    ):
         self.order_record = order_record
         self.token_record: Token = order_record.token
         self.net = net
         self.dispatcher = dispatcher
         self.chat_id = chat_id
         self.price_in_usd = price_in_usd
+        self.max_price_impact = max_price_impact
         self.symbol_usd = "$" if self.price_in_usd else ""
         self.symbol_bnb = "BNB" if not self.price_in_usd else ""
 
@@ -51,13 +60,11 @@ class OrderWatcher:
             else "market price"
         )
         type_icon = self.get_type_icon()
-        price_impact = self.net.calculate_loss_to_price_impact(
-            self.token_record.address, self.amount, self.type == "sell"
-        )
+        price_impact = self.net.calculate_price_impact(self.token_record.address, self.amount, self.type == "sell")
+        price_impact_warning = f" - {price_impact:.2f} ‼️" if price_impact > self.max_price_impact else ""
         return (
             f"{type_icon} {order_id}: {self.token_record.symbol} {comparison} {limit_price} - "
-            + f"<b>{type_name}</b> <code>{format_token_amount(amount)}</code> {unit}{trailing} - "
-            + f"{price_impact:.2%}"
+            + f"<b>{type_name}</b> <code>{format_token_amount(amount)}</code> {unit}{trailing}{price_impact_warning}"
         )
 
     def long_str(self) -> str:
@@ -81,12 +88,15 @@ class OrderWatcher:
             if self.limit_price is not None
             else "market price"
         )
+        price_impact = self.net.calculate_price_impact(self.token_record.address, self.amount, self.type == "sell")
+        price_impact_warning = " ‼️" if price_impact > self.max_price_impact else ""
         return (
             f"{icon}{self.token_record.symbol} - ({order_id}) <b>{type_name}</b> {type_icon}\n"
             + f"<b>Amount</b>: <code>{format_token_amount(amount)}</code> {unit}\n"
             + f"<b>Price</b>: {comparision} {limit_price}\n"
             + trailing
             + f"<b>Slippage</b>: {self.slippage}%\n"
+            + f"<b>Price impact</b>: {price_impact:.2%}{price_impact_warning}\n"
             + f"<b>Gas</b>: {gas_price}\n"
             + f'<b>Created</b>: {self.created.strftime("%Y-%m-%d %H:%m")}'
         )
