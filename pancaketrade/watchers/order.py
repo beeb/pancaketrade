@@ -61,7 +61,7 @@ class OrderWatcher:
         )
         type_icon = self.get_type_icon()
         price_impact = self.net.calculate_price_impact(self.token_record.address, self.amount, self.type == "sell")
-        price_impact_warning = f" - {price_impact:.2f} ‼️" if price_impact > self.max_price_impact else ""
+        price_impact_warning = f" - {price_impact:.2f} ❗️❗️" if price_impact > self.max_price_impact else ""
         return (
             f"{type_icon} {order_id}: {self.token_record.symbol} {comparison} {limit_price} - "
             + f"<b>{type_name}</b> <code>{format_token_amount(amount)}</code> {unit}{trailing}{price_impact_warning}"
@@ -89,7 +89,7 @@ class OrderWatcher:
             else "market price"
         )
         price_impact = self.net.calculate_price_impact(self.token_record.address, self.amount, self.type == "sell")
-        price_impact_warning = " ‼️" if price_impact > self.max_price_impact else ""
+        price_impact_warning = " ❗️❗️" if price_impact > self.max_price_impact else ""
         return (
             f"{icon}{self.token_record.symbol} - ({order_id}) <b>{type_name}</b> {type_icon}\n"
             + f"<b>Amount</b>: <code>{format_token_amount(amount)}</code> {unit}\n"

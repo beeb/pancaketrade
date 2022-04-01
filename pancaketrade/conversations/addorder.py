@@ -493,7 +493,7 @@ class AddOrderConversation:
         price_impact = self.net.calculate_price_impact(
             token_address=token.address, amount_in=Web3.toWei(order["amount"], "wei"), sell=order["type"] == "sell"
         )
-        price_impact_warning = " ‼️" if price_impact > self.config.max_price_impact else ""
+        price_impact_warning = " ❗️❗️" if price_impact > self.config.max_price_impact else ""
         message = (
             "<u>Preview:</u>\n"
             + f"{token.name} - {type_name}\n"
