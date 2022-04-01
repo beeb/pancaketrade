@@ -276,7 +276,7 @@ class BuySellConversation:
             sell=order["type"] == "sell",
             token_price=current_price,
         )
-        price_impact_warning = " ‼" if price_impact > self.config.max_price_impact else ""
+        price_impact_warning = " ❗️❗️" if price_impact > self.config.max_price_impact else ""
         message = (
             "<u>Preview:</u>\n"
             + f"{token.name}\n"
