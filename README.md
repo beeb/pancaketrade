@@ -110,6 +110,7 @@ The solution is to create a new bot token and try again, or disable `update_mess
 ---
 bsc_rpc: 'https://bsc-dataseed.binance.org:443' # you can use any BSC RPC url you want
 min_pool_size_bnb: 25 # PancakeSwap LPs that have less than 25 BNB will not be considered
+max_price_impact: 0.05 # if price impact is above 5%, order will not execute
 monitor_interval: 5 # the script will check the token prices with this interval in seconds
 update_messages: true # status messages will update periodically to show current values
 price_in_usd: true # input, show and track prices in USD/token instead of BNB/token
