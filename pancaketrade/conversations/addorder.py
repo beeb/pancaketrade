@@ -504,6 +504,7 @@ class AddOrderConversation:
             + f"Price impact: {price_impact:.2%}{price_impact_warning}\n"
             + f"Gas: {gas_price}"
         )
+        validate_icon = "⚠️" if price_impact > self.config.max_price_impact else "✅"
         chat_message(
             update,
             context,
@@ -511,7 +512,7 @@ class AddOrderConversation:
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
-                        InlineKeyboardButton("✅ Validate", callback_data="ok"),
+                        InlineKeyboardButton(f"{validate_icon} Validate", callback_data="ok"),
                         InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
                     ]
                 ]
