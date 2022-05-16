@@ -36,6 +36,7 @@ class Config:
     secrets: ConfigSecrets
     bsc_rpc: str = "https://bsc-dataseed.binance.org:443"
     min_pool_size_bnb: float = 25
+    max_price_impact: float = 0.05
     monitor_interval: float = 5
     update_messages: bool = False
     price_in_usd: bool = False

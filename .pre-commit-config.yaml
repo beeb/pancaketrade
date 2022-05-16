@@ -17,7 +17,7 @@ repos:
       - id: isort
         args: [--profile=black, --filter-files, --line-length=120]
   - repo: https://github.com/psf/black
-    rev: 21.12b0
+    rev: 22.3.0
     hooks:
       - id: black
         args: [--line-length=120]

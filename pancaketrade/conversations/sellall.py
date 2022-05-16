@@ -82,7 +82,7 @@ class SellAllConversation:
                 chat_message(update, context, text="⛔ Approval failed", edit=False)
                 return ConversationHandler.END
         balance_tokens = self.net.get_token_balance_wei(token_address=token.address)
-        balance_decimal = Decimal(balance_tokens) / Decimal(10 ** token.decimals)
+        balance_decimal = Decimal(balance_tokens) / Decimal(10**token.decimals)
         chat_message(
             update,
             context,

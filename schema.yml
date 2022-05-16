@@ -2,6 +2,7 @@
 bsc_rpc: regex("^(https?|ftp)://(-\.)?([^\s/?\.#]+\.?)+(/[^\s]*)?$", 'URI')
 wallet: regex('^0x[a-fA-F0-9]{40}$', 'ethereum address', required=False)
 min_pool_size_bnb: num(min=0.0001)
+max_price_impact: num(min=0.001, max=0.999)
 monitor_interval: num(min=1)
 update_messages: bool(required=False)
 price_in_usd: bool(required=False)

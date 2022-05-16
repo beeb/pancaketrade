@@ -40,6 +40,7 @@ class TokenWatcher:
                 dispatcher=self.dispatcher,
                 chat_id=self.config.secrets.admin_chat_id,
                 price_in_usd=self.config.price_in_usd,
+                max_price_impact=self.config.max_price_impact,
             )
             for order_record in orders
         ]

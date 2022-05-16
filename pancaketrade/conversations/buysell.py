@@ -243,7 +243,7 @@ class BuySellConversation:
         else:  # sell and price in BNB
             usd_amount = self.net.get_bnb_price() * current_price * amount
         unit = f"BNB worth of {token.symbol}" if order["type"] == "buy" else token.symbol
-        order["amount"] = str(int(amount * Decimal(10 ** decimals)))
+        order["amount"] = str(int(amount * Decimal(10**decimals)))
         chat_message(
             update,
             context,
@@ -270,12 +270,21 @@ class BuySellConversation:
             usd_amount = current_price * amount
         else:  # sell and price in BNB
             usd_amount = self.net.get_bnb_price() * current_price * amount
+        price_impact = self.net.calculate_price_impact(
+            token_address=token.address,
+            amount_in=Web3.toWei(order["amount"], "wei"),
+            sell=order["type"] == "sell",
+            token_price=current_price,
+        )
+        price_impact_warning = " ❗️❗️" if price_impact > self.config.max_price_impact else ""
         message = (
             "<u>Preview:</u>\n"
             + f"{token.name}\n"
             + trailing
-            + f"Amount: {format_token_amount(amount)} {unit} (${usd_amount:.2f})"
+            + f"Amount: {format_token_amount(amount)} {unit} (${usd_amount:.2f})\n"
+            + f"Price impact: {price_impact:.2%}{price_impact_warning}"
         )
+        validate_icon = "⚠️" if price_impact > self.config.max_price_impact else "✅"
         chat_message(
             update,
             context,
@@ -283,7 +292,7 @@ class BuySellConversation:
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
-                        InlineKeyboardButton("✅ Validate", callback_data="ok"),
+                        InlineKeyboardButton(f"{validate_icon} Validate", callback_data="ok"),
                         InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
                     ]
                 ]
@@ -320,6 +329,7 @@ class BuySellConversation:
             dispatcher=context.dispatcher,
             chat_id=update.effective_chat.id,
             price_in_usd=self.config.price_in_usd,
+            max_price_impact=self.config.max_price_impact,
         )
         token.orders.append(order)
         chat_message(
@@ -339,7 +349,7 @@ class BuySellConversation:
 
     def get_human_amount(self, order: Mapping, token) -> Decimal:
         decimals = token.decimals if order["type"] == "sell" else 18
-        return Decimal(order["amount"]) / Decimal(10 ** decimals)
+        return Decimal(order["amount"]) / Decimal(10**decimals)
 
     def get_amount_unit(self, order: Mapping, token) -> str:
         return token.symbol if order["type"] == "sell" else "BNB"
