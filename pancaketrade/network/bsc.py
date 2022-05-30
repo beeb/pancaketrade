@@ -392,10 +392,16 @@ class Network:
             token_price, _ = self.get_token_price(token_address)
         if self.price_in_usd:  # we need price in BNB / token
             token_price = token_price / self.get_bnb_price()
-        quote_amount_out = amount_in * token_price if sell else amount_in / token_price
+        quote_amount_out = amount_in * token_price if sell else amount_in / token_price  # with "in" token decimals
         if swap_path is None or amount_out is None:
-            swap_path, amount_out = self.get_best_swap_path(token_address, amount_in, sell)
-        slippage = (quote_amount_out - amount_out) / quote_amount_out
+            swap_path, amount_out = self.get_best_swap_path(token_address, amount_in, sell)  # with "out" token decimals
+        quote_amount_out_normalized = quote_amount_out * Decimal(
+            10 ** (18 - self.get_token_decimals(swap_path[0]))
+        )  # normalize to 18 decimals
+        amount_out_normalized = Decimal(amount_out) * Decimal(
+            10 ** (18 - self.get_token_decimals(swap_path[-1]))
+        )  # normalize to 18 decimals
+        slippage = (quote_amount_out_normalized - amount_out_normalized) / quote_amount_out_normalized
         lpFee = Decimal("0.0025") if len(swap_path) == 2 else Decimal("0.0049375")  # 1 - (1-0.25%)^2
         return slippage - lpFee
 
