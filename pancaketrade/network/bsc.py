@@ -272,8 +272,8 @@ class Network:
         if lp is None:
             return Decimal(0)
         base_decimals = self.get_token_decimals(base_token.address)
-        base_amount = Decimal(base_token.functions.balanceOf(lp).call()) * Decimal(
-            10 ** (18 - base_decimals)
+        base_amount = Decimal(base_token.functions.balanceOf(lp).call()) * Decimal(10) ** Decimal(
+            18 - base_decimals
         )  # e.g. balance of LP for base token, normalized to 18 decimals
         if (
             base_token.address == self.addr.wbnb
@@ -289,8 +289,9 @@ class Network:
             return Decimal(0)
 
         token_decimals = self.get_token_decimals(token.address)
-        token_amount = Decimal(token.functions.balanceOf(lp).call()) * Decimal(10 ** (18 - token_decimals))
-        # normalize to 18 decimals
+        token_amount = Decimal(token.functions.balanceOf(lp).call()) * Decimal(10) ** Decimal(
+            18 - token_decimals
+        )  # normalize to 18 decimals
         try:
             base_per_token = base_amount / token_amount
         except Exception:
@@ -328,7 +329,7 @@ class Network:
             return Decimal(0)
         token_decimals = self.get_token_decimals(token.address)
         bnb_amount = Decimal(self.contracts.wbnb.functions.balanceOf(lp).call())
-        token_amount = Decimal(token.functions.balanceOf(lp).call()) * Decimal(10 ** (18 - token_decimals))
+        token_amount = Decimal(token.functions.balanceOf(lp).call()) * Decimal(10) ** Decimal(18 - token_decimals)
         return bnb_amount / token_amount
 
     @cached(cache=TTLCache(maxsize=1, ttl=30))
@@ -395,11 +396,11 @@ class Network:
         quote_amount_out = amount_in * token_price if sell else amount_in / token_price  # with "in" token decimals
         if swap_path is None or amount_out is None:
             swap_path, amount_out = self.get_best_swap_path(token_address, amount_in, sell)  # with "out" token decimals
-        quote_amount_out_normalized = quote_amount_out * Decimal(
-            10 ** (18 - self.get_token_decimals(swap_path[0]))
+        quote_amount_out_normalized = quote_amount_out * Decimal(10) ** Decimal(
+            18 - self.get_token_decimals(swap_path[0])
         )  # normalize to 18 decimals
-        amount_out_normalized = Decimal(amount_out) * Decimal(
-            10 ** (18 - self.get_token_decimals(swap_path[-1]))
+        amount_out_normalized = Decimal(amount_out) * Decimal(10) ** Decimal(
+            18 - self.get_token_decimals(swap_path[-1])
         )  # normalize to 18 decimals
         slippage = (quote_amount_out_normalized - amount_out_normalized) / quote_amount_out_normalized
         lpFee = Decimal("0.0025") if len(swap_path) == 2 else Decimal("0.0049375")  # 1 - (1-0.25%)^2
