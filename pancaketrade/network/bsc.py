@@ -574,7 +574,7 @@ class Network:
             min_output_tokens, path, self.wallet, self.deadline(60)
         )
         try:
-            gas_limit = Wei(int(Decimal(func.estimateGas({"from": self.wallet, "value": amount_bnb})) * Decimal(1.2)))
+            gas_limit = Wei(int(Decimal(func.estimateGas({"from": self.wallet, "value": amount_bnb})) * Decimal(1.5)))
         except Exception as e:
             logger.error(f"Can't get gas estimate, cancelling transaction: {e}")
             return None
@@ -677,7 +677,7 @@ class Network:
             amount_tokens, min_output_bnb, path, self.wallet, self.deadline(60)
         )
         try:
-            gas_limit = Wei(int(Decimal(func.estimateGas({"from": self.wallet, "value": Wei(0)})) * Decimal(1.2)))
+            gas_limit = Wei(int(Decimal(func.estimateGas({"from": self.wallet, "value": Wei(0)})) * Decimal(1.5)))
         except Exception as e:
             logger.error(f"Can't get gas estimate, cancelling transaction: {e}")
             return None
@@ -764,7 +764,7 @@ class Network:
         func = token_contract.functions.approve(self.addr.router_v2, max_approval)
         logger.info(f"Approving {self.get_token_symbol(token_address=token_address)} - {token_address}...")
         try:
-            gas_limit = Wei(int(Decimal(func.estimateGas({"from": self.wallet, "value": Wei(0)})) * Decimal(1.2)))
+            gas_limit = Wei(int(Decimal(func.estimateGas({"from": self.wallet, "value": Wei(0)})) * Decimal(1.5)))
         except Exception:
             gas_limit = Wei(100000)
         tx_params = self.get_tx_params(
