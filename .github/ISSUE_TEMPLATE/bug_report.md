@@ -4,7 +4,6 @@ about: Create a report to help us improve
 title: ''
 labels: bug
 assignees: ''
-
 ---
 
 <!--
@@ -15,20 +14,24 @@ assignees: ''
   If not, please try and fulfil these first.
 -->
 <!-- Checked checkbox should look like this: [x] -->
+
 **Please confirm the following**
+
 - [ ] I am on the latest stable [release](https://github.com/beeb/pancaketrade/releases) of `pancaketrade`
 - [ ] I have searched the [issues](https://github.com/beeb/pancaketrade/issues) and cannot find a similar one
 - [ ] I have read the entire Readme and followed all installation instructions
 
 **Setup (please complete the following information):**
- - OS and version:
- - Pancaketrade version:
+
+- OS and version:
+- Pancaketrade version:
 
 **Describe the bug**
 A clear and concise description of what the bug is.
 
 **To Reproduce**
 Steps to reproduce the behavior:
+
 1. ...
 2. ...
 
