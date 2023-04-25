@@ -57,7 +57,7 @@ class BuySellConversation:
         query = update.callback_query
         assert query.data
         token_address = query.data.split(":")[1]
-        if not Web3.isChecksumAddress(token_address):
+        if not Web3.is_checksum_address(token_address):
             self.command_error(update, context, text="Invalid token address.")
             return ConversationHandler.END
         token = self.parent.watchers[token_address]

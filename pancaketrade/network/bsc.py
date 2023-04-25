@@ -22,13 +22,13 @@ GAS_LIMIT_FAILSAFE = Wei(2500000)  # if the estimated limit is above this one, c
 
 
 class NetworkAddresses(NamedTuple):
-    wbnb: ChecksumAddress = Web3.toChecksumAddress("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c")
-    busd: ChecksumAddress = Web3.toChecksumAddress("0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56")
-    usdt: ChecksumAddress = Web3.toChecksumAddress("0x55d398326f99059ff775485246999027b3197955")
-    factory_v1: ChecksumAddress = Web3.toChecksumAddress("0xBCfCcbde45cE874adCB698cC183deBcF17952812")
-    factory_v2: ChecksumAddress = Web3.toChecksumAddress("0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73")
-    router_v1: ChecksumAddress = Web3.toChecksumAddress("0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F")
-    router_v2: ChecksumAddress = Web3.toChecksumAddress("0x10ED43C718714eb63d5aA57B78B54704E256024E")
+    wbnb: ChecksumAddress = Web3.to_checksum_address("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c")
+    busd: ChecksumAddress = Web3.to_checksum_address("0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56")
+    usdt: ChecksumAddress = Web3.to_checksum_address("0x55d398326f99059ff775485246999027b3197955")
+    factory_v1: ChecksumAddress = Web3.to_checksum_address("0xBCfCcbde45cE874adCB698cC183deBcF17952812")
+    factory_v2: ChecksumAddress = Web3.to_checksum_address("0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73")
+    router_v1: ChecksumAddress = Web3.to_checksum_address("0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F")
+    router_v2: ChecksumAddress = Web3.to_checksum_address("0x10ED43C718714eb63d5aA57B78B54704E256024E")
 
 
 class NetworkContracts:
@@ -472,7 +472,7 @@ class Network:
         pair = self.contracts.factory_v2.functions.getPair(token_address, base_token_address).call()
         if pair == "0x" + 40 * "0":  # not found, don't cache
             return None
-        checksum_pair = Web3.toChecksumAddress(pair)
+        checksum_pair = Web3.to_checksum_address(pair)
         self.lp_cache[(str(token_address), str(base_token_address))] = checksum_pair
         return checksum_pair
 

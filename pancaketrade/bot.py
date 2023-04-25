@@ -52,7 +52,7 @@ class TradeBot:
         )
         defaults = Defaults(parse_mode=ParseMode.HTML, disable_web_page_preview=True, timeout=120)
         # persistence = PicklePersistence(filename='botpersistence')
-        self.updater = Updater(token=config.secrets.telegram_token, persistence=None, defaults=defaults)
+        self.updater = Updater(token=config.secrets.telegram_token, defaults=defaults)
         self.dispatcher = self.updater.dispatcher
         update_db_prices(
             new_price_in_usd=self.config.price_in_usd,
@@ -201,7 +201,7 @@ class TradeBot:
         query = update.callback_query
         assert query.data
         token_address = query.data.split(":")[1]
-        if not Web3.isChecksumAddress(token_address):
+        if not Web3.is_checksum_address(token_address):
             chat_message(update, context, text="⛔️ Invalid token address.", edit=self.config.update_messages)
             return
         token = self.watchers[token_address]
@@ -233,7 +233,7 @@ class TradeBot:
         query = update.callback_query
         assert query.data
         token_address = query.data.split(":")[1]
-        if not Web3.isChecksumAddress(token_address):
+        if not Web3.is_checksum_address(token_address):
             chat_message(update, context, text="⛔️ Invalid token address.", edit=self.config.update_messages)
             return
         token = self.watchers[token_address]

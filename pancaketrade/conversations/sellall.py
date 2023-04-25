@@ -35,7 +35,7 @@ class SellAllConversation:
         query = update.callback_query
         assert query.data
         token_address = query.data.split(":")[1]
-        if not Web3.isChecksumAddress(token_address):
+        if not Web3.is_checksum_address(token_address):
             chat_message(update, context, text="⛔️ Invalid token address.", edit=False)
             return ConversationHandler.END
         token: TokenWatcher = self.parent.watchers[token_address]
@@ -62,7 +62,7 @@ class SellAllConversation:
         if query.data == "cancel":
             chat_message(update, context, text="⚠️ OK, I'm cancelling this command.", edit=self.config.update_messages)
             return ConversationHandler.END
-        if not Web3.isChecksumAddress(query.data):
+        if not Web3.is_checksum_address(query.data):
             chat_message(update, context, text="⛔️ Invalid token address.", edit=self.config.update_messages)
             return ConversationHandler.END
         token: TokenWatcher = self.parent.watchers[query.data]

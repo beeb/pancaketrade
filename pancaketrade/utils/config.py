@@ -45,7 +45,7 @@ class Config:
     _pk: str = field(repr=False, default="")
 
     def __post_init__(self):
-        self.wallet = Web3.toChecksumAddress(self.wallet)
+        self.wallet = Web3.to_checksum_address(self.wallet)
         # below we remove any extra key that might exist in the secrets section (formerly we had bscscan api key there)
         secrets = {
             key: val

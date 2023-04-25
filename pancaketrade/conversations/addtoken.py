@@ -59,7 +59,7 @@ class AddTokenConversation:
         assert update.message and update.message.text and context.user_data is not None
         response = update.message.text.strip()
         if Web3.isAddress(response):
-            token_address = Web3.toChecksumAddress(response)
+            token_address = Web3.to_checksum_address(response)
         else:
             chat_message(
                 update, context, text="⚠️ The address you provided is not a valid ETH address. Try again:", edit=False

@@ -24,7 +24,7 @@ class TokenWatcher:
         self.dispatcher = dispatcher
         self.config = config
         self.token_record = token_record
-        self.address = Web3.toChecksumAddress(token_record.address)
+        self.address = Web3.to_checksum_address(token_record.address)
         self.decimals = int(token_record.decimals)
         self.symbol = str(token_record.symbol)
         self.emoji = token_record.icon + " " if token_record.icon else ""
